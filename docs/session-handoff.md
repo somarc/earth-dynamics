@@ -2,69 +2,64 @@
 
 **Updated:** 2026-06-25  
 **Repo:** `/Users/mhess/marc_projects/ecdo` · GitHub `somarc/earth-dynamics`  
-**Latest:** Phase D complete (`3348974` → `e74d569`)
+**Latest:** Phase E complete (`7d91d89` → `8ffa7c9`)
 
 ---
 
 ## Where we are
 
-**Phase D (physics loop)** shipped:
+**Phase E (globe equity)** shipped:
 
 | Item | What |
 |------|------|
-| D1 | GFZ AAM ingest → `aam_daily` (~18k rows, 1976–2026) |
-| D2 | AAM z anomaly overlaid on ΔLOD chart; `/api/aam/window` |
-| D3 | Space weather chain highlight on multi-step storm dates |
-| D4 | `npm run ingest -- --only=ephemeris` incremental Horizons extend |
+| E1 | IBTrACS ingest — 4,775 storms since 1980; tracks on globe |
+| E2 | Weather grid — **12/16** cities; 4 pending (Sydney, São Paulo, equator pts). Chunked resume + `--weather-grid=`; re-run when Open-Meteo 429 clears |
+| E3 | ERA5 weather glyphs (temp color, wind size) at grid cities |
+| E4 | **Atmosphere** preset — cyclones + weather, hides solid/space layers |
 
-**Next: Phase E (globe equity)** — IBTrACS, weather grid completion, Atmosphere preset.
+**Next: Phase F (trust layer)** — epistemic badges, staleness chips, disclaimer governance.
 
 ---
 
 ## Run / verify
 
 ```bash
-npm run start                              # restart API to pick up new routes
-npm run ingest -- --only=aam               # refresh AAM (incremental by year)
-npm run ingest -- --only=ephemeris         # extend ephemeris to EOP end
+npm run start                              # restart API for cyclones field
+npm run ingest -- --only=ibtracs           # skip if already ingested
+npm run ingest -- --only=weather           # resume until 16/16 (chunked; wait if 429)
+npm run ingest -- --only=weather --weather-grid=sydney,saopaulo,equator_pacific,equator_africa
 ```
 
 **Demo dates**
 
 | Date | Why |
 |------|-----|
-| 2024-05-11 | G5 storm — chain highlight on space weather panel; LOD+AAM overlay |
-| 2024-01-15 | Winter AAM/LOD coupling visible on rotation panel |
-| Today (±2d) | OVATION aurora + chain badge when Kp elevated |
+| 2005-08-29 | Hurricane Katrina track (IBTrACS) |
+| 2024-09-26 | Recent Atlantic cyclone season |
+| Today | Weather glyphs at ingested grid cities |
 
-**API checks**
+**Try**
 
-```bash
-curl "http://localhost:3001/api/aam/window?end=2024-05-11&days=30"
-curl "http://localhost:3001/api/day/2024-05-11" | jq '.aam'
-```
-
----
-
-## Phase E kickoff
-
-1. `ingest/sources/ibtracs.mjs` + cyclone tracks on globe
-2. Resume `npm run ingest -- --only=weather` (12 cities pending)
-3. **Atmosphere** layer preset
-
-See [`roadmap.md`](roadmap.md) Phase E.
+1. Click **Atmosphere** preset in footer
+2. Scrub to **2005-08-29** — Katrina track grows to landfall
+3. Hover cyclone head or weather glyph for inspect/tooltip
 
 ---
 
-## Key files (Phase D)
+## Phase F kickoff
+
+See [`roadmap.md`](roadmap.md) Phase F: lane epistemic badges, per-source staleness, helical/pedagogical callouts.
+
+---
+
+## Key files (Phase E)
 
 ```
-ingest/sources/aam.mjs
-ingest/sources/ephemeris.mjs
-ingest/lib/horizons-ephemeris.mjs
-src/charts.js                 # LOD + AAM overlay
-src/space-weather-chain.js    # CME → Dst → aurora highlight
-api/handlers.mjs              # /api/aam/window
+ingest/sources/ibtracs.mjs
+src/cyclones.js
+src/weather-globe.js
+src/earth.js                  # setCyclones, setWeatherGlyphs
+api/handlers.mjs              # day.cyclones
 ```
 
 ---

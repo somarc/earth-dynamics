@@ -39,7 +39,7 @@ Close the gap between **co-display** (many lanes, one timeline) and **co-analysi
 
 ```
 Phase D  Physics loop      T16 → LOD coupling → ephemeris refresh     ✓
-Phase E  Globe equity      T15 → T6 complete → weather glyphs → preset  ← NEXT
+Phase E  Globe equity      T15 → T6 complete → weather glyphs → preset  ✓
 Phase F  Trust layer       I7 → staleness badges → lane epistemics
 Phase G  Share & compare   U7 → U6 → change summary
 Phase H  Ship              I3 → I4 → I5 → I6
@@ -75,10 +75,10 @@ npm run ingest -- --only=ephemeris
 
 | ID | Item | Source / scope | Status |
 |----|------|----------------|--------|
-| **E1** | IBTrACS tropical cyclones (T15) | Track polylines + inspect + citation | `planned` |
-| **E2** | Weather grid completion (T6) | Resume Open-Meteo 16-pt ingest | `planned` |
-| **E3** | Weather glyphs on globe | Temp/wind hints at grid points | `planned` |
-| **E4** | **Atmosphere** layer preset | Cyclones + weather; hides space/plates | `planned` |
+| **E1** | IBTrACS tropical cyclones (T15) | Track polylines + inspect + citation | `done` |
+| **E2** | Weather grid completion (T6) | Chunked Open-Meteo resume; 12/16 ingested (rate-limited) | `debt` |
+| **E3** | Weather glyphs on globe | Temp/wind hints at grid points | `done` |
+| **E4** | **Atmosphere** layer preset | Cyclones + weather; hides space/plates | `done` |
 | **E5** | US storms on globe *(decision)* | NCEI markers vs list-only — see wishlist W-decision | `icebox` |
 
 **Decision (before E1):** IBTrACS owns global “storms on globe”; US NCEI stays list-only unless E5 explicitly approved.
@@ -87,7 +87,8 @@ npm run ingest -- --only=ephemeris
 
 ```bash
 npm run ingest -- --only=weather
-npm run ingest -- --only=ibtracs      # after E1 lands
+npm run ingest -- --only=weather --weather-grid=sydney,saopaulo,equator_pacific,equator_africa
+npm run ingest -- --only=ibtracs
 ```
 
 ---
@@ -183,9 +184,9 @@ Promote to `planned` after Phase D + F establish trustworthy baselines.
 | T3 | Earthquakes M≥5 | USGS | `done` |
 | T4 | GVP eruption episodes | Smithsonian | `done` |
 | T5 | US storms | NOAA NCEI | `done` (list only) |
-| T6 | Weather grid 16 pts | Open-Meteo | `debt` (4/16) |
+| T6 | Weather grid 16 pts | Open-Meteo | `debt` (12/16) |
 | T7–T14 | Solar, Kp, CME, aurora, Dst, wind, OVATION | Various | `done` |
-| T15 | IBTrACS cyclones | NOAA | `planned` (Phase E) |
+| T15 | IBTrACS cyclones | NOAA | `done` |
 | T16 | Atmospheric angular momentum | GFZ ESMGFZ AAM | `done` |
 | T17 | ENSO / ONI | NOAA CPC | `icebox` |
 
@@ -240,4 +241,4 @@ NASA_API_KEY=xxx npm run fetch-space-weather
 
 ---
 
-*Last updated: 2026-06-25 — Phases A–C, G, and **D (physics loop)** shipped; **Phase E (globe equity)** is next. See [`wishlist.md`](wishlist.md) and [`session-handoff.md`](session-handoff.md).*
+*Last updated: 2026-06-25 — Phases A–E and D shipped; **Phase F (trust layer)** is next. See [`wishlist.md`](wishlist.md) and [`session-handoff.md`](session-handoff.md).*

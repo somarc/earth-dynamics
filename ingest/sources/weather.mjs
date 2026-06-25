@@ -3,8 +3,51 @@ import { WEATHER_GRID } from '../constants.mjs';
 
 const START = '1962-01-01';
 const END = new Date().toISOString().slice(0, 10);
+const CHUNK_YEARS = 3;
+const CHUNK_PAUSE_MS = 8000;
+const GRID_PAUSE_MS = 45000;
 
-async function fetchGridPoint(grid, start, end, retries = 5) {
+function addDays(dateStr, days) {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function* yearChunks(start, end, years = CHUNK_YEARS) {
+  let cursor = start;
+  while (cursor <= end) {
+    const startYear = Number.parseInt(cursor.slice(0, 4), 10);
+    const chunkEndYear = startYear + years - 1;
+    let chunkEnd = `${chunkEndYear}-12-31`;
+    if (chunkEnd > end) chunkEnd = end;
+    yield { start: cursor, end: chunkEnd };
+    const nextYear = chunkEndYear + 1;
+    cursor = `${nextYear}-01-01`;
+    if (cursor > end) break;
+  }
+}
+
+function gridStatus(db, gridId) {
+  return db.prepare(
+    'SELECT COUNT(*) AS c, MIN(date) AS minDate, MAX(date) AS maxDate FROM weather_daily WHERE grid_id = ?'
+  ).get(gridId);
+}
+
+function isGridComplete(db, gridId, end = END) {
+  const { c, minDate, maxDate } = gridStatus(db, gridId);
+  return c >= 1000 && minDate <= START && maxDate >= end;
+}
+
+function resumeStart(db, gridId) {
+  const { maxDate } = gridStatus(db, gridId);
+  return maxDate ? addDays(maxDate, 1) : START;
+}
+
+async function sleep(ms) {
+  await new Promise((r) => setTimeout(r, ms));
+}
+
+async function fetchGridChunk(grid, start, end, retries = 10) {
   const url = new URL('https://archive-api.open-meteo.com/v1/archive');
   url.searchParams.set('latitude', String(grid.lat));
   url.searchParams.set('longitude', String(grid.lon));
@@ -17,17 +60,38 @@ async function fetchGridPoint(grid, start, end, retries = 5) {
     const res = await fetch(url);
     if (res.ok) return res.json();
     if (res.status === 429) {
-      const wait = 10000 * (attempt + 1);
-      console.log(`    rate limited, waiting ${wait / 1000}s…`);
-      await new Promise((r) => setTimeout(r, wait));
+      const retryAfter = Number.parseInt(res.headers.get('retry-after') || '', 10);
+      const wait = Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : 15000 * 2 ** attempt;
+      console.log(`    rate limited (${start}→${end}), waiting ${Math.round(wait / 1000)}s…`);
+      await sleep(wait);
       continue;
     }
-    throw new Error(`Open-Meteo ${res.status} for ${grid.id}`);
+    throw new Error(`Open-Meteo ${res.status} for ${grid.id} (${start}→${end})`);
   }
-  throw new Error(`Open-Meteo rate limit exceeded for ${grid.id}`);
+  throw new Error(`Open-Meteo rate limit exceeded for ${grid.id} (${start}→${end})`);
 }
 
-export async function ingestWeather({ force = false } = {}) {
+function insertChunk(db, ins, grid, data) {
+  const days = data.daily?.time || [];
+  const tx = db.transaction(() => {
+    for (let i = 0; i < days.length; i++) {
+      ins.run({
+        date: days[i],
+        grid_id: grid.id,
+        temp_max_c: data.daily.temperature_2m_max[i],
+        temp_min_c: data.daily.temperature_2m_min[i],
+        precip_mm: data.daily.precipitation_sum[i],
+        wind_max_kmh: data.daily.windspeed_10m_max[i],
+      });
+    }
+  });
+  tx();
+  return days.length;
+}
+
+export async function ingestWeather({ force = false, gridIds = null } = {}) {
   const db = getDb();
 
   const gridIns = db.prepare(
@@ -39,12 +103,11 @@ export async function ingestWeather({ force = false } = {}) {
 
   if (force) db.prepare('DELETE FROM weather_daily').run();
 
+  const idFilter = gridIds?.length ? new Set(gridIds) : null;
   const pending = WEATHER_GRID.filter((g) => {
+    if (idFilter && !idFilter.has(g.id)) return false;
     if (force) return true;
-    const count = db.prepare(
-      'SELECT COUNT(*) AS c FROM weather_daily WHERE grid_id = ?'
-    ).get(g.id).c;
-    return count < 1000;
+    return !isGridComplete(db, g.id);
   });
 
   if (!pending.length) {
@@ -59,34 +122,46 @@ export async function ingestWeather({ force = false } = {}) {
     )`);
 
   let total = 0;
+  let completed = 0;
   let failed = 0;
+
   for (const grid of pending) {
-    console.log(`  weather: ${grid.label}…`);
-    try {
-      const data = await fetchGridPoint(grid, START, END);
-      const days = data.daily?.time || [];
-      const tx = db.transaction(() => {
-        for (let i = 0; i < days.length; i++) {
-          ins.run({
-            date: days[i],
-            grid_id: grid.id,
-            temp_max_c: data.daily.temperature_2m_max[i],
-            temp_min_c: data.daily.temperature_2m_min[i],
-            precip_mm: data.daily.precipitation_sum[i],
-            wind_max_kmh: data.daily.windspeed_10m_max[i],
-          });
-          total++;
+    const resume = resumeStart(db, grid.id);
+    const chunks = [...yearChunks(resume, END)];
+    console.log(`  weather: ${grid.label} (${chunks.length} chunk(s) from ${resume})…`);
+
+    let gridFailed = false;
+    for (let i = 0; i < chunks.length; i++) {
+      const { start, end } = chunks[i];
+      try {
+        const data = await fetchGridChunk(grid, start, end);
+        const rows = insertChunk(db, ins, grid, data);
+        total += rows;
+        if (chunks.length > 1) {
+          console.log(`    ${start}→${end}: ${rows} rows`);
         }
-      });
-      tx();
-    } catch (err) {
-      failed++;
-      console.log(`    failed: ${err.message}`);
+      } catch (err) {
+        gridFailed = true;
+        console.log(`    failed: ${err.message}`);
+        break;
+      }
+      if (i < chunks.length - 1) await sleep(CHUNK_PAUSE_MS);
     }
-    await new Promise((r) => setTimeout(r, 3000));
+
+    if (gridFailed) {
+      failed++;
+    } else if (isGridComplete(db, grid.id)) {
+      completed++;
+    } else {
+      failed++;
+      console.log(`    incomplete: max date ${gridStatus(db, grid.id).maxDate ?? 'none'}`);
+    }
+
+    await sleep(GRID_PAUSE_MS);
   }
 
-  const note = `${WEATHER_GRID.length - pending.length + (pending.length - failed)}/${WEATHER_GRID.length} grid points`;
+  const alreadyDone = WEATHER_GRID.filter((g) => isGridComplete(db, g.id)).length;
+  const note = `${alreadyDone}/${WEATHER_GRID.length} grid points`;
   logIngest('weather', db.prepare('SELECT COUNT(*) AS c FROM weather_daily').get().c, note);
-  console.log(`  weather: ${total} new rows (${failed} failed, re-run to resume)`);
+  console.log(`  weather: ${total} new rows (${completed} completed, ${failed} failed, re-run to resume)`);
 }

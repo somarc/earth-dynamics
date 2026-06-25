@@ -14,6 +14,12 @@ import { dbPath } from './db.mjs';
 const args = new Set(process.argv.slice(2));
 const force = args.has('--force');
 const only = [...args].find((a) => a.startsWith('--only='))?.split('=')[1];
+const weatherGrid = [...args]
+  .find((a) => a.startsWith('--weather-grid='))
+  ?.split('=')[1]
+  ?.split(',')
+  .map((id) => id.trim())
+  .filter(Boolean);
 
 async function main() {
   console.log(`Wobblescope ingest → ${dbPath()}\n`);
@@ -25,7 +31,7 @@ async function main() {
 
   if (!only || only === 'weather') {
     console.log('2. Open-Meteo weather grid…');
-    await ingestWeather({ force });
+    await ingestWeather({ force, gridIds: weatherGrid });
   }
 
   if (!only || only === 'storms') {
