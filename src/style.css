@@ -304,6 +304,29 @@ body,
 .legend__item--aurora { color: #5cff8a; }
 .legend__item--cme { color: #ff8c42; }
 .legend__item--field { color: #7eb8ff; }
+.legend__item--cyclone { color: #ffaa44; }
+.legend__item--weather { color: #6ec9a0; }
+
+.globe-tooltip--cyclone {
+  border-color: rgba(255, 170, 68, 0.35);
+}
+
+.globe-tooltip--cyclone strong {
+  color: #ffaa44;
+}
+
+.globe-tooltip--weather {
+  border-color: rgba(110, 201, 160, 0.35);
+}
+
+.globe-tooltip--weather strong {
+  color: #6ec9a0;
+}
+
+.event-list .cyclone {
+  color: #ffaa44;
+  font-weight: 600;
+}
 
 .mode-badge {
   font-family: var(--font-mono);

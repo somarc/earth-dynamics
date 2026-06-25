@@ -46,6 +46,8 @@ const LAYER_PRESETS = {
     fieldLines: false,
     bodies: true,
     moon: true,
+    cyclones: false,
+    weather: false,
   },
   space: {
     label: 'Space Weather',
@@ -59,6 +61,8 @@ const LAYER_PRESETS = {
     fieldLines: true,
     bodies: false,
     moon: false,
+    cyclones: false,
+    weather: false,
   },
   orbital: {
     label: 'Orbital',
@@ -72,6 +76,8 @@ const LAYER_PRESETS = {
     fieldLines: false,
     bodies: true,
     moon: true,
+    cyclones: false,
+    weather: false,
   },
   full: {
     label: 'Full stack',
@@ -85,6 +91,23 @@ const LAYER_PRESETS = {
     fieldLines: true,
     bodies: true,
     moon: true,
+    cyclones: true,
+    weather: true,
+  },
+  atmosphere: {
+    label: 'Atmosphere',
+    quakes: false,
+    volcanoes: false,
+    trail: true,
+    plates: false,
+    plateMotion: false,
+    hotspots: false,
+    aurora: false,
+    fieldLines: false,
+    bodies: false,
+    moon: false,
+    cyclones: true,
+    weather: true,
   },
 };
 
@@ -103,6 +126,8 @@ function formatGlobeTally(counts) {
   if (counts.eruptions != null) {
     parts.push(pluralCount(counts.eruptions, 'active GVP eruption', 'active GVP eruptions'));
   }
+  if (counts.cyclones != null) parts.push(pluralCount(counts.cyclones, 'cyclone'));
+  if (counts.weather != null) parts.push(pluralCount(counts.weather, 'weather grid point', 'weather grid points'));
   if (counts.storms) parts.push(pluralCount(counts.storms, 'storm'));
   return parts.join(', ');
 }
@@ -157,8 +182,11 @@ function updateEventsPanelMeta(date, counts = null) {
 }
 
 function applyEventLayers(frame, date) {
+  geocentricScene.viewDate = date;
   geocentricScene.setEarthquakes(frame.earthquakes);
   geocentricScene.setVolcanoes(frame.eruptions);
+  geocentricScene.setCyclones(frame.cyclones, date);
+  geocentricScene.setWeatherGlyphs(frame.weather);
   heliocentricScene.setEarthquakes(frame.earthquakes);
   heliocentricScene.setVolcanoes(frame.eruptions);
   heliocentricScene.setCmeEvents(frame.spaceWeather, date);
@@ -207,6 +235,8 @@ function updateLegend() {
       <span class="legend__item legend__item--hotspot">◎ Mantle hotspot</span>
       <span class="legend__item legend__item--aurora">◌ Aurora (OVATION / Kp)</span>
       <span class="legend__item legend__item--field">⌇ Magnetic field (model)</span>
+      <span class="legend__item legend__item--cyclone">〰 IBTrACS cyclone track</span>
+      <span class="legend__item legend__item--weather">◌ ERA5 weather grid</span>
     `;
   }
 }
@@ -285,6 +315,8 @@ async function updateUI() {
   updateEventsPanelMeta(date, {
     quakes: frame.earthquakes?.length ?? 0,
     eruptions: frame.eruptions?.length ?? 0,
+    cyclones: frame.cyclones?.length ?? 0,
+    weather: frame.weather?.length ?? 0,
     storms: frame.storms?.length ?? 0,
   });
 
@@ -418,6 +450,13 @@ async function updateUI() {
     );
   }
 
+  for (const c of (frame.cyclones || []).slice(0, 4)) {
+    const wind = c.maxWindKts != null ? `${Math.round(c.maxWindKts)} kt` : '—';
+    items.push(
+      `<li><span class="cyclone">${c.name || 'Cyclone'}</span> ${c.basin || ''} ${c.season || ''} · ${wind}</li>`
+    );
+  }
+
   for (const w of (frame.weather || []).slice(0, 3)) {
     items.push(
       `<li><span class="weather">${w.label}</span> ${w.tempMaxC?.toFixed(0)}°C, wind ${w.windMaxKmh?.toFixed(0)} km/h</li>`
@@ -462,6 +501,8 @@ function applyLayerPreset(presetId) {
   set('show-field-lines', preset.fieldLines);
   set('show-bodies', preset.bodies);
   set('show-moon', preset.moon);
+  set('show-cyclones', preset.cyclones ?? true);
+  set('show-weather-glyphs', preset.weather ?? true);
 
   geocentricScene.showQuakes = preset.quakes;
   geocentricScene.showVolcanoes = preset.volcanoes;
@@ -472,6 +513,8 @@ function applyLayerPreset(presetId) {
   geocentricScene.showAurora = preset.aurora;
   geocentricScene.showFieldLines = preset.fieldLines;
   geocentricScene.showBodies = preset.bodies;
+  geocentricScene.setCyclonesVisible(preset.cyclones ?? true);
+  geocentricScene.setWeatherVisible(preset.weather ?? true);
   heliocentricScene.showQuakes = preset.quakes;
   heliocentricScene.showVolcanoes = preset.volcanoes;
   heliocentricScene.showTrail = preset.trail;
@@ -569,6 +612,15 @@ function setupControls() {
   });
   document.getElementById('show-cme').addEventListener('change', (e) => {
     heliocentricScene.showCme = e.target.checked;
+    updateUI();
+  });
+
+  document.getElementById('show-cyclones').addEventListener('change', (e) => {
+    geocentricScene.setCyclonesVisible(e.target.checked);
+    updateUI();
+  });
+  document.getElementById('show-weather-glyphs').addEventListener('change', (e) => {
+    geocentricScene.setWeatherVisible(e.target.checked);
     updateUI();
   });
 }

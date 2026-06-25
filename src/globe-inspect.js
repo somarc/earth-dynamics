@@ -9,6 +9,10 @@ export const GLOBE_ABOUT = {
     'Plate motion arrows show how fast each tectonic plate moves over the mantle, derived from PB2002 Euler poles. Longer arrows mean faster motion toward the arrowhead.',
   plateBoundary:
     'Plate boundaries are where lithospheric plates meet. Subduction zones (red tubes) are especially important for deep earthquakes, arc volcanoes, and tsunami hazard.',
+  cyclone:
+    'Tropical cyclone tracks from NOAA IBTrACS. Line color reflects intensity; the head marker is the storm position on or before the selected date.',
+  weather:
+    'ERA5 grid glyphs at 16 reference cities. Color encodes daily max temperature; size reflects max wind. Open-Meteo historical archive.',
 };
 
 function esc(value) {
@@ -152,6 +156,30 @@ export function renderGlobeTooltip(selection) {
         <span class="globe-tooltip__kind">plate motion</span><br />
         <span class="globe-tooltip__detail">${data.speedMmYr?.toFixed(1) ?? '—'} mm/yr toward arrow</span><br />
         <span class="globe-tooltip__detail globe-tooltip__detail--muted">Code ${esc(data.code)} · ω ${data.degPerMa?.toFixed(2) ?? '—'} °/Ma</span>
+      `,
+    };
+  }
+
+  if (type === 'cyclone') {
+    const wind = data.maxWindKts != null ? `${Math.round(data.maxWindKts)} kt` : '—';
+    return {
+      className: 'globe-tooltip--cyclone',
+      html: `
+        <strong>${esc(data.name || 'Cyclone')}</strong>
+        <span class="globe-tooltip__kind">IBTrACS</span><br />
+        <span class="globe-tooltip__detail">${esc(data.basin || '')} ${data.season || ''} · max ${wind}</span><br />
+        <span class="globe-tooltip__detail globe-tooltip__detail--muted">${data.startDate || '—'} → ${data.endDate || '—'}</span>
+      `,
+    };
+  }
+
+  if (type === 'weather') {
+    return {
+      className: 'globe-tooltip--weather',
+      html: `
+        <strong>${esc(data.label || data.gridId)}</strong>
+        <span class="globe-tooltip__kind">ERA5 grid</span><br />
+        <span class="globe-tooltip__detail">${data.tempMaxC != null ? `${data.tempMaxC.toFixed(0)}°C max` : '—'} · wind ${data.windMaxKmh != null ? `${data.windMaxKmh.toFixed(0)} km/h` : '—'}</span>
       `,
     };
   }

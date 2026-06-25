@@ -15,6 +15,8 @@ import { loadPlateBoundaries, buildPlateGroup, loadPlateMotion, buildMotionGroup
 import { loadHotspots, buildHotspotGroup } from './hotspots.js';
 import { classifyPick } from './event-inspect.js';
 import { createAtmosphereShell, updateAtmosphereSun } from './atmosphere.js';
+import { buildCycloneGroup } from './cyclones.js';
+import { buildWeatherGlyphGroup } from './weather-globe.js';
 import {
   createEventHalo,
   EventPulseController,
@@ -34,6 +36,9 @@ export class EarthScene {
     this.showPlates = true;
     this.showPlateMotion = true;
     this.showHotspots = true;
+    this.showCyclones = true;
+    this.showWeather = true;
+    this.viewDate = null;
     this.ready = this.init(canvas);
   }
 
@@ -120,6 +125,10 @@ export class EarthScene {
     this.surfaceGroup.add(this.plateMotionGroup);
     this.hotspotGroup = new THREE.Group();
     this.surfaceGroup.add(this.hotspotGroup);
+    this.cycloneGroup = new THREE.Group();
+    this.surfaceGroup.add(this.cycloneGroup);
+    this.weatherGroup = new THREE.Group();
+    this.surfaceGroup.add(this.weatherGroup);
     this.fieldLinesGroup = new THREE.Group();
     this.axisGroup.add(this.fieldLinesGroup);
     this.igrfFieldData = null;
@@ -395,6 +404,30 @@ export class EarthScene {
     if (this.hotspotGroup) this.hotspotGroup.visible = visible;
   }
 
+  setCyclonesVisible(visible) {
+    this.showCyclones = visible;
+    if (this.cycloneGroup) this.cycloneGroup.visible = visible;
+  }
+
+  setWeatherVisible(visible) {
+    this.showWeather = visible;
+    if (this.weatherGroup) this.weatherGroup.visible = visible;
+  }
+
+  setCyclones(storms, viewDate = this.viewDate) {
+    this.cycloneGroup.clear();
+    if (!this.showCyclones) return;
+    this.cycloneGroup.add(buildCycloneGroup(storms, viewDate));
+    this.cycloneGroup.visible = true;
+  }
+
+  setWeatherGlyphs(readings) {
+    this.weatherGroup.clear();
+    if (!this.showWeather || !readings?.length) return;
+    this.weatherGroup.add(buildWeatherGlyphGroup(readings));
+    this.weatherGroup.visible = true;
+  }
+
   setPlateMotionVisible(visible) {
     this.showPlateMotion = visible;
     this.updatePlateMotionVisible();
@@ -500,6 +533,8 @@ export class EarthScene {
     this.raycaster.setFromCamera(this.pointer, this.camera);
 
     const meshLayers = [
+      { visible: this.showWeather, group: this.weatherGroup },
+      { visible: this.showCyclones, group: this.cycloneGroup },
       { visible: this.showHotspots, group: this.hotspotGroup },
       { visible: this.showQuakes, group: this.quakeGroup },
       { visible: this.showVolcanoes, group: this.volcanoGroup },

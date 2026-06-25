@@ -22,6 +22,8 @@ function renderGlossary(context) {
     ['Hotspots', context.hotspotAbout ?? context.hotspot ?? GLOBE_ABOUT.hotspot],
     ['Plate motion', context.plateAbout ?? context.plate ?? GLOBE_ABOUT.plate],
     ['Boundaries', context.plateBoundary ?? GLOBE_ABOUT.plateBoundary],
+    ['Cyclones (IBTrACS)', context.cyclone ?? GLOBE_ABOUT.cyclone],
+    ['Weather grid', context.weather ?? GLOBE_ABOUT.weather],
   ];
   return `
     <dl class="inspect-glossary">
@@ -116,6 +118,35 @@ export function renderEventInspect(container, selection, context = {}) {
     return;
   }
 
+  if (type === 'cyclone') {
+    container.innerHTML = `
+      <dl class="inspect-card">
+        <div><dt>Type</dt><dd>Tropical cyclone (IBTrACS)</dd></div>
+        <div><dt>Name</dt><dd>${esc(data.name)} (${data.season || '—'})</dd></div>
+        <div><dt>Basin</dt><dd>${esc(data.basin || '—')}</dd></div>
+        <div><dt>Peak wind</dt><dd>${data.maxWindKts != null ? `${Math.round(data.maxWindKts)} kt` : '—'}${data.maxSshs != null && data.maxSshs >= 0 ? ` · Cat ${data.maxSshs}` : ''}</dd></div>
+        <div><dt>Track window</dt><dd>${data.startDate || '—'} → ${data.endDate || '—'}</dd></div>
+      </dl>
+      <p class="inspect-about">${esc(context.cyclone ?? GLOBE_ABOUT.cyclone)}</p>
+      <a class="inspect-link" href="https://www.ncei.noaa.gov/products/international-best-track-archive" target="_blank" rel="noopener">IBTrACS →</a>
+    `;
+    return;
+  }
+
+  if (type === 'weather') {
+    container.innerHTML = `
+      <dl class="inspect-card">
+        <div><dt>Type</dt><dd>ERA5 grid point</dd></div>
+        <div><dt>Location</dt><dd>${esc(data.label || data.gridId)}</dd></div>
+        <div><dt>Max temp</dt><dd>${data.tempMaxC != null ? `${data.tempMaxC.toFixed(1)}°C` : '—'}</dd></div>
+        <div><dt>Max wind</dt><dd>${data.windMaxKmh != null ? `${data.windMaxKmh.toFixed(0)} km/h` : '—'}</dd></div>
+        <div><dt>Precip</dt><dd>${data.precipMm != null ? `${data.precipMm.toFixed(1)} mm` : '—'}</dd></div>
+      </dl>
+      <p class="inspect-about">${esc(context.weather ?? GLOBE_ABOUT.weather)}</p>
+    `;
+    return;
+  }
+
   if (type === 'plate-boundary') {
     const note = plateBoundaryNote({ Type: data.type });
     container.innerHTML = `
@@ -139,6 +170,8 @@ export function classifyPick(hit) {
     if (d?.pickType === 'earthquake') return { type: 'earthquake', data: d };
     if (d?.pickType === 'volcano') return { type: 'volcano', data: d };
     if (d?.pickType === 'hotspot') return { type: 'hotspot', data: d };
+    if (d?.pickType === 'cyclone') return { type: 'cyclone', data: d };
+    if (d?.pickType === 'weather') return { type: 'weather', data: d };
     if (d?.pickType === 'plate') return { type: 'plate', data: d };
     if (d?.id && d.mag != null) return { type: 'earthquake', data: d };
     if (d?.volcanoNumber != null || (d?.name && d?.vei != null)) return { type: 'volcano', data: d };

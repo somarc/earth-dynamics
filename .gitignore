@@ -3,6 +3,7 @@ dist/
 .DS_Store
 data/*.db
 data/*.db-*
+data/ibtracs-*.csv
 public/data/*.json
 !public/data/.gitkeep
 !public/data/plate-boundaries.json
