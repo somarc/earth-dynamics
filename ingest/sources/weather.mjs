@@ -17,7 +17,7 @@ async function fetchGridPoint(grid, start, end, retries = 5) {
     const res = await fetch(url);
     if (res.ok) return res.json();
     if (res.status === 429) {
-      const wait = 5000 * (attempt + 1);
+      const wait = 10000 * (attempt + 1);
       console.log(`    rate limited, waiting ${wait / 1000}s…`);
       await new Promise((r) => setTimeout(r, wait));
       continue;
@@ -29,10 +29,6 @@ async function fetchGridPoint(grid, start, end, retries = 5) {
 
 export async function ingestWeather({ force = false } = {}) {
   const db = getDb();
-  if (!force && db.prepare('SELECT COUNT(*) AS c FROM weather_daily').get().c > 0) {
-    console.log('  weather: skipped (already ingested, use --force)');
-    return;
-  }
 
   const gridIns = db.prepare(
     'INSERT OR REPLACE INTO weather_grid VALUES (@grid_id, @label, @lat, @lon)'
@@ -43,40 +39,54 @@ export async function ingestWeather({ force = false } = {}) {
 
   if (force) db.prepare('DELETE FROM weather_daily').run();
 
+  const pending = WEATHER_GRID.filter((g) => {
+    if (force) return true;
+    const count = db.prepare(
+      'SELECT COUNT(*) AS c FROM weather_daily WHERE grid_id = ?'
+    ).get(g.id).c;
+    return count < 1000;
+  });
+
+  if (!pending.length) {
+    console.log('  weather: all grid points ingested');
+    return;
+  }
+  console.log(`  weather: ${pending.length} grid point(s) pending`);
+
   const ins = db.prepare(`
     INSERT OR REPLACE INTO weather_daily VALUES (
       @date, @grid_id, @temp_max_c, @temp_min_c, @precip_mm, @wind_max_kmh
     )`);
 
   let total = 0;
-  for (const grid of WEATHER_GRID) {
-    const existing = db.prepare(
-      'SELECT COUNT(*) AS c FROM weather_daily WHERE grid_id = ?'
-    ).get(grid.id).c;
-    if (!force && existing > 1000) {
-      console.log(`  weather: ${grid.label} skipped (${existing} rows)`);
-      continue;
-    }
+  let failed = 0;
+  for (const grid of pending) {
     console.log(`  weather: ${grid.label}…`);
-    const data = await fetchGridPoint(grid, START, END);
-    const days = data.daily?.time || [];
-    const tx = db.transaction(() => {
-      for (let i = 0; i < days.length; i++) {
-        ins.run({
-          date: days[i],
-          grid_id: grid.id,
-          temp_max_c: data.daily.temperature_2m_max[i],
-          temp_min_c: data.daily.temperature_2m_min[i],
-          precip_mm: data.daily.precipitation_sum[i],
-          wind_max_kmh: data.daily.windspeed_10m_max[i],
-        });
-        total++;
-      }
-    });
-    tx();
-    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      const data = await fetchGridPoint(grid, START, END);
+      const days = data.daily?.time || [];
+      const tx = db.transaction(() => {
+        for (let i = 0; i < days.length; i++) {
+          ins.run({
+            date: days[i],
+            grid_id: grid.id,
+            temp_max_c: data.daily.temperature_2m_max[i],
+            temp_min_c: data.daily.temperature_2m_min[i],
+            precip_mm: data.daily.precipitation_sum[i],
+            wind_max_kmh: data.daily.windspeed_10m_max[i],
+          });
+          total++;
+        }
+      });
+      tx();
+    } catch (err) {
+      failed++;
+      console.log(`    failed: ${err.message}`);
+    }
+    await new Promise((r) => setTimeout(r, 3000));
   }
 
-  logIngest('weather', total, `${WEATHER_GRID.length} grid points, ERA5`);
-  console.log(`  weather: ${total} rows`);
+  const note = `${WEATHER_GRID.length - pending.length + (pending.length - failed)}/${WEATHER_GRID.length} grid points`;
+  logIngest('weather', db.prepare('SELECT COUNT(*) AS c FROM weather_daily').get().c, note);
+  console.log(`  weather: ${total} new rows (${failed} failed, re-run to resume)`);
 }
