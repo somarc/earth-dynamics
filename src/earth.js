@@ -8,7 +8,8 @@ import {
   magToSize,
   veiToSize,
 } from './utils.js';
-import { updateAuroraRings, updateFieldLines } from './space-weather.js';
+import { updateAuroraRings } from './space-weather.js';
+import { loadIgrfFieldLines, updateIgrfFieldLines } from './igrf.js';
 import { loadPlateBoundaries, buildPlateGroup, loadPlateMotion, buildMotionGroup } from './plates.js';
 import { loadHotspots, buildHotspotGroup } from './hotspots.js';
 import { classifyPick } from './event-inspect.js';
@@ -120,6 +121,12 @@ export class EarthScene {
     this.surfaceGroup.add(this.hotspotGroup);
     this.fieldLinesGroup = new THREE.Group();
     this.axisGroup.add(this.fieldLinesGroup);
+    this.igrfFieldData = null;
+    try {
+      this.igrfFieldData = await loadIgrfFieldLines();
+    } catch (err) {
+      console.warn('IGRF field lines unavailable:', err);
+    }
 
     try {
       const [plateGeo, motionData] = await Promise.all([
@@ -363,7 +370,7 @@ export class EarthScene {
   setSpaceWeather(geomagnetic) {
     const kp = geomagnetic?.kpMax ?? null;
     updateAuroraRings(this.auroraGroup, kp, this.showAurora);
-    updateFieldLines(this.fieldLinesGroup, kp, this.showFieldLines);
+    updateIgrfFieldLines(this.fieldLinesGroup, kp, this.showFieldLines, this.igrfFieldData);
   }
 
   setVolcanoes(volcs) {
@@ -387,6 +394,29 @@ export class EarthScene {
       this.volcanoGroup.add(mesh);
       this.volcanoMeshes.set(v.id, mesh);
     }
+  }
+
+  hoverPlateAt(clientX, clientY) {
+    if (!this.showPlates || !this.plateGroup?.visible) return null;
+
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.params.Line.threshold = 0.018;
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+
+    const hits = this.raycaster.intersectObjects(this.plateGroup.children, false);
+    if (!hits.length) return null;
+
+    const p = hits[0].object.userData;
+    if (!p?.Name) return null;
+    return {
+      name: p.Name,
+      plates: `${p.PlateA || '?'}–${p.PlateB || '?'}`,
+      type: p.Type || 'transform / ridge',
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
   }
 
   pickAt(clientX, clientY) {

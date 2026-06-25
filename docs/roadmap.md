@@ -70,9 +70,9 @@ These connect existing layers, improve daily usability, or unlock patterns for e
 | R1 | Plate boundaries (PB2002) | Bird 2003 / NOAA | `done` |
 | R2 | Plate motion vectors | PB2002 Euler poles | `done` |
 | R3 | Mantle hotspots | GVP / Wilson hotspot list | `done` |
-| R4 | Boundary labels on hover | PB2002 `Name` + `Type` | `planned` |
-| R5 | IGRF field lines (proper) | NOAA WMM/IGRF coefficients | `planned` |
-| R6 | Trench / ridge emphasis | Subduction polylines (thicker) | `planned` |
+| R4 | Boundary labels on hover | PB2002 `Name` + `Type` | `done` |
+| R5 | IGRF field lines (proper) | NOAA WMM/IGRF coefficients | `done` |
+| R6 | Trench / ridge emphasis | Subduction polylines (thicker) | `done` |
 
 ---
 
@@ -142,7 +142,7 @@ These connect existing layers, improve daily usability, or unlock patterns for e
 
 ```
 Phase A (now)     ~~P1 → P2 → P3 → P4~~ ✓
-Phase B (context) R2 → R3 → R4 → R5
+Phase B (context) ~~R2 → R3 → R4 → R5 → R6~~ ✓
 Phase C (space)   T12 → T13 → T14 → U5
 Phase D (global)  T15 → T6 complete → T16
 Phase E (ship)    I3 → I4 → I5

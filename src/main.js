@@ -436,12 +436,36 @@ async function main() {
 
 function setupGlobePick() {
   const canvas = document.getElementById('geo-canvas');
+  const tooltip = document.getElementById('plate-tooltip');
   canvas.classList.add('scene-canvas--pickable');
 
   canvas.addEventListener('click', (e) => {
     if (state.view !== 'geocentric') return;
     const picked = geocentricScene.pickAt(e.clientX, e.clientY);
     renderEventInspect(document.getElementById('event-inspect'), picked);
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (state.view !== 'geocentric') {
+      tooltip.classList.add('plate-tooltip--hidden');
+      return;
+    }
+    const hit = geocentricScene.hoverPlateAt(e.clientX, e.clientY);
+    if (!hit) {
+      tooltip.classList.add('plate-tooltip--hidden');
+      return;
+    }
+    tooltip.classList.remove('plate-tooltip--hidden');
+    tooltip.style.left = `${hit.x}px`;
+    tooltip.style.top = `${hit.y}px`;
+    tooltip.innerHTML = `
+      <strong>${hit.name}</strong> (${hit.plates})<br />
+      <span class="plate-type">${hit.type}</span>
+    `;
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    tooltip.classList.add('plate-tooltip--hidden');
   });
 }
 
