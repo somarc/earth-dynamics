@@ -48,11 +48,13 @@ export function updateOvationAurora(group, ovationData, visible, minProb = 15) {
     geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     const mat = new THREE.PointsMaterial({
-      size: 0.018,
+      size: 0.022,
       vertexColors: true,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.9,
       depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
     });
     group.add(new THREE.Points(geo, mat));
   };

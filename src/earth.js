@@ -14,6 +14,7 @@ import { loadIgrfFieldLines, updateIgrfFieldLines } from './igrf.js';
 import { loadPlateBoundaries, buildPlateGroup, loadPlateMotion, buildMotionGroup } from './plates.js';
 import { loadHotspots, buildHotspotGroup } from './hotspots.js';
 import { classifyPick } from './event-inspect.js';
+import { createAtmosphereShell, updateAtmosphereSun } from './atmosphere.js';
 
 export class EarthScene {
   constructor(canvas) {
@@ -34,6 +35,9 @@ export class EarthScene {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setClearColor(0x060a12, 1);
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
@@ -52,15 +56,9 @@ export class EarthScene {
     this.earth = new THREE.Mesh(earthGeo, earthMat);
     this.surfaceGroup.add(this.earth);
 
-    const atmosGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.02, 64, 64);
-    const atmosMat = new THREE.MeshPhongMaterial({
-      color: 0x4da3ff,
-      transparent: true,
-      opacity: 0.08,
-      side: THREE.BackSide,
-    });
-    this.atmosphere = new THREE.Mesh(atmosGeo, atmosMat);
-    this.surfaceGroup.add(this.atmosphere);
+    // Inertial shell — does not spin with surfaceGroup so limb tracks ephemeris sun.
+    this.atmosphere = createAtmosphereShell(EARTH_RADIUS);
+    this.earthGroup.add(this.atmosphere);
 
     const gridGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.001, 32, 16);
     const gridMat = new THREE.MeshBasicMaterial({
@@ -328,6 +326,7 @@ export class EarthScene {
     this.sunLight.intensity = ephemerisDay?.sun ? 2.0 : 1.5;
     this.fillLight.position.copy(sunDir).multiplyScalar(-sunDistance * 0.7);
     this.fillLight.intensity = 0.1 + (ephemerisDay?.lunar?.illumination ?? 0.25) * 0.08;
+    updateAtmosphereSun(this.atmosphere, sunDir);
   }
 
   updateBodies(ephemerisDay) {

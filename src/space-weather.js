@@ -227,24 +227,44 @@ export function updateAuroraRings(group, kp, visible, { skipIfOvation = false } 
   const lat = auroraLatitudeFromKp(kp);
   if (lat == null) return;
 
-  const opacity = Math.min(0.75, 0.15 + (kp ?? 0) * 0.07);
+  const opacity = Math.min(0.8, 0.18 + (kp ?? 0) * 0.075);
   const buildRing = (latitude, color) => {
-    const inner = EARTH_RADIUS * 1.008;
-    const geo = new THREE.BufferGeometry().setFromPoints(ringPoints(latitude, inner));
+    const shell = EARTH_RADIUS * 1.009;
+    const geo = new THREE.BufferGeometry().setFromPoints(ringPoints(latitude, shell, 128));
     const line = new THREE.Line(
       geo,
       new THREE.LineBasicMaterial({ color, transparent: true, opacity }),
     );
     group.add(line);
 
-    const fillLat = latitude > 0 ? latitude + 2 : latitude - 2;
-    const fillPoints = ringPoints(fillLat, EARTH_RADIUS * 1.006, 96);
-    const fillGeo = new THREE.BufferGeometry().setFromPoints(fillPoints);
-    const fill = new THREE.Line(
-      fillGeo,
-      new THREE.LineBasicMaterial({ color, transparent: true, opacity: opacity * 0.35 }),
-    );
-    group.add(fill);
+    const bandLat = latitude > 0 ? latitude + 1.5 : latitude - 1.5;
+    const bandPoints = ringPoints(bandLat, EARTH_RADIUS * 1.007, 160);
+    const bandPositions = new Float32Array(bandPoints.length * 3);
+    const bandColors = new Float32Array(bandPoints.length * 3);
+    const c = new THREE.Color(color);
+    bandPoints.forEach((p, i) => {
+      bandPositions[i * 3] = p.x;
+      bandPositions[i * 3 + 1] = p.y;
+      bandPositions[i * 3 + 2] = p.z;
+      bandColors[i * 3] = c.r;
+      bandColors[i * 3 + 1] = c.g;
+      bandColors[i * 3 + 2] = c.b;
+    });
+    const bandGeo = new THREE.BufferGeometry();
+    bandGeo.setAttribute('position', new THREE.BufferAttribute(bandPositions, 3));
+    bandGeo.setAttribute('color', new THREE.BufferAttribute(bandColors, 3));
+    group.add(new THREE.Points(
+      bandGeo,
+      new THREE.PointsMaterial({
+        size: 0.014,
+        vertexColors: true,
+        transparent: true,
+        opacity: opacity * 0.55,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+      }),
+    ));
   };
 
   buildRing(lat, 0x5cff8a);
