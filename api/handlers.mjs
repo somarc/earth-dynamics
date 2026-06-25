@@ -1,0 +1,166 @@
+import { SOURCES } from '../ingest/constants.mjs';
+
+function rowToEop(r) {
+  if (!r) return null;
+  return {
+    date: r.date,
+    mjd: r.mjd,
+    xArcsec: r.x_arcsec,
+    yArcsec: r.y_arcsec,
+    lodSec: r.lod_sec,
+    xMas: r.x_mas,
+    yMas: r.y_mas,
+    lodMs: r.lod_ms,
+    omegaPicoradS: r.omega_picorad_s,
+    deltaOmegaPicoradS: r.delta_omega_picorad_s,
+    xRad: r.x_rad,
+    yRad: r.y_rad,
+  };
+}
+
+function rowToEphemeris(r) {
+  if (!r) return null;
+  const body = (key) => {
+    const x = r[`${key}_x`];
+    if (x == null) return null;
+    return {
+      x, y: r[`${key}_y`], z: r[`${key}_z`],
+      distKm: r[`${key}_dist_km`],
+      distAu: r[`${key}_dist_km`] ? r[`${key}_dist_km`] / 149597870.7 : undefined,
+    };
+  };
+  return {
+    moon: body('moon'),
+    sun: body('sun'),
+    mercury: body('mercury'),
+    venus: body('venus'),
+    mars: body('mars'),
+    jupiter: body('jupiter'),
+    saturn: body('saturn'),
+    earthHelio: r.earth_helio_x != null ? {
+      x: r.earth_helio_x, y: r.earth_helio_y, z: r.earth_helio_z,
+      distAu: r.earth_helio_dist_au, distKm: r.earth_helio_dist_km,
+    } : null,
+    lunar: {
+      phaseAngle: r.phase_angle,
+      phaseName: r.phase_name,
+      illumination: r.illumination,
+      moonDistanceKm: r.moon_distance_km,
+      tidalIndex: r.tidal_index,
+      syzygy: r.syzygy,
+      isPerigee: !!r.is_perigee,
+      isApogee: !!r.is_apogee,
+    },
+    alignments: JSON.parse(r.alignments_json || '[]'),
+  };
+}
+
+export function createHandlers(db) {
+  const getMeta = () => {
+    const eop = db.prepare('SELECT MIN(date) AS start, MAX(date) AS end, COUNT(*) AS count FROM eop_daily').get();
+    const ingested = db.prepare('SELECT source, completed_at, row_count FROM ingest_log').all();
+    return {
+      sources: SOURCES,
+      eop: eop,
+      ingested,
+      generated: new Date().toISOString(),
+    };
+  };
+
+  const getEopWindow = (endDate, days = 400) => {
+    return db.prepare(`
+      SELECT * FROM eop_daily
+      WHERE date <= ?
+      ORDER BY date DESC
+      LIMIT ?
+    `).all(endDate, days).reverse().map(rowToEop);
+  };
+
+  const getDay = (date) => {
+    const eop = rowToEop(db.prepare('SELECT * FROM eop_daily WHERE date = ?').get(date));
+    const ephRow = db.prepare('SELECT * FROM ephemeris_daily WHERE date = ?').get(date);
+    const eph = rowToEphemeris(ephRow);
+
+    const quakes = db.prepare(`
+      SELECT id, time, date, mag, place, lat, lon, depth, url, tsunami
+      FROM earthquakes
+      WHERE date BETWEEN date(?, '-7 days') AND date(?, '+7 days')
+      ORDER BY mag DESC LIMIT 50
+    `).all(date, date).map((q) => ({
+      ...q, tsunami: !!q.tsunami,
+    }));
+
+    const volcs = db.prepare(`
+      SELECT id, volcano_number AS volcanoNumber, name, vei, start_date AS startDate,
+             end_date AS endDate, continuing, lat, lon
+      FROM eruptions
+      WHERE start_date <= date(?, '+7 days')
+        AND (end_date IS NULL OR end_date >= date(?, '-7 days'))
+      LIMIT 20
+    `).all(date, date).map((v) => ({ ...v, continuing: !!v.continuing }));
+
+    const storms = db.prepare(`
+      SELECT id, date, event_type AS eventType, state, lat, lon, magnitude, deaths, narrative
+      FROM storm_events
+      WHERE date BETWEEN date(?, '-3 days') AND date(?, '+3 days')
+      ORDER BY deaths DESC, event_type LIMIT 30
+    `).all(date, date);
+
+    const weather = db.prepare(`
+      SELECT w.grid_id AS gridId, g.label, g.lat, g.lon,
+             w.temp_max_c AS tempMaxC, w.temp_min_c AS tempMinC,
+             w.precip_mm AS precipMm, w.wind_max_kmh AS windMaxKmh
+      FROM weather_daily w
+      JOIN weather_grid g ON g.grid_id = w.grid_id
+      WHERE w.date = ?
+    `).all(date);
+
+    const solar = db.prepare('SELECT * FROM solar_daily WHERE date = ?').get(date);
+
+    return { date, eop, ephemeris: eph, earthquakes: quakes, eruptions: volcs, storms, weather, solar };
+  };
+
+  const getDates = () =>
+    db.prepare('SELECT date FROM eop_daily ORDER BY date').all().map((r) => r.date);
+
+  const getEphemerisWindow = (endDate, days = 28) =>
+    db.prepare(`
+      SELECT * FROM ephemeris_daily WHERE date <= ?
+      ORDER BY date DESC LIMIT ?
+    `).all(endDate, days).reverse().map((r) => ({
+      date: r.date,
+      ...rowToEphemeris(r),
+    }));
+
+  return { getMeta, getEopWindow, getDay, getDates, getEphemerisWindow };
+}
+
+export function routeRequest(db, url) {
+  const handlers = createHandlers(db);
+  const path = new URL(url, 'http://local').pathname;
+
+  if (path === '/api/meta') {
+    return { status: 200, body: handlers.getMeta() };
+  }
+  if (path === '/api/dates') {
+    return { status: 200, body: { dates: handlers.getDates() } };
+  }
+  const dayMatch = path.match(/^\/api\/day\/(\d{4}-\d{2}-\d{2})$/);
+  if (dayMatch) {
+    return { status: 200, body: handlers.getDay(dayMatch[1]) };
+  }
+  if (path === '/api/eop/window') {
+    const params = new URL(url, 'http://local').searchParams;
+    const end = params.get('end');
+    const days = parseInt(params.get('days') || '400', 10);
+    return { status: 200, body: handlers.getEopWindow(end, days) };
+  }
+  if (path === '/api/ephemeris/window') {
+    const params = new URL(url, 'http://local').searchParams;
+    const end = params.get('end');
+    const days = parseInt(params.get('days') || '28', 10);
+    return { status: 200, body: handlers.getEphemerisWindow(end, days) };
+  }
+
+  return { status: 404, body: { error: 'Not found' } };
+}

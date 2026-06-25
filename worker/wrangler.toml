@@ -1,0 +1,12 @@
+name = "earth-dynamics-api"
+main = "index.js"
+compatibility_date = "2024-06-01"
+
+# Uncomment when D1 database is provisioned:
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "earth-dynamics"
+# database_id = "<your-d1-id>"
+
+[vars]
+ENVIRONMENT = "production"

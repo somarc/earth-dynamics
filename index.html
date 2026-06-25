@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ECDO — Earth Polar Motion &amp; Geophysical Events</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="header">
+        <div class="header__brand">
+          <h1>ECDO Earth Dynamics</h1>
+          <p class="subtitle">Polar motion, angular velocity, solar system geometry &amp; geophysical events</p>
+        </div>
+        <div class="header__right">
+          <div class="view-switcher">
+            <button class="view-btn view-btn--active" data-view="geocentric">Geocentric</button>
+            <button class="view-btn" data-view="heliocentric">Heliocentric</button>
+          </div>
+          <div class="header__meta" id="date-display">—</div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="viewport" id="viewport">
+          <canvas id="geo-canvas" class="scene-canvas"></canvas>
+          <canvas id="helio-canvas" class="scene-canvas scene-canvas--hidden"></canvas>
+          <div class="viewport__overlay">
+            <div class="legend" id="legend"></div>
+          </div>
+        </section>
+
+        <aside class="panels">
+          <div class="panel">
+            <h2>Polhode</h2>
+            <p class="panel__desc">Pole path in the Earth-fixed frame (IERS x, −y)</p>
+            <canvas id="polhode-chart" width="320" height="240"></canvas>
+          </div>
+
+          <div class="panel">
+            <h2>Angular Velocity</h2>
+            <p class="panel__desc">ΔLOD and Δω₃ deviation from nominal spin</p>
+            <canvas id="lod-chart" width="320" height="160"></canvas>
+          </div>
+
+          <div class="panel">
+            <h2>Ecliptic Plane</h2>
+            <p class="panel__desc">Geocentric positions (JPL Horizons, DE441) — Moon trail last 28 d</p>
+            <canvas id="ecliptic-chart" width="320" height="220"></canvas>
+          </div>
+
+          <div class="panel">
+            <h2>Lunar &amp; Planetary Geometry</h2>
+            <div id="orbital-metrics"></div>
+          </div>
+
+          <div class="panel panel--events">
+            <h2>Events at Date</h2>
+            <ul id="event-list" class="event-list"></ul>
+          </div>
+
+          <div class="panel panel--citations">
+            <h2>Data Sources</h2>
+            <ul class="citations" id="citations"></ul>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="controls">
+        <button id="play-btn" class="btn" aria-label="Play/pause">▶</button>
+        <input type="range" id="time-slider" class="slider" min="0" max="100" value="0" />
+        <div class="controls__labels">
+          <span id="start-label">1962</span>
+          <span id="end-label">2026</span>
+        </div>
+        <div class="controls__speed">
+          <label for="speed-select">Speed</label>
+          <select id="speed-select">
+            <option value="0.25">0.25×</option>
+            <option value="1" selected>1×</option>
+            <option value="4">4×</option>
+            <option value="16">16×</option>
+            <option value="64">64×</option>
+          </select>
+        </div>
+        <div class="controls__toggles">
+          <label><input type="checkbox" id="show-quakes" checked /> Earthquakes</label>
+          <label><input type="checkbox" id="show-volcanoes" checked /> Volcanoes</label>
+          <label><input type="checkbox" id="show-trail" checked /> Pole trail</label>
+          <label><input type="checkbox" id="show-bodies" checked /> Moon &amp; Sun</label>
+          <label id="show-moon-label" style="display:none"><input type="checkbox" id="show-moon" checked /> Moon</label>
+        </div>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
