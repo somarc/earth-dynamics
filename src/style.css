@@ -10,6 +10,12 @@
   --accent-earth: #3ecf8e;
   --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --scrollbar-size: 8px;
+  --scrollbar-track: rgba(8, 14, 28, 0.72);
+  --scrollbar-thumb: rgba(77, 163, 255, 0.32);
+  --scrollbar-thumb-hover: rgba(77, 163, 255, 0.5);
+  --scrollbar-thumb-active: rgba(77, 163, 255, 0.62);
+  --scrollbar-border: rgba(100, 140, 200, 0.22);
 }
 
 * {
@@ -306,12 +312,66 @@ body,
   color: var(--text-muted);
 }
 
+.panels,
+.event-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.panels::-webkit-scrollbar,
+.event-list::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+.panels::-webkit-scrollbar-track,
+.event-list::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+  margin: 6px 2px;
+  border: 1px solid rgba(100, 140, 200, 0.08);
+}
+
+.panels::-webkit-scrollbar-thumb,
+.event-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(77, 163, 255, 0.42),
+    rgba(77, 163, 255, 0.24)
+  );
+  border: 1px solid var(--scrollbar-border);
+  border-radius: 999px;
+  min-height: 36px;
+}
+
+.panels::-webkit-scrollbar-thumb:hover,
+.event-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    var(--scrollbar-thumb-hover),
+    rgba(77, 163, 255, 0.34)
+  );
+  border-color: rgba(77, 163, 255, 0.35);
+}
+
+.panels::-webkit-scrollbar-thumb:active,
+.event-list::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
+  border-color: rgba(77, 163, 255, 0.45);
+}
+
+.panels::-webkit-scrollbar-corner,
+.event-list::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 .panels {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.5rem;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   border-left: 1px solid var(--border);
   background: rgba(4, 8, 16, 0.6);
 }
@@ -344,8 +404,8 @@ body,
 }
 
 .panel--events {
-  flex: 1;
-  min-height: 120px;
+  flex: 1 1 300px;
+  min-height: 300px;
   display: flex;
   flex-direction: column;
 }
@@ -353,7 +413,11 @@ body,
 .event-list {
   list-style: none;
   overflow-y: auto;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 240px;
+  max-height: 42vh;
+  --scrollbar-size: 6px;
+  padding-right: 0.15rem;
   font-size: 0.72rem;
   line-height: 1.45;
 }
@@ -626,6 +690,15 @@ select {
     max-height: 40vh;
     border-left: none;
     border-top: 1px solid var(--border);
+  }
+
+  .panel--events {
+    min-height: 200px;
+  }
+
+  .event-list {
+    min-height: 160px;
+    max-height: 28vh;
   }
 
   .controls {

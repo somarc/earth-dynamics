@@ -18,8 +18,22 @@ const BODY_LABELS = {
   saturn: 'Sa',
 };
 
+export function resolveEphemerisDate(ephemeris, date) {
+  if (!ephemeris?.byDate || !date) return null;
+  if (ephemeris.byDate[date]) return date;
+  const dates = ephemeris.dates;
+  if (!dates?.length) return null;
+  let best = null;
+  for (const d of dates) {
+    if (d <= date) best = d;
+    else break;
+  }
+  return best;
+}
+
 export function getEphemerisForDate(ephemeris, date) {
-  return ephemeris?.byDate?.[date] ?? null;
+  const resolved = resolveEphemerisDate(ephemeris, date);
+  return resolved ? ephemeris.byDate[resolved] : null;
 }
 
 export function drawEclipticChart(canvas, ephemeris, date, historyDays = 28) {
@@ -31,7 +45,8 @@ export function drawEclipticChart(canvas, ephemeris, date, historyDays = 28) {
 
   ctx.clearRect(0, 0, w, h);
 
-  const day = getEphemerisForDate(ephemeris, date);
+  const resolvedDate = resolveEphemerisDate(ephemeris, date);
+  const day = resolvedDate ? ephemeris.byDate[resolvedDate] : null;
   if (!day) {
     ctx.fillStyle = 'rgba(138,155,181,0.7)';
     ctx.font = '11px IBM Plex Sans, sans-serif';
@@ -40,7 +55,7 @@ export function drawEclipticChart(canvas, ephemeris, date, historyDays = 28) {
   }
 
   const dates = ephemeris.dates;
-  const idx = dates.indexOf(date);
+  const idx = dates.indexOf(resolvedDate);
   const history = [];
   if (idx >= 0) {
     for (let i = Math.max(0, idx - historyDays); i <= idx; i++) {
@@ -69,6 +84,12 @@ export function drawEclipticChart(canvas, ephemeris, date, historyDays = 28) {
   ctx.font = '9px IBM Plex Mono, monospace';
   ctx.fillText('ecliptic XY (AU)', 8, 12);
   ctx.fillText('log-scaled geocentric', 8, 24);
+  const staleAsOf = day._ephemerisAsOf ?? (resolvedDate !== date ? resolvedDate : null);
+  if (staleAsOf) {
+    ctx.fillStyle = 'rgba(138,155,181,0.45)';
+    ctx.font = '8px IBM Plex Mono, monospace';
+    ctx.fillText(`positions as of ${staleAsOf}`, 8, 36);
+  }
 
   if (history.length > 1) {
     ctx.beginPath();

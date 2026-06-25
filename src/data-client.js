@@ -47,11 +47,23 @@ export async function loadCatalog() {
   }
 }
 
-function ephWindowToChart(ephWindow) {
-  return {
-    dates: ephWindow.map((e) => e.date),
-    byDate: Object.fromEntries(ephWindow.map((e) => [e.date, e])),
-  };
+function ephWindowToChart(ephWindow, selectedDate, ephemerisDay) {
+  const dates = ephWindow.map((e) => e.date);
+  const byDate = Object.fromEntries(ephWindow.map((e) => [e.date, e]));
+
+  // Timeline can extend past the last ingested ephemeris row; day.ephemeris still
+  // resolves via API fallback — inject it so the ecliptic chart can render.
+  if (selectedDate && ephemerisDay && !byDate[selectedDate]) {
+    const lastInWindow = dates[dates.length - 1] ?? null;
+    byDate[selectedDate] = {
+      ...ephemerisDay,
+      date: selectedDate,
+      _ephemerisAsOf: lastInWindow,
+    };
+    dates.push(selectedDate);
+  }
+
+  return { dates, byDate };
 }
 
 export async function loadFrame(catalog, date, currentIndex, { recentOnly = false } = {}) {
@@ -68,7 +80,7 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
       record: day.eop,
       eopWindow,
       ephemerisDay: day.ephemeris,
-      ephemerisForChart: ephWindowToChart(ephWindow),
+      ephemerisForChart: ephWindowToChart(ephWindow, date, day.ephemeris),
       ephemerisOrbit: ephOrbit,
       earthquakes: day.earthquakes,
       eruptions: day.eruptions,
