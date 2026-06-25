@@ -38,16 +38,33 @@ export function buildPlateGroup(geojson, radius = EARTH_RADIUS * 1.012) {
     if (points.length < 2) continue;
 
     const type = feature.properties?.Type || '';
+    const props = feature.properties;
+
+    if (type === 'subduction' && points.length >= 4) {
+      const curve = new THREE.CatmullRomCurve3(points);
+      const tube = new THREE.Mesh(
+        new THREE.TubeGeometry(curve, Math.min(points.length * 3, 120), 0.0045, 6, false),
+        new THREE.MeshBasicMaterial({
+          color: 0xff4422,
+          transparent: true,
+          opacity: 0.88,
+        }),
+      );
+      tube.userData = props;
+      group.add(tube);
+      continue;
+    }
+
     const mat = new THREE.LineBasicMaterial({
       color: boundaryColor(type),
       transparent: true,
-      opacity: type === 'subduction' ? 0.85 : 0.65,
+      opacity: 0.55,
     });
     const line = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(points),
       mat,
     );
-    line.userData = feature.properties;
+    line.userData = props;
     group.add(line);
   }
 
