@@ -1,4 +1,4 @@
-import { filterEventsToPastWeek, eventsOnDate } from './utils.js';
+import { eventsOnDate } from './utils.js';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -56,8 +56,9 @@ function ephWindowToChart(ephWindow) {
 
 export async function loadFrame(catalog, date, currentIndex, { recentOnly = false } = {}) {
   if (catalog.mode === 'api') {
+    const dayPath = recentOnly ? `/api/day/${date}?past=7` : `/api/day/${date}`;
     const [day, eopWindow, ephWindow, ephOrbit, geoWindow] = await Promise.all([
-      api(`/api/day/${date}`),
+      api(dayPath),
       api(`/api/eop/window?end=${date}&days=400`),
       api(`/api/ephemeris/window?end=${date}&days=28`),
       api(`/api/ephemeris/window?end=${date}&days=365`),
@@ -78,9 +79,6 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
       spaceWeather: day.spaceWeather || [],
       geomagneticWindow: geoWindow,
     };
-    if (recentOnly) {
-      frame = filterEventsToPastWeek(frame, date);
-    }
     return frame;
   }
 

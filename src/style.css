@@ -530,6 +530,10 @@ body,
   accent-color: var(--accent-earth);
 }
 
+.filter-label--active {
+  color: var(--accent-earth);
+}
+
 .controls__presets {
   display: flex;
   align-items: center;

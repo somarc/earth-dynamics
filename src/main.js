@@ -84,6 +84,42 @@ function activeScene() {
   return state.view === 'heliocentric' ? heliocentricScene : geocentricScene;
 }
 
+function updateEventsPanelMeta(date, counts = null) {
+  const eventsTitle = document.getElementById('events-panel-title');
+  const eventsDesc = document.getElementById('events-panel-desc');
+  const recentEl = document.getElementById('recent-only');
+  const filterLabel = document.querySelector('.filter-label');
+
+  if (recentEl) recentEl.checked = state.recentOnly;
+  filterLabel?.classList.toggle('filter-label--active', state.recentOnly);
+
+  if (!eventsTitle || !eventsDesc) return;
+
+  if (state.recentOnly) {
+    eventsTitle.textContent = 'Events (past 7 days)';
+    const range = date ? `${addDays(date, -7)} → ${date}` : 'past 7 days';
+    const tally = counts
+      ? `${counts.quakes} quake${counts.quakes === 1 ? '' : 's'}`
+        + `${counts.storms ? `, ${counts.storms} storm${counts.storms === 1 ? '' : 's'}` : ''}`
+      : 'loading…';
+    eventsDesc.textContent = `${range} — ${tally}`;
+  } else {
+    eventsTitle.textContent = 'Events at Date';
+    const tally = counts
+      ? `${counts.quakes} quake${counts.quakes === 1 ? '' : 's'} (±7d)`
+      : '±7 day windows around selected date';
+    eventsDesc.textContent = tally;
+  }
+}
+
+function applyEventLayers(frame, date) {
+  geocentricScene.setEarthquakes(frame.earthquakes);
+  geocentricScene.setVolcanoes(frame.eruptions);
+  heliocentricScene.setEarthquakes(frame.earthquakes);
+  heliocentricScene.setVolcanoes(frame.eruptions);
+  heliocentricScene.setCmeEvents(frame.spaceWeather, date);
+}
+
 function renderCitations() {
   const el = document.getElementById('citations');
   const sources = state.catalog?.manifest?.sources || {};
@@ -156,29 +192,28 @@ async function updateUI() {
   const date = state.dates[state.currentIndex];
   if (!date) return;
 
+  updateEventsPanelMeta(date);
+
   const frame = await loadFrame(state.catalog, date, state.currentIndex, {
     recentOnly: state.recentOnly,
   });
   const { record, eopWindow, ephemerisDay, ephemerisForChart } = frame;
+
+  updateEventsPanelMeta(date, {
+    quakes: frame.earthquakes?.length ?? 0,
+    storms: frame.storms?.length ?? 0,
+  });
+
+  document.getElementById('date-display').textContent = formatDate(date);
+  document.getElementById('time-slider').value = state.currentIndex;
+
+  applyEventLayers(frame, date);
+
   if (!record) return;
 
   state.eopSeries = eopWindow;
 
-  document.getElementById('date-display').textContent = formatDate(date);
-  const eventsTitle = document.getElementById('events-panel-title');
-  const eventsDesc = document.getElementById('events-panel-desc');
-  if (state.recentOnly) {
-    eventsTitle.textContent = 'Events (past 7 days)';
-    eventsDesc.textContent = `${addDays(date, -7)} → ${date} — quakes, storms, volcanoes, space weather`;
-  } else {
-    eventsTitle.textContent = 'Events at Date';
-    eventsDesc.textContent = '±7 day windows (API default)';
-  }
-  document.getElementById('time-slider').value = state.currentIndex;
-
   scene.updatePoleMotion(record, eopWindow);
-  scene.setEarthquakes(frame.earthquakes);
-  scene.setVolcanoes(frame.eruptions);
   let ovationMode = false;
   let ovationLat = null;
   if (isOvationCurrent(date)) {
@@ -198,7 +233,6 @@ async function updateUI() {
     scene.updateBodies(ephemerisDay);
   } else {
     heliocentricScene.updateHeliocentric(ephemerisDay, frame.ephemerisOrbit || []);
-    heliocentricScene.setCmeEvents(frame.spaceWeather, date);
   }
 
   try {
@@ -387,11 +421,14 @@ function setupControls() {
   });
 
   const recentOnlyEl = document.getElementById('recent-only');
-  recentOnlyEl.checked = state.recentOnly;
-  recentOnlyEl.addEventListener('change', (e) => {
-    state.recentOnly = e.target.checked;
-    updateUI();
-  });
+  if (recentOnlyEl) {
+    recentOnlyEl.checked = state.recentOnly;
+    recentOnlyEl.addEventListener('change', (e) => {
+      state.recentOnly = e.target.checked;
+      updateEventsPanelMeta(state.dates[state.currentIndex]);
+      updateUI();
+    });
+  }
 
   const sync = (id, prop) => {
     document.getElementById(id).addEventListener('change', (e) => {

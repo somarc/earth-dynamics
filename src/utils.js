@@ -69,15 +69,21 @@ export function filterEventsToPastWeek(frame, endDate, days = 7) {
   };
 }
 
+export function quakeTimeMs(q) {
+  const t = Number(q.time);
+  if (!Number.isFinite(t)) return 0;
+  return t > 1e12 ? t : t * 1000;
+}
+
 export function eventsOnDate(dateStr, earthquakes, eruptions, windowDays = 3, pastOnly = false) {
   const target = new Date(dateStr + 'T12:00:00Z').getTime();
   const windowMs = windowDays * 86400000;
 
   const quakes = earthquakes.filter((q) => {
-    const t = q.time * 1000;
     if (pastOnly) {
-      return t >= target - windowMs && t <= target;
+      return isDateInPastWindow(q.date, dateStr, windowDays);
     }
+    const t = quakeTimeMs(q);
     return Math.abs(t - target) <= windowMs;
   });
   const volcs = eruptions.filter((e) => {
