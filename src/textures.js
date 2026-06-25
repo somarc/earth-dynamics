@@ -17,17 +17,46 @@ function createFallbackTexture() {
   return texture;
 }
 
-export function loadEarthTexture() {
-  return new Promise((resolve) => {
-    const loader = new THREE.TextureLoader();
-    loader.load(
-      'https://unpkg.com/three-globe@2.31.1/example/img/earth-blue-marble.jpg',
+function loadTexture(url) {
+  return new Promise((resolve, reject) => {
+    new THREE.TextureLoader().load(
+      url,
       (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
         resolve(tex);
       },
       undefined,
-      () => resolve(createFallbackTexture())
+      reject,
     );
+  });
+}
+
+export async function loadEarthTextures() {
+  try {
+    const [day, night] = await Promise.all([
+      loadTexture('/textures/earth-day.jpg'),
+      loadTexture('/textures/earth-night.jpg'),
+    ]);
+    return { day, night };
+  } catch {
+    const day = createFallbackTexture();
+    return { day, night: null };
+  }
+}
+
+/** @deprecated Use loadEarthTextures */
+export function loadEarthTexture() {
+  return loadEarthTextures().then((t) => t.day);
+}
+
+export function createEarthMaterial(textures) {
+  const { day, night } = textures;
+  return new THREE.MeshStandardMaterial({
+    map: day,
+    roughness: 0.82,
+    metalness: 0.04,
+    emissive: night ? new THREE.Color(0xffffff) : new THREE.Color(0x050810),
+    emissiveMap: night ?? undefined,
+    emissiveIntensity: night ? 0.42 : 0.12,
   });
 }

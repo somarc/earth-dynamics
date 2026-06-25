@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { loadEarthTexture } from './textures.js';
+import { createEarthMaterial, loadEarthTextures } from './textures.js';
 import {
   EARTH_RADIUS,
   latLonToVector3,
@@ -46,13 +46,9 @@ export class EarthScene {
     this.surfaceGroup = new THREE.Group();
     this.earthGroup.add(this.surfaceGroup);
 
-    const earthTexture = await loadEarthTexture();
+    const earthTextures = await loadEarthTextures();
     const earthGeo = new THREE.SphereGeometry(EARTH_RADIUS, 64, 64);
-    const earthMat = new THREE.MeshPhongMaterial({
-      map: earthTexture,
-      shininess: 8,
-      specular: new THREE.Color(0x223344),
-    });
+    const earthMat = createEarthMaterial(earthTextures);
     this.earth = new THREE.Mesh(earthGeo, earthMat);
     this.surfaceGroup.add(this.earth);
 
@@ -138,6 +134,7 @@ export class EarthScene {
       this.plateGroup.visible = this.showPlates;
       if (motionData) {
         this.plateMotionGroup.add(buildMotionGroup(motionData));
+        this.plateMotionGroup.userData.about = motionData.about ?? null;
         this.plateMotionGroup.visible = this.showPlates && this.showPlateMotion;
       }
     } catch (err) {
@@ -147,6 +144,7 @@ export class EarthScene {
     try {
       const hotspotData = await loadHotspots();
       this.hotspotGroup.add(buildHotspotGroup(hotspotData));
+      this.hotspotGroup.userData.about = hotspotData.about ?? null;
       this.hotspotGroup.visible = this.showHotspots;
     } catch (err) {
       console.warn('Hotspots unavailable:', err);
@@ -192,14 +190,15 @@ export class EarthScene {
     this.quakeMeshes = new Map();
     this.volcanoMeshes = new Map();
 
-    const ambLight = new THREE.AmbientLight(0x334466, 0.6);
-    this.scene.add(ambLight);
-    const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    sunLight.position.set(5, 3, 5);
-    this.scene.add(sunLight);
-    const rimLight = new THREE.DirectionalLight(0x4da3ff, 0.3);
-    rimLight.position.set(-3, -1, -4);
-    this.scene.add(rimLight);
+    this.ambientLight = new THREE.AmbientLight(0x223344, 0.28);
+    this.scene.add(this.ambientLight);
+    this.sunLight = new THREE.DirectionalLight(0xfff8ee, 1.85);
+    this.sunLight.position.set(5, 3, 5);
+    this.scene.add(this.sunLight);
+    this.fillLight = new THREE.DirectionalLight(0x4da3ff, 0.12);
+    this.fillLight.position.set(-3, -1, -4);
+    this.scene.add(this.fillLight);
+    this.defaultSunDirection = new THREE.Vector3(5, 3, 5).normalize();
 
     this.stars = this.createStars();
     this.scene.add(this.stars);
@@ -291,6 +290,8 @@ export class EarthScene {
     this.quakeMeshes.clear();
     if (!this.showQuakes) return;
 
+    const pickMat = new THREE.MeshBasicMaterial({ visible: false });
+
     for (const q of quakes) {
       const size = magToSize(q.mag);
       const geo = new THREE.SphereGeometry(size, 8, 8);
@@ -302,13 +303,36 @@ export class EarthScene {
       const mesh = new THREE.Mesh(geo, mat);
       const pos = latLonToVector3(q.lat, q.lon, EARTH_RADIUS * 1.015);
       mesh.position.set(pos.x, pos.y, pos.z);
-      mesh.userData = q;
+      const payload = { ...q, pickType: 'earthquake' };
+      mesh.userData = payload;
       this.quakeGroup.add(mesh);
+
+      const pick = new THREE.Mesh(
+        new THREE.SphereGeometry(Math.max(size * 2.8, 0.022), 8, 8),
+        pickMat,
+      );
+      pick.position.copy(mesh.position);
+      pick.userData = payload;
+      this.quakeGroup.add(pick);
+
       this.quakeMeshes.set(q.id, mesh);
     }
   }
 
+  updateSunLighting(ephemerisDay) {
+    const sunDir = ephemerisDay?.sun
+      ? new THREE.Vector3(ephemerisDay.sun.x, ephemerisDay.sun.y, ephemerisDay.sun.z).normalize()
+      : this.defaultSunDirection;
+    const sunDistance = 9;
+    this.sunLight.position.copy(sunDir).multiplyScalar(sunDistance);
+    this.sunLight.intensity = ephemerisDay?.sun ? 2.0 : 1.5;
+    this.fillLight.position.copy(sunDir).multiplyScalar(-sunDistance * 0.7);
+    this.fillLight.intensity = 0.1 + (ephemerisDay?.lunar?.illumination ?? 0.25) * 0.08;
+  }
+
   updateBodies(ephemerisDay) {
+    this.updateSunLighting(ephemerisDay);
+
     if (!ephemerisDay || !this.showBodies) {
       this.bodiesGroup.visible = false;
       return;
@@ -386,6 +410,7 @@ export class EarthScene {
     if (!this.showVolcanoes) return;
 
     const coneGeo = new THREE.ConeGeometry(0.012, 0.03, 4);
+    const pickMat = new THREE.MeshBasicMaterial({ visible: false });
     for (const v of volcs) {
       const size = veiToSize(v.vei);
       const mat = new THREE.MeshBasicMaterial({
@@ -397,50 +422,88 @@ export class EarthScene {
       mesh.position.set(pos.x, pos.y, pos.z);
       const normal = new THREE.Vector3(pos.x, pos.y, pos.z).normalize();
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
-      mesh.userData = v;
+      const payload = { ...v, pickType: 'volcano' };
+      mesh.userData = payload;
       this.volcanoGroup.add(mesh);
+
+      const pick = new THREE.Mesh(
+        new THREE.SphereGeometry(Math.max(size * 2.5, 0.024), 8, 8),
+        pickMat,
+      );
+      pick.position.copy(mesh.position);
+      pick.userData = payload;
+      this.volcanoGroup.add(pick);
+
       this.volcanoMeshes.set(v.id, mesh);
     }
   }
 
-  hoverPlateAt(clientX, clientY) {
-    if (!this.showPlates || !this.plateGroup?.visible) return null;
-
+  setPointerFromClient(clientX, clientY) {
     const rect = this.canvas.getBoundingClientRect();
     this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    this.raycaster.params.Line.threshold = 0.018;
+    return rect;
+  }
+
+  getHotspotAbout() {
+    return this.hotspotGroup?.userData?.about ?? null;
+  }
+
+  getPlateMotionAbout() {
+    return this.plateMotionGroup?.userData?.about ?? null;
+  }
+
+  hoverPickAt(clientX, clientY) {
+    const rect = this.setPointerFromClient(clientX, clientY);
     this.raycaster.setFromCamera(this.pointer, this.camera);
 
-    const hits = this.raycaster.intersectObjects(this.plateGroup.children, false);
-    if (!hits.length) return null;
+    const meshLayers = [
+      { visible: this.showHotspots, group: this.hotspotGroup },
+      { visible: this.showQuakes, group: this.quakeGroup },
+      { visible: this.showVolcanoes, group: this.volcanoGroup },
+      { visible: this.showPlates && this.showPlateMotion, group: this.plateMotionGroup },
+    ];
 
-    const p = hits[0].object.userData;
-    if (!p?.Name) return null;
-    return {
-      name: p.Name,
-      plates: `${p.PlateA || '?'}–${p.PlateB || '?'}`,
-      type: p.Type || 'transform / ridge',
-      x: clientX - rect.left,
-      y: clientY - rect.top,
-    };
+    for (const layer of meshLayers) {
+      if (!layer.visible || !layer.group?.visible) continue;
+      const hits = this.raycaster.intersectObjects(layer.group.children, true);
+      for (const hit of hits) {
+        const picked = classifyPick(hit);
+        if (picked) {
+          return {
+            ...picked,
+            x: clientX - rect.left,
+            y: clientY - rect.top,
+          };
+        }
+      }
+    }
+
+    if (this.showPlates && this.plateGroup?.visible) {
+      this.raycaster.params.Line.threshold = 0.018;
+      const hits = this.raycaster.intersectObjects(this.plateGroup.children, false);
+      if (hits.length) {
+        const p = hits[0].object.userData;
+        if (p?.Name) {
+          return {
+            type: 'plate-boundary',
+            data: {
+              name: p.Name,
+              plates: `${p.PlateA || '?'}–${p.PlateB || '?'}`,
+              type: p.Type || 'transform / ridge',
+            },
+            x: clientX - rect.left,
+            y: clientY - rect.top,
+          };
+        }
+      }
+    }
+
+    return null;
   }
 
   pickAt(clientX, clientY) {
-    const rect = this.canvas.getBoundingClientRect();
-    this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    this.raycaster.setFromCamera(this.pointer, this.camera);
-
-    const groups = [
-      this.quakeGroup, this.volcanoGroup, this.plateMotionGroup, this.hotspotGroup,
-    ].filter(Boolean);
-    const hits = this.raycaster.intersectObjects(groups, true);
-    for (const hit of hits) {
-      const picked = classifyPick(hit);
-      if (picked) return picked;
-    }
-    return null;
+    return this.hoverPickAt(clientX, clientY);
   }
 
   render(delta) {

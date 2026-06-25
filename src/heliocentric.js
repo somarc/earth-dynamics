@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { loadEarthTexture } from './textures.js';
+import { createEarthMaterial, loadEarthTextures } from './textures.js';
 import { createLabelRenderer, makeLabel, resizeLabelRenderer } from './labels.js';
 import {
   EARTH_RADIUS,
@@ -86,19 +86,10 @@ export class HeliocentricScene {
     this.surfaceGroup = new THREE.Group();
     this.axisGroup.add(this.surfaceGroup);
 
-    const earthTexture = await loadEarthTexture();
+    const earthTextures = await loadEarthTextures();
     const scale = HELIO_EARTH_RADIUS / EARTH_RADIUS;
     const earthGeo = new THREE.SphereGeometry(HELIO_EARTH_RADIUS, 48, 48);
-    this.earth = new THREE.Mesh(
-      earthGeo,
-      new THREE.MeshStandardMaterial({
-        map: earthTexture,
-        roughness: 0.85,
-        metalness: 0.05,
-        emissive: new THREE.Color(0x050810),
-        emissiveIntensity: 0.15,
-      })
-    );
+    this.earth = new THREE.Mesh(earthGeo, createEarthMaterial(earthTextures));
     this.surfaceGroup.add(this.earth);
     this.earthLabel = makeLabel('Earth', 'body-label body-label--earth');
     this.earthLabel.position.set(0, HELIO_EARTH_RADIUS + 0.18, 0);
