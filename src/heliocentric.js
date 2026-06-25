@@ -10,6 +10,12 @@ import {
   veiToSize,
 } from './utils.js';
 import { buildCmeMarkers } from './cme-heliocentric.js';
+import {
+  createEventHalo,
+  EventPulseController,
+  shouldQuakeHalo,
+  shouldVolcanoHalo,
+} from './event-markers.js';
 
 const OBLIQUITY = (23.4367 * Math.PI) / 180;
 const AU_SCALE = 12;
@@ -162,6 +168,12 @@ export class HeliocentricScene {
     this.stars = this.createStars();
     this.scene.add(this.stars);
 
+    this.quakeMeshes = new Map();
+    this.volcanoMeshes = new Map();
+    this.eventPulses = new EventPulseController();
+    this.defaultCameraPosition = new THREE.Vector3(0, 8, 18);
+    this.cameraEntry = null;
+
     this.autoRotate = 0.008;
     this.lodFactor = 1;
 
@@ -283,6 +295,7 @@ export class HeliocentricScene {
 
   setEarthquakes(quakes) {
     this.quakeGroup.clear();
+    this.quakeMeshes.clear();
     if (!this.showQuakes) return;
     const s = HELIO_EARTH_RADIUS / EARTH_RADIUS;
     for (const q of quakes) {
@@ -297,12 +310,22 @@ export class HeliocentricScene {
       );
       const pos = latLonToVector3(q.lat, q.lon, HELIO_EARTH_RADIUS * 1.02);
       mesh.position.set(pos.x, pos.y, pos.z);
+      mesh.userData = { ...q, pickType: 'earthquake' };
       this.quakeGroup.add(mesh);
+
+      if (shouldQuakeHalo(q)) {
+        const halo = createEventHalo(size, q.mag >= 7 ? 0xff2244 : 0xff5c6a);
+        halo.position.copy(mesh.position);
+        this.quakeGroup.add(halo);
+      }
+
+      this.quakeMeshes.set(q.id, mesh);
     }
   }
 
   setVolcanoes(volcs) {
     this.volcanoGroup.clear();
+    this.volcanoMeshes.clear();
     if (!this.showVolcanoes) return;
     const s = HELIO_EARTH_RADIUS / EARTH_RADIUS;
     for (const v of volcs) {
@@ -315,14 +338,57 @@ export class HeliocentricScene {
       mesh.position.set(pos.x, pos.y, pos.z);
       const normal = new THREE.Vector3(pos.x, pos.y, pos.z).normalize();
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
+      mesh.userData = { ...v, pickType: 'volcano' };
       this.volcanoGroup.add(mesh);
+
+      if (shouldVolcanoHalo(v)) {
+        const halo = createEventHalo(size, v.continuing ? 0xff6600 : 0xff8c42, 2.6);
+        halo.position.copy(mesh.position);
+        halo.quaternion.copy(mesh.quaternion);
+        this.volcanoGroup.add(halo);
+      }
+
+      this.volcanoMeshes.set(v.id, mesh);
     }
+  }
+
+  beginViewEntry() {
+    this.cameraEntry = { start: performance.now(), duration: 420 };
+    this.entryFromPos = this.camera.position.clone();
+    if (this.entryFromPos.distanceTo(this.defaultCameraPosition) < 0.05) {
+      this.entryFromPos.copy(this.defaultCameraPosition).multiplyScalar(1.12);
+    }
+  }
+
+  triggerDayPulse() {
+    this.eventPulses.trigger(this.quakeMeshes.values(), {
+      filter: (d) => shouldQuakeHalo(d),
+      color: 0xff5c6a,
+      maxScale: 1.85,
+    });
+    this.eventPulses.trigger(this.volcanoMeshes.values(), {
+      filter: (d) => shouldVolcanoHalo(d),
+      color: 0xff8844,
+      maxScale: 1.7,
+    });
+  }
+
+  updateCameraEntry(now) {
+    if (!this.cameraEntry) return;
+    const t = Math.min(1, (now - this.cameraEntry.start) / this.cameraEntry.duration);
+    const eased = t * t * (3 - 2 * t);
+    this.camera.position.lerpVectors(this.entryFromPos, this.defaultCameraPosition, eased);
+    this.controls.target.set(0, 0, 0);
+    if (t >= 1) this.cameraEntry = null;
   }
 
   updateBodies() {}
 
   render(delta) {
+    const now = performance.now();
     this.surfaceGroup.rotation.y += this.autoRotate * this.lodFactor;
+    this.updateCameraEntry(now);
+    this.eventPulses.update(now);
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
     if (this.labelRenderer) {

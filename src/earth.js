@@ -15,6 +15,12 @@ import { loadPlateBoundaries, buildPlateGroup, loadPlateMotion, buildMotionGroup
 import { loadHotspots, buildHotspotGroup } from './hotspots.js';
 import { classifyPick } from './event-inspect.js';
 import { createAtmosphereShell, updateAtmosphereSun } from './atmosphere.js';
+import {
+  createEventHalo,
+  EventPulseController,
+  shouldQuakeHalo,
+  shouldVolcanoHalo,
+} from './event-markers.js';
 
 export class EarthScene {
   constructor(canvas) {
@@ -187,6 +193,9 @@ export class EarthScene {
 
     this.quakeMeshes = new Map();
     this.volcanoMeshes = new Map();
+    this.eventPulses = new EventPulseController();
+    this.defaultCameraPosition = new THREE.Vector3(0, 0.3, 2.8);
+    this.cameraEntry = null;
 
     this.ambientLight = new THREE.AmbientLight(0x223344, 0.28);
     this.scene.add(this.ambientLight);
@@ -313,6 +322,12 @@ export class EarthScene {
       pick.userData = payload;
       this.quakeGroup.add(pick);
 
+      if (shouldQuakeHalo(q)) {
+        const halo = createEventHalo(size, q.mag >= 7 ? 0xff2244 : 0xff5c6a);
+        halo.position.copy(mesh.position);
+        this.quakeGroup.add(halo);
+      }
+
       this.quakeMeshes.set(q.id, mesh);
     }
   }
@@ -433,8 +448,36 @@ export class EarthScene {
       pick.userData = payload;
       this.volcanoGroup.add(pick);
 
+      if (shouldVolcanoHalo(v)) {
+        const halo = createEventHalo(size, v.continuing ? 0xff6600 : 0xff8c42, 2.6);
+        halo.position.copy(mesh.position);
+        halo.quaternion.copy(mesh.quaternion);
+        this.volcanoGroup.add(halo);
+      }
+
       this.volcanoMeshes.set(v.id, mesh);
     }
+  }
+
+  beginViewEntry() {
+    this.cameraEntry = { start: performance.now(), duration: 420 };
+    this.entryFromPos = this.camera.position.clone();
+    if (this.entryFromPos.distanceTo(this.defaultCameraPosition) < 0.05) {
+      this.entryFromPos.copy(this.defaultCameraPosition).multiplyScalar(1.12);
+    }
+  }
+
+  triggerDayPulse() {
+    this.eventPulses.trigger(this.quakeMeshes.values(), {
+      filter: (d) => shouldQuakeHalo(d),
+      color: 0xff5c6a,
+      maxScale: 1.85,
+    });
+    this.eventPulses.trigger(this.volcanoMeshes.values(), {
+      filter: (d) => shouldVolcanoHalo(d),
+      color: 0xff8844,
+      maxScale: 1.7,
+    });
   }
 
   setPointerFromClient(clientX, clientY) {
@@ -505,13 +548,25 @@ export class EarthScene {
     return this.hoverPickAt(clientX, clientY);
   }
 
+  updateCameraEntry(now) {
+    if (!this.cameraEntry) return;
+    const t = Math.min(1, (now - this.cameraEntry.start) / this.cameraEntry.duration);
+    const eased = t * t * (3 - 2 * t);
+    this.camera.position.lerpVectors(this.entryFromPos, this.defaultCameraPosition, eased);
+    this.controls.target.set(0, 0, 0);
+    if (t >= 1) this.cameraEntry = null;
+  }
+
   render(delta) {
+    const now = performance.now();
     const spin = this.baseSpin + this.autoRotate * this.lodFactor;
     this.surfaceGroup.rotation.y += spin;
     // Field lines are body-fixed to the dipole / spin axis — co-rotate with geography.
     if (this.fieldLinesGroup?.visible) {
       this.fieldLinesGroup.rotation.y += spin;
     }
+    this.updateCameraEntry(now);
+    this.eventPulses.update(now);
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
   }

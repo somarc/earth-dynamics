@@ -8,6 +8,7 @@ import { renderEventInspect } from './event-inspect.js';
 import { getGlobeInspectContext, renderGlobeTooltip } from './globe-inspect.js';
 import { formatDate, addDays } from './utils.js';
 import { loadCatalog, loadFrame } from './data-client.js';
+import { createViewTransition, updateViewTransition } from './view-transition.js';
 
 const state = {
   catalog: null,
@@ -25,6 +26,7 @@ const state = {
 
 let geocentricScene = null;
 let heliocentricScene = null;
+let viewTransition = null;
 
 const LAYER_PRESETS = {
   solid: {
@@ -204,10 +206,44 @@ function updateLegend() {
   }
 }
 
+function applyViewCanvasVisibility(now = performance.now()) {
+  const geoCanvas = document.getElementById('geo-canvas');
+  const helioCanvas = document.getElementById('helio-canvas');
+
+  if (!viewTransition) {
+    geoCanvas.classList.toggle('scene-canvas--hidden', state.view !== 'geocentric');
+    helioCanvas.classList.toggle('scene-canvas--hidden', state.view !== 'heliocentric');
+    geoCanvas.style.opacity = state.view === 'geocentric' ? '1' : '';
+    helioCanvas.style.opacity = state.view === 'heliocentric' ? '1' : '';
+    return;
+  }
+
+  const { done, outgoingOpacity, incomingOpacity } = updateViewTransition(viewTransition, now);
+  const outgoing = viewTransition.fromView;
+
+  geoCanvas.classList.remove('scene-canvas--hidden');
+  helioCanvas.classList.remove('scene-canvas--hidden');
+
+  if (outgoing === 'geocentric') {
+    geoCanvas.style.opacity = String(outgoingOpacity);
+    helioCanvas.style.opacity = String(incomingOpacity);
+  } else {
+    helioCanvas.style.opacity = String(outgoingOpacity);
+    geoCanvas.style.opacity = String(incomingOpacity);
+  }
+
+  if (done) {
+    viewTransition = null;
+    applyViewCanvasVisibility(now);
+  }
+}
+
 function setView(view) {
+  if (view === state.view) return;
+
+  viewTransition = createViewTransition(state.view, view);
   state.view = view;
-  document.getElementById('geo-canvas').classList.toggle('scene-canvas--hidden', view !== 'geocentric');
-  document.getElementById('helio-canvas').classList.toggle('scene-canvas--hidden', view !== 'heliocentric');
+
   document.querySelectorAll('.view-btn').forEach((btn) => {
     btn.classList.toggle('view-btn--active', btn.dataset.view === view);
   });
@@ -219,9 +255,14 @@ function setView(view) {
     view === 'heliocentric' ? '' : 'none';
   geocentricScene.setLabelsVisible?.(false);
   heliocentricScene.setLabelsVisible(view === 'heliocentric');
+
+  const incomingScene = view === 'heliocentric' ? heliocentricScene : geocentricScene;
+  incomingScene.beginViewEntry?.();
+
   updateLegend();
   updateUI();
   activeScene().handleResize();
+  applyViewCanvasVisibility();
 }
 
 async function updateUI() {
@@ -525,6 +566,8 @@ function animate(timestamp) {
       state.dayAccumulator -= 1;
       if (state.currentIndex < state.dates.length - 1) {
         state.currentIndex++;
+        geocentricScene.triggerDayPulse?.();
+        heliocentricScene.triggerDayPulse?.();
         updateUI();
       } else {
         state.playing = false;
@@ -532,7 +575,15 @@ function animate(timestamp) {
       }
     }
   }
-  activeScene().render(delta);
+
+  applyViewCanvasVisibility(timestamp);
+
+  if (viewTransition) {
+    geocentricScene.render(delta);
+    heliocentricScene.render(delta);
+  } else {
+    activeScene().render(delta);
+  }
 }
 
 async function main() {
