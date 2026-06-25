@@ -14,7 +14,7 @@ These connect existing layers, improve daily usability, or unlock patterns for e
 | **P1** | [Plate motion vectors](#p1-plate-motion-vectors) | Makes plate boundaries *meaningful* — quakes/volcanoes drift in tectonic context | `done` |
 | **P2** | [Event inspect / click-through](#p2-event-inspect) | Turns markers into evidence (USGS, DONKI, GVP links, metadata) | `done` |
 | **P3** | [Incremental data refresh](#p3-incremental-ingest) | Timeline stays current without full 1990–2026 re-fetch | `done` |
-| **P4** | [Layer presets](#p4-layer-presets) | Reduces toggle fatigue as overlay count grows | `planned` |
+| **P4** | [Layer presets](#p4-layer-presets) | Reduces toggle fatigue as overlay count grows | `done` |
 
 ---
 
@@ -141,7 +141,7 @@ These connect existing layers, improve daily usability, or unlock patterns for e
 ## Suggested iteration order
 
 ```
-Phase A (now)     P1 → P2 → P3 → P4
+Phase A (now)     ~~P1 → P2 → P3 → P4~~ ✓
 Phase B (context) R2 → R3 → R4 → R5
 Phase C (space)   T12 → T13 → T14 → U5
 Phase D (global)  T15 → T6 complete → T16

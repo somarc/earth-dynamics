@@ -22,6 +22,57 @@ const state = {
 let geocentricScene = null;
 let heliocentricScene = null;
 
+const LAYER_PRESETS = {
+  solid: {
+    label: 'Solid Earth',
+    quakes: true,
+    volcanoes: true,
+    trail: true,
+    plates: true,
+    plateMotion: true,
+    aurora: false,
+    fieldLines: false,
+    bodies: true,
+    moon: true,
+  },
+  space: {
+    label: 'Space Weather',
+    quakes: false,
+    volcanoes: false,
+    trail: true,
+    plates: false,
+    plateMotion: false,
+    aurora: true,
+    fieldLines: true,
+    bodies: false,
+    moon: false,
+  },
+  orbital: {
+    label: 'Orbital',
+    quakes: false,
+    volcanoes: false,
+    trail: true,
+    plates: false,
+    plateMotion: false,
+    aurora: false,
+    fieldLines: false,
+    bodies: true,
+    moon: true,
+  },
+  full: {
+    label: 'Full stack',
+    quakes: true,
+    volcanoes: true,
+    trail: true,
+    plates: true,
+    plateMotion: true,
+    aurora: true,
+    fieldLines: true,
+    bodies: true,
+    moon: true,
+  },
+};
+
 function activeScene() {
   return state.view === 'heliocentric' ? heliocentricScene : geocentricScene;
 }
@@ -211,6 +262,47 @@ async function updateUI() {
     : '<li class="empty">No events within window</li>';
 }
 
+function applyLayerPreset(presetId) {
+  const preset = LAYER_PRESETS[presetId];
+  if (!preset) return;
+
+  const set = (id, checked) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = checked;
+  };
+
+  set('show-quakes', preset.quakes);
+  set('show-volcanoes', preset.volcanoes);
+  set('show-trail', preset.trail);
+  set('show-plates', preset.plates);
+  set('show-plate-motion', preset.plateMotion);
+  set('show-aurora', preset.aurora);
+  set('show-field-lines', preset.fieldLines);
+  set('show-bodies', preset.bodies);
+  set('show-moon', preset.moon);
+
+  geocentricScene.showQuakes = preset.quakes;
+  geocentricScene.showVolcanoes = preset.volcanoes;
+  geocentricScene.showTrail = preset.trail;
+  geocentricScene.setPlatesVisible(preset.plates);
+  geocentricScene.setPlateMotionVisible(preset.plateMotion);
+  geocentricScene.showAurora = preset.aurora;
+  geocentricScene.showFieldLines = preset.fieldLines;
+  geocentricScene.showBodies = preset.bodies;
+  heliocentricScene.showQuakes = preset.quakes;
+  heliocentricScene.showVolcanoes = preset.volcanoes;
+  heliocentricScene.showTrail = preset.trail;
+  heliocentricScene.showAurora = preset.aurora;
+  heliocentricScene.showFieldLines = preset.fieldLines;
+  heliocentricScene.showMoon = preset.moon;
+
+  document.querySelectorAll('.preset-btn').forEach((btn) => {
+    btn.classList.toggle('preset-btn--active', btn.dataset.preset === presetId);
+  });
+
+  updateUI();
+}
+
 function setupControls() {
   const slider = document.getElementById('time-slider');
   const playBtn = document.getElementById('play-btn');
@@ -238,6 +330,10 @@ function setupControls() {
 
   document.querySelectorAll('.view-btn').forEach((btn) => {
     btn.addEventListener('click', () => setView(btn.dataset.view));
+  });
+
+  document.querySelectorAll('.preset-btn').forEach((btn) => {
+    btn.addEventListener('click', () => applyLayerPreset(btn.dataset.preset));
   });
 
   const sync = (id, prop) => {
@@ -322,6 +418,7 @@ async function main() {
   renderCitations();
   setupControls();
   setupGlobePick();
+  applyLayerPreset('full');
   updateLegend();
   updateUI();
   requestAnimationFrame(animate);

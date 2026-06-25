@@ -427,7 +427,7 @@ body,
 
 .controls {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-columns: auto 1fr auto auto auto auto;
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1.25rem;
@@ -463,6 +463,41 @@ body,
   color: var(--text-muted);
   grid-column: 2;
   margin-top: -0.5rem;
+}
+
+.controls__presets {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.presets-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-right: 0.15rem;
+}
+
+.preset-btn {
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: rgba(20, 30, 50, 0.6);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.preset-btn:hover {
+  color: var(--text);
+  border-color: rgba(77, 163, 255, 0.35);
+}
+
+.preset-btn--active {
+  background: rgba(77, 163, 255, 0.18);
+  color: var(--accent);
+  border-color: rgba(77, 163, 255, 0.4);
 }
 
 .controls__speed,
@@ -507,6 +542,7 @@ select {
     grid-template-rows: auto auto auto;
   }
 
+  .controls__presets,
   .controls__speed,
   .controls__toggles {
     grid-column: 1 / -1;
