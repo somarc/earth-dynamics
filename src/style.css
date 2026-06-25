@@ -473,7 +473,7 @@ body,
 
 .controls {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto auto;
+  grid-template-columns: auto 1fr auto auto auto auto auto;
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1.25rem;
@@ -509,6 +509,25 @@ body,
   color: var(--text-muted);
   grid-column: 2;
   margin-top: -0.5rem;
+}
+
+.controls__filter {
+  display: flex;
+  align-items: center;
+}
+
+.filter-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.filter-label input {
+  accent-color: var(--accent-earth);
 }
 
 .controls__presets {
@@ -588,6 +607,7 @@ select {
     grid-template-rows: auto auto auto;
   }
 
+  .controls__filter,
   .controls__presets,
   .controls__speed,
   .controls__toggles {

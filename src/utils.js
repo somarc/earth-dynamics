@@ -39,16 +39,56 @@ export function formatDate(dateStr) {
   });
 }
 
-export function eventsOnDate(dateStr, earthquakes, eruptions, windowDays = 3) {
+export function addDays(dateStr, days) {
+  const d = new Date(`${dateStr}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Inclusive date range [endDate - days, endDate] (no future events). */
+export function isDateInPastWindow(date, endDate, days = 7) {
+  if (!date || !endDate) return false;
+  return date >= addDays(endDate, -days) && date <= endDate;
+}
+
+export function filterEventsToPastWeek(frame, endDate, days = 7) {
+  const start = addDays(endDate, -days);
+  const inRange = (d) => isDateInPastWindow(d, endDate, days);
+
+  const eruptions = (frame.eruptions || []).filter((v) => {
+    const vEnd = v.endDate || endDate;
+    return v.startDate <= endDate && vEnd >= start;
+  });
+
+  return {
+    ...frame,
+    earthquakes: (frame.earthquakes || []).filter((q) => inRange(q.date)),
+    eruptions,
+    storms: (frame.storms || []).filter((s) => inRange(s.date)),
+    spaceWeather: (frame.spaceWeather || []).filter((e) => inRange(e.date)),
+  };
+}
+
+export function eventsOnDate(dateStr, earthquakes, eruptions, windowDays = 3, pastOnly = false) {
   const target = new Date(dateStr + 'T12:00:00Z').getTime();
   const windowMs = windowDays * 86400000;
 
-  const quakes = earthquakes.filter((q) => Math.abs(q.time - target) <= windowMs);
+  const quakes = earthquakes.filter((q) => {
+    const t = q.time * 1000;
+    if (pastOnly) {
+      return t >= target - windowMs && t <= target;
+    }
+    return Math.abs(t - target) <= windowMs;
+  });
   const volcs = eruptions.filter((e) => {
     const start = new Date(e.startDate + 'T12:00:00Z').getTime();
     const end = e.endDate
       ? new Date(e.endDate + 'T12:00:00Z').getTime()
       : Date.now();
+    if (pastOnly) {
+      const windowStart = target - windowMs;
+      return start <= target && end >= windowStart;
+    }
     return target >= start && target <= end;
   });
 

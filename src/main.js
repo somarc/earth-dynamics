@@ -5,7 +5,7 @@ import { drawEclipticChart, renderOrbitalMetrics } from './ephemeris.js';
 import { drawKpChart, drawDstChart, renderSpaceWeatherMetrics } from './space-weather.js';
 import { fetchOvation, isOvationCurrent, ovationEquatorwardEdge } from './ovation.js';
 import { renderEventInspect } from './event-inspect.js';
-import { formatDate } from './utils.js';
+import { formatDate, addDays } from './utils.js';
 import { loadCatalog, loadFrame } from './data-client.js';
 
 const state = {
@@ -19,6 +19,7 @@ const state = {
   view: 'geocentric',
   eopSeries: [],
   ovationData: null,
+  recentOnly: true,
 };
 
 let geocentricScene = null;
@@ -155,13 +156,24 @@ async function updateUI() {
   const date = state.dates[state.currentIndex];
   if (!date) return;
 
-  const frame = await loadFrame(state.catalog, date, state.currentIndex);
+  const frame = await loadFrame(state.catalog, date, state.currentIndex, {
+    recentOnly: state.recentOnly,
+  });
   const { record, eopWindow, ephemerisDay, ephemerisForChart } = frame;
   if (!record) return;
 
   state.eopSeries = eopWindow;
 
   document.getElementById('date-display').textContent = formatDate(date);
+  const eventsTitle = document.getElementById('events-panel-title');
+  const eventsDesc = document.getElementById('events-panel-desc');
+  if (state.recentOnly) {
+    eventsTitle.textContent = 'Events (past 7 days)';
+    eventsDesc.textContent = `${addDays(date, -7)} → ${date} — quakes, storms, volcanoes, space weather`;
+  } else {
+    eventsTitle.textContent = 'Events at Date';
+    eventsDesc.textContent = '±7 day windows (API default)';
+  }
   document.getElementById('time-slider').value = state.currentIndex;
 
   scene.updatePoleMotion(record, eopWindow);
@@ -295,7 +307,7 @@ async function updateUI() {
 
   list.innerHTML = items.length
     ? items.join('')
-    : '<li class="empty">No events within window</li>';
+    : `<li class="empty">No events in ${state.recentOnly ? 'past 7 days' : 'window'}</li>`;
 }
 
 function applyLayerPreset(presetId) {
@@ -372,6 +384,13 @@ function setupControls() {
 
   document.querySelectorAll('.preset-btn').forEach((btn) => {
     btn.addEventListener('click', () => applyLayerPreset(btn.dataset.preset));
+  });
+
+  const recentOnlyEl = document.getElementById('recent-only');
+  recentOnlyEl.checked = state.recentOnly;
+  recentOnlyEl.addEventListener('change', (e) => {
+    state.recentOnly = e.target.checked;
+    updateUI();
   });
 
   const sync = (id, prop) => {

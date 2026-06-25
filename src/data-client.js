@@ -1,3 +1,5 @@
+import { filterEventsToPastWeek, eventsOnDate } from './utils.js';
+
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 async function api(path) {
@@ -52,7 +54,7 @@ function ephWindowToChart(ephWindow) {
   };
 }
 
-export async function loadFrame(catalog, date, currentIndex) {
+export async function loadFrame(catalog, date, currentIndex, { recentOnly = false } = {}) {
   if (catalog.mode === 'api') {
     const [day, eopWindow, ephWindow, ephOrbit, geoWindow] = await Promise.all([
       api(`/api/day/${date}`),
@@ -61,7 +63,7 @@ export async function loadFrame(catalog, date, currentIndex) {
       api(`/api/ephemeris/window?end=${date}&days=365`),
       api(`/api/geomagnetic/window?end=${date}&days=28`).catch(() => []),
     ]);
-    return {
+    let frame = {
       record: day.eop,
       eopWindow,
       ephemerisDay: day.ephemeris,
@@ -76,6 +78,10 @@ export async function loadFrame(catalog, date, currentIndex) {
       spaceWeather: day.spaceWeather || [],
       geomagneticWindow: geoWindow,
     };
+    if (recentOnly) {
+      frame = filterEventsToPastWeek(frame, date);
+    }
+    return frame;
   }
 
   const record = catalog.eop[currentIndex];
@@ -83,8 +89,9 @@ export async function loadFrame(catalog, date, currentIndex) {
   const eopWindow = catalog.eop.slice(trailStart, currentIndex + 1);
   const ephemerisDay = catalog.ephemeris?.byDate?.[date] ?? null;
 
-  const { eventsOnDate } = await import('./utils.js');
-  const { quakes, volcs } = eventsOnDate(date, catalog.earthquakes, catalog.eruptions, 7);
+  const { quakes, volcs } = eventsOnDate(
+    date, catalog.earthquakes, catalog.eruptions, 7, recentOnly,
+  );
 
   return {
     record,

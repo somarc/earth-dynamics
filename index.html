@@ -74,7 +74,8 @@
           </div>
 
           <div class="panel panel--events">
-            <h2>Events at Date</h2>
+            <h2 id="events-panel-title">Events at Date</h2>
+            <p class="panel__desc" id="events-panel-desc">±7 day windows (API default)</p>
             <ul id="event-list" class="event-list"></ul>
           </div>
 
@@ -101,6 +102,11 @@
             <option value="16">16×</option>
             <option value="64">64×</option>
           </select>
+        </div>
+        <div class="controls__filter">
+          <label class="filter-label" title="Limit quakes, storms, volcanoes, and space-weather events to the 7 days before the selected date">
+            <input type="checkbox" id="recent-only" checked /> Past week only
+          </label>
         </div>
         <div class="controls__presets">
           <span class="presets-label">Presets</span>
