@@ -559,6 +559,27 @@ body,
   min-height: 2.5em;
 }
 
+.panel--chain-active {
+  border-color: rgba(255, 140, 66, 0.45);
+  box-shadow: 0 0 0 1px rgba(255, 140, 66, 0.12);
+}
+
+.chain-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 500;
+  color: #ff9a55;
+  vertical-align: middle;
+}
+
+.chart--chain-step {
+  outline: 1px solid rgba(255, 140, 66, 0.35);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
 .panel--events {
   flex: 1 1 300px;
   min-height: 300px;

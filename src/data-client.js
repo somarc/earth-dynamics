@@ -69,12 +69,13 @@ function ephWindowToChart(ephWindow, selectedDate, ephemerisDay) {
 export async function loadFrame(catalog, date, currentIndex, { recentOnly = false } = {}) {
   if (catalog.mode === 'api') {
     const dayPath = recentOnly ? `/api/day/${date}?past=7` : `/api/day/${date}`;
-    const [day, eopWindow, ephWindow, ephOrbit, geoWindow] = await Promise.all([
+    const [day, eopWindow, ephWindow, ephOrbit, geoWindow, aamWindow] = await Promise.all([
       api(dayPath),
       api(`/api/eop/window?end=${date}&days=400`),
       api(`/api/ephemeris/window?end=${date}&days=28`),
       api(`/api/ephemeris/window?end=${date}&days=365`),
       api(`/api/geomagnetic/window?end=${date}&days=28`).catch(() => []),
+      api(`/api/aam/window?end=${date}&days=400`).catch(() => []),
     ]);
     let frame = {
       record: day.eop,
@@ -82,6 +83,8 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
       ephemerisDay: day.ephemeris,
       ephemerisForChart: ephWindowToChart(ephWindow, date, day.ephemeris),
       ephemerisOrbit: ephWindowToChart(ephOrbit, date, day.ephemeris),
+      aam: day.aam,
+      aamWindow,
       earthquakes: day.earthquakes,
       eruptions: day.eruptions,
       storms: day.storms || [],

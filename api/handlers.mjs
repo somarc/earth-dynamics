@@ -193,8 +193,10 @@ export function createHandlers(db) {
           LIMIT 40
         `).all(date, date);
 
+    const aam = getAamForDate(date);
+
     return {
-      date, eop, ephemeris: eph, earthquakes: quakeRows, eruptions: volcRows,
+      date, eop, ephemeris: eph, aam, earthquakes: quakeRows, eruptions: volcRows,
       storms, weather, solar, geomagnetic: geomagnetic || null, spaceWeather: spaceEvents,
     };
   };
@@ -205,6 +207,33 @@ export function createHandlers(db) {
              g_scale AS gScale, aurora_level AS auroraLevel,
              sw_speed_kms AS swSpeedKms, sw_bz_nt AS swBzNt, sw_density AS swDensity
       FROM geomagnetic_daily
+      WHERE date <= ?
+      ORDER BY date DESC
+      LIMIT ?
+    `).all(endDate, days).reverse();
+
+  const getAamForDate = (date) => {
+    let row = db.prepare('SELECT * FROM aam_daily WHERE date = ?').get(date);
+    if (!row) {
+      row = db.prepare(
+        'SELECT * FROM aam_daily WHERE date <= ? ORDER BY date DESC LIMIT 1'
+      ).get(date);
+    }
+    return row
+      ? {
+          date: row.date,
+          mjd: row.mjd,
+          aamX: row.aam_x,
+          aamY: row.aam_y,
+          aamZ: row.aam_z,
+        }
+      : null;
+  };
+
+  const getAamWindow = (endDate, days = 400) =>
+    db.prepare(`
+      SELECT date, mjd, aam_x AS aamX, aam_y AS aamY, aam_z AS aamZ
+      FROM aam_daily
       WHERE date <= ?
       ORDER BY date DESC
       LIMIT ?
@@ -244,7 +273,10 @@ export function createHandlers(db) {
       ...rowToEphemeris(r),
     }));
 
-  return { getMeta, getEopWindow, getDay, getDates, getEphemerisWindow, getGeomagneticWindow };
+  return {
+    getMeta, getEopWindow, getDay, getDates, getEphemerisWindow, getGeomagneticWindow,
+    getAamWindow,
+  };
 }
 
 export function routeRequest(db, url) {
@@ -281,6 +313,12 @@ export function routeRequest(db, url) {
     const end = params.get('end');
     const days = parseInt(params.get('days') || '28', 10);
     return { status: 200, body: handlers.getGeomagneticWindow(end, days) };
+  }
+  if (path === '/api/aam/window') {
+    const params = new URL(url, 'http://local').searchParams;
+    const end = params.get('end');
+    const days = parseInt(params.get('days') || '400', 10);
+    return { status: 200, body: handlers.getAamWindow(end, days) };
   }
 
   return { status: 404, body: { error: 'Not found' } };

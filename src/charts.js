@@ -80,11 +80,23 @@ export function drawPolhode(canvas, eop, currentIndex, trailLength = 400) {
   ctx.fillText(`−y: ${last?.yMas != null ? (-last.yMas).toFixed(1) : '—'}`, 8, h - 8);
 }
 
-export function drawLodChart(canvas, eop, currentIndex, windowSize = 365) {
+function buildAamByDate(aamWindow) {
+  if (!aamWindow?.length) return null;
+  return Object.fromEntries(aamWindow.map((r) => [r.date, r]));
+}
+
+function anomalySeries(values) {
+  const valid = values.filter((v) => v != null);
+  if (!valid.length) return null;
+  const mean = valid.reduce((a, b) => a + b, 0) / valid.length;
+  return values.map((v) => (v == null ? null : v - mean));
+}
+
+export function drawLodChart(canvas, eop, currentIndex, { aamWindow = null, windowSize = 365 } = {}) {
   const ctx = canvas.getContext('2d');
   const w = canvas.width;
   const h = canvas.height;
-  const pad = { top: 12, right: 8, bottom: 18, left: 42 };
+  const pad = { top: 14, right: 8, bottom: 18, left: 42 };
 
   ctx.clearRect(0, 0, w, h);
 
@@ -94,6 +106,10 @@ export function drawLodChart(canvas, eop, currentIndex, windowSize = 365) {
 
   const lodValues = slice.map((r) => r.lodMs);
   const omegaValues = slice.map((r) => r.deltaOmegaPicoradS / 1000);
+  const aamByDate = buildAamByDate(aamWindow);
+  const aamZRaw = aamByDate ? slice.map((r) => aamByDate[r.date]?.aamZ ?? null) : null;
+  const aamZAnomaly = aamZRaw ? anomalySeries(aamZRaw) : null;
+  const hasAam = aamZAnomaly?.some((v) => v != null);
 
   const minLod = Math.min(...lodValues);
   const maxLod = Math.max(...lodValues);
@@ -102,25 +118,34 @@ export function drawLodChart(canvas, eop, currentIndex, windowSize = 365) {
 
   const plotW = w - pad.left - pad.right;
   const plotH = (h - pad.top - pad.bottom) / 2 - 4;
+  const lodRange = maxLod - minLod || 1;
 
-  const drawSeries = (values, min, max, y0, color, label) => {
+  const drawSeries = (values, min, max, y0, color, label, { width = 1.5, dash = [] } = {}) => {
     const range = max - min || 1;
     ctx.beginPath();
+    let started = false;
     values.forEach((v, i) => {
+      if (v == null) return;
       const x = pad.left + (i / (values.length - 1 || 1)) * plotW;
       const y = y0 + plotH - ((v - min) / range) * plotH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      if (!started) {
+        ctx.moveTo(x, y);
+        started = true;
+      } else {
+        ctx.lineTo(x, y);
+      }
     });
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = width;
+    ctx.setLineDash(dash);
     ctx.stroke();
+    ctx.setLineDash([]);
 
     ctx.fillStyle = 'rgba(138, 155, 181, 0.7)';
     ctx.font = '9px IBM Plex Mono, monospace';
     ctx.fillText(label, pad.left, y0 - 2);
     const lastVal = values.at(-1);
-    if (lastVal != null) ctx.fillText(`${lastVal.toFixed(2)}`, w - pad.right - 50, y0 + 10);
+    if (label && lastVal != null) ctx.fillText(`${lastVal.toFixed(2)}`, w - pad.right - 50, y0 + 10);
   };
 
   drawSeries(lodValues, minLod, maxLod, pad.top, '#4da3ff', 'ΔLOD (ms)');
@@ -132,6 +157,27 @@ export function drawLodChart(canvas, eop, currentIndex, windowSize = 365) {
     '#3ecf8e',
     'Δω₃ (nrad/s)'
   );
+
+  if (hasAam) {
+    const validAam = aamZAnomaly.filter((v) => v != null);
+    const minA = Math.min(...validAam);
+    const maxA = Math.max(...validAam);
+    const aamRange = maxA - minA || 1;
+    const scaledAam = aamZAnomaly.map((v) =>
+      v == null ? null : minLod + ((v - minA) / aamRange) * lodRange,
+    );
+    drawSeries(scaledAam, minLod, maxLod, pad.top, 'rgba(255, 140, 66, 0.85)', '', {
+      width: 1.25,
+      dash: [5, 4],
+    });
+    ctx.fillStyle = 'rgba(255, 154, 85, 0.85)';
+    ctx.font = '9px IBM Plex Mono, monospace';
+    ctx.fillText('AAM z anomaly', pad.left + 72, pad.top - 2);
+  } else {
+    ctx.fillStyle = 'rgba(138, 155, 181, 0.45)';
+    ctx.font = '8px IBM Plex Mono, monospace';
+    ctx.fillText('npm run ingest -- --only=aam', pad.left + 72, pad.top - 2);
+  }
 
   const cursorX = pad.left + plotW;
   ctx.strokeStyle = 'rgba(255, 209, 102, 0.6)';

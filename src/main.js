@@ -4,6 +4,10 @@ import { drawPolhode, drawLodChart } from './charts.js';
 import { drawEclipticChart, renderOrbitalMetrics } from './ephemeris.js';
 import { drawHelicalChart } from './helical-chart.js';
 import { drawKpChart, drawDstChart, renderSpaceWeatherMetrics } from './space-weather.js';
+import {
+  applySpaceWeatherChainHighlight,
+  evaluateSpaceWeatherChain,
+} from './space-weather-chain.js';
 import { fetchOvation, isOvationCurrent, ovationEquatorwardEdge } from './ovation.js';
 import { renderEventInspect } from './event-inspect.js';
 import { getGlobeInspectContext, renderGlobeTooltip } from './globe-inspect.js';
@@ -318,7 +322,9 @@ async function updateUI() {
   try {
     const chartIndex = eopWindow.length - 1;
     drawPolhode(document.getElementById('polhode-chart'), eopWindow, chartIndex);
-    drawLodChart(document.getElementById('lod-chart'), eopWindow, chartIndex);
+    drawLodChart(document.getElementById('lod-chart'), eopWindow, chartIndex, {
+      aamWindow: frame.aamWindow,
+    });
 
     if (ephemerisForChart) {
       drawEclipticChart(document.getElementById('ecliptic-chart'), ephemerisForChart, date);
@@ -353,6 +359,9 @@ async function updateUI() {
       frame.geomagnetic,
       frame.spaceWeather,
       { ovationLat, ovationMode }
+    );
+    applySpaceWeatherChainHighlight(
+      evaluateSpaceWeatherChain(frame, { ovationMode }),
     );
   } catch (err) {
     console.error('Chart render error:', err);
