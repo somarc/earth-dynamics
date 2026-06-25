@@ -10,6 +10,7 @@ import {
 } from './utils.js';
 import { updateAuroraRings, updateFieldLines } from './space-weather.js';
 import { loadPlateBoundaries, buildPlateGroup, loadPlateMotion, buildMotionGroup } from './plates.js';
+import { classifyPick } from './event-inspect.js';
 
 export class EarthScene {
   constructor(canvas) {
@@ -186,6 +187,9 @@ export class EarthScene {
     this.autoRotate = 0.002;
     this.baseSpin = 0;
     this.lodFactor = 1;
+
+    this.raycaster = new THREE.Raycaster();
+    this.pointer = new THREE.Vector2();
 
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
@@ -366,6 +370,21 @@ export class EarthScene {
       this.volcanoGroup.add(mesh);
       this.volcanoMeshes.set(v.id, mesh);
     }
+  }
+
+  pickAt(clientX, clientY) {
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+
+    const groups = [this.quakeGroup, this.volcanoGroup, this.plateMotionGroup].filter(Boolean);
+    const hits = this.raycaster.intersectObjects(groups, true);
+    for (const hit of hits) {
+      const picked = classifyPick(hit);
+      if (picked) return picked;
+    }
+    return null;
   }
 
   render(delta) {

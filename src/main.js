@@ -3,6 +3,7 @@ import { HeliocentricScene } from './heliocentric.js';
 import { drawPolhode, drawLodChart } from './charts.js';
 import { drawEclipticChart, renderOrbitalMetrics } from './ephemeris.js';
 import { drawKpChart, renderSpaceWeatherMetrics } from './space-weather.js';
+import { renderEventInspect } from './event-inspect.js';
 import { formatDate } from './utils.js';
 import { loadCatalog, loadFrame } from './data-client.js';
 
@@ -316,11 +317,25 @@ async function main() {
   modeBadge.textContent = state.catalog.mode === 'api' ? 'SQLite API' : 'JSON fallback';
   document.querySelector('.header__right').prepend(modeBadge);
 
+  renderEventInspect(document.getElementById('event-inspect'), null);
+
   renderCitations();
   setupControls();
+  setupGlobePick();
   updateLegend();
   updateUI();
   requestAnimationFrame(animate);
+}
+
+function setupGlobePick() {
+  const canvas = document.getElementById('geo-canvas');
+  canvas.classList.add('scene-canvas--pickable');
+
+  canvas.addEventListener('click', (e) => {
+    if (state.view !== 'geocentric') return;
+    const picked = geocentricScene.pickAt(e.clientX, e.clientY);
+    renderEventInspect(document.getElementById('event-inspect'), picked);
+  });
 }
 
 main();

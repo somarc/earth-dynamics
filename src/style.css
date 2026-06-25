@@ -199,6 +199,49 @@ body,
 .event-list .gst { color: #ff5c6a; font-weight: 600; }
 .event-list .flare { color: #ffd166; font-weight: 600; }
 
+.inspect-empty {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.inspect-card {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  margin-bottom: 0.5rem;
+}
+
+.inspect-card div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.inspect-card dt {
+  color: var(--text-muted);
+}
+
+.inspect-card dd {
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+.inspect-link {
+  font-size: 0.72rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.inspect-link:hover {
+  text-decoration: underline;
+}
+
+#geo-canvas.scene-canvas--pickable {
+  cursor: crosshair;
+}
+
 .sw-event-list {
   list-style: none;
   margin-top: 0.5rem;

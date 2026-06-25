@@ -12,7 +12,7 @@ These connect existing layers, improve daily usability, or unlock patterns for e
 | ID | Item | Why now | Status |
 |----|------|---------|--------|
 | **P1** | [Plate motion vectors](#p1-plate-motion-vectors) | Makes plate boundaries *meaningful* — quakes/volcanoes drift in tectonic context | `done` |
-| **P2** | [Event inspect / click-through](#p2-event-inspect) | Turns markers into evidence (USGS, DONKI, GVP links, metadata) | `next` |
+| **P2** | [Event inspect / click-through](#p2-event-inspect) | Turns markers into evidence (USGS, DONKI, GVP links, metadata) | `done` |
 | **P3** | [Incremental data refresh](#p3-incremental-ingest) | Timeline stays current without full 1990–2026 re-fetch | `next` |
 | **P4** | [Layer presets](#p4-layer-presets) | Reduces toggle fatigue as overlay count grows | `planned` |
 
