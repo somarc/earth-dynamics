@@ -163,4 +163,10 @@ export const SOURCES = {
     citation: 'Auroral oval probability model (nowcast)',
     link: 'https://www.swpc.noaa.gov/products/aurora-30-minute-forecast',
   },
+  gfzAam: {
+    name: 'Atmospheric Angular Momentum (AAM)',
+    org: 'GFZ Potsdam',
+    citation: 'ESMGFZ operational AAM v1.0 (ECMWF analysis, 3h)',
+    link: 'https://www.gfz.de/en/sektion/erdsystem-modellierung/esmdata/esmdata/eam/',
+  },
 };

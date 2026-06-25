@@ -6,6 +6,7 @@ import { ingestSolar } from './sources/solar.mjs';
 import { ingestSpaceWeather } from './sources/space-weather.mjs';
 import { ingestOmni } from './sources/omni.mjs';
 import { ingestEarthquakes } from './sources/earthquakes.mjs';
+import { ingestAam } from './sources/aam.mjs';
 import { dbPath } from './db.mjs';
 
 const args = new Set(process.argv.slice(2));
@@ -50,6 +51,11 @@ async function main() {
   if (!only || only === 'earthquakes') {
     console.log('6. USGS earthquakes (incremental)…');
     await ingestEarthquakes({ force });
+  }
+
+  if (!only || only === 'aam') {
+    console.log('7. GFZ atmospheric angular momentum…');
+    await ingestAam({ force });
   }
 
   console.log('\nDone.');

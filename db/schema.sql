@@ -161,3 +161,12 @@ CREATE TABLE IF NOT EXISTS space_weather_events (
 );
 CREATE INDEX IF NOT EXISTS idx_swe_date ON space_weather_events(date);
 CREATE INDEX IF NOT EXISTS idx_swe_type ON space_weather_events(event_type);
+
+CREATE TABLE IF NOT EXISTS aam_daily (
+  date TEXT PRIMARY KEY,
+  mjd REAL NOT NULL,
+  aam_x REAL NOT NULL,
+  aam_y REAL NOT NULL,
+  aam_z REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_aam_date ON aam_daily(date);
