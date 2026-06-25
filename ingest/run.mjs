@@ -8,6 +8,7 @@ import { ingestOmni } from './sources/omni.mjs';
 import { ingestEarthquakes } from './sources/earthquakes.mjs';
 import { ingestAam } from './sources/aam.mjs';
 import { ingestEphemeris } from './sources/ephemeris.mjs';
+import { ingestIbtracs } from './sources/ibtracs.mjs';
 import { dbPath } from './db.mjs';
 
 const args = new Set(process.argv.slice(2));
@@ -62,6 +63,11 @@ async function main() {
   if (only === 'ephemeris') {
     console.log('JPL Horizons ephemeris (incremental)…');
     await ingestEphemeris({ force });
+  }
+
+  if (only === 'ibtracs') {
+    console.log('NOAA IBTrACS tropical cyclones…');
+    await ingestIbtracs({ force });
   }
 
   console.log('\nDone.');

@@ -169,4 +169,10 @@ export const SOURCES = {
     citation: 'ESMGFZ operational AAM v1.0 (ECMWF analysis, 3h)',
     link: 'https://www.gfz.de/en/sektion/erdsystem-modellierung/esmdata/esmdata/eam/',
   },
+  ibtracs: {
+    name: 'IBTrACS Global Tropical Cyclones',
+    org: 'NOAA NCEI',
+    citation: 'International Best Track Archive for Climate Stewardship v04r01',
+    link: 'https://www.ncei.noaa.gov/products/international-best-track-archive',
+  },
 };

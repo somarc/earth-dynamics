@@ -170,3 +170,17 @@ CREATE TABLE IF NOT EXISTS aam_daily (
   aam_z REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_aam_date ON aam_daily(date);
+
+CREATE TABLE IF NOT EXISTS cyclone_storms (
+  sid TEXT PRIMARY KEY,
+  name TEXT,
+  basin TEXT,
+  season INTEGER,
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  max_wind_kts REAL,
+  max_sshs INTEGER,
+  track_json TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_cyclone_start ON cyclone_storms(start_date);
+CREATE INDEX IF NOT EXISTS idx_cyclone_end ON cyclone_storms(end_date);
