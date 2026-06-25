@@ -11,6 +11,79 @@ export function gScaleLabel(g) {
   return `G${g} storm`;
 }
 
+export function dstStormLabel(dst) {
+  if (dst == null) return '—';
+  if (dst > -30) return 'Quiet';
+  if (dst > -50) return 'Weak';
+  if (dst > -100) return 'Moderate';
+  if (dst > -200) return 'Intense';
+  return 'Super storm';
+}
+
+export function drawDstChart(canvas, series, currentDate) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  const pad = { top: 14, right: 10, bottom: 20, left: 34 };
+
+  ctx.clearRect(0, 0, w, h);
+  const withDst = (series || []).filter((r) => r.dstMin != null);
+  if (!withDst.length) {
+    ctx.fillStyle = 'rgba(138,155,181,0.7)';
+    ctx.font = '11px IBM Plex Sans, sans-serif';
+    ctx.fillText('Run npm run ingest -- --only=omni', 10, 24);
+    return;
+  }
+
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+  const dstVals = withDst.map((r) => r.dstMin);
+  const minDst = Math.min(-500, ...dstVals);
+  const maxDst = Math.max(20, ...dstVals);
+
+  const stormBands = [
+    { dst: -50, color: 'rgba(255, 213, 74, 0.08)' },
+    { dst: -100, color: 'rgba(255, 140, 66, 0.1)' },
+    { dst: -200, color: 'rgba(255, 92, 106, 0.12)' },
+  ];
+  for (const band of stormBands) {
+    const y = pad.top + ((band.dst - maxDst) / (minDst - maxDst)) * plotH;
+    ctx.fillStyle = band.color;
+    ctx.fillRect(pad.left, y, plotW, pad.top + plotH - y);
+  }
+
+  ctx.beginPath();
+  withDst.forEach((r, i) => {
+    const x = pad.left + (i / Math.max(withDst.length - 1, 1)) * plotW;
+    const y = pad.top + ((r.dstMin - maxDst) / (minDst - maxDst)) * plotH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#ff8c6a';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  const idx = withDst.findIndex((r) => r.date === currentDate);
+  if (idx >= 0) {
+    const x = pad.left + (idx / Math.max(withDst.length - 1, 1)) * plotW;
+    ctx.strokeStyle = 'rgba(255, 209, 102, 0.8)';
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(x, pad.top);
+    ctx.lineTo(x, pad.top + plotH);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  const cur = withDst.find((r) => r.date === currentDate) ?? withDst.at(-1);
+  ctx.fillStyle = 'rgba(138, 155, 181, 0.75)';
+  ctx.font = '9px IBM Plex Mono, monospace';
+  ctx.fillText('Dst min', pad.left, 11);
+  if (cur?.dstMin != null) {
+    ctx.fillText(`${cur.dstMin} nT`, w - 64, 11);
+  }
+}
+
 export function drawKpChart(canvas, series, currentDate) {
   const ctx = canvas.getContext('2d');
   const w = canvas.width;
@@ -75,7 +148,7 @@ export function drawKpChart(canvas, series, currentDate) {
   }
 }
 
-export function renderSpaceWeatherMetrics(container, geomagnetic, events) {
+export function renderSpaceWeatherMetrics(container, geomagnetic, events, { ovationLat = null, ovationMode = false } = {}) {
   const g = geomagnetic;
   const cmes = (events || []).filter((e) => e.eventType === 'CME').slice(0, 3);
   const storms = (events || []).filter((e) => e.eventType === 'GST').slice(0, 2);
@@ -86,11 +159,18 @@ export function renderSpaceWeatherMetrics(container, geomagnetic, events) {
     return;
   }
 
-  const auroraLat = g?.kpMax != null ? auroraLatitudeFromKp(g.kpMax) : null;
+  const kpAuroraLat = g?.kpMax != null ? auroraLatitudeFromKp(g.kpMax) : null;
+  const auroraLat = ovationLat ?? kpAuroraLat;
   const tags = [];
   if (g?.gScale) tags.push(`<span class="tag tag--storm">G${g.gScale}</span>`);
-  if (auroraLat != null && g.kpMax >= 4) {
+  if (g?.dstMin != null && g.dstMin <= -50) {
+    tags.push(`<span class="tag tag--dst">Dst ${g.dstMin} nT</span>`);
+  }
+  if (auroraLat != null && (g?.kpMax >= 4 || ovationMode)) {
     tags.push(`<span class="tag tag--aurora">Aurora ~${auroraLat.toFixed(0)}°</span>`);
+  }
+  if (g?.swBzNt != null && g.swBzNt < -5) {
+    tags.push(`<span class="tag tag--bz">Bz ${g.swBzNt.toFixed(1)} nT</span>`);
   }
 
   const eventLines = [];
@@ -105,16 +185,22 @@ export function renderSpaceWeatherMetrics(container, geomagnetic, events) {
     eventLines.push(`<li><span class="flare">${f.magnitude}</span> ${f.sourceLocation || ''}</li>`);
   }
 
+  const auroraNote = ovationMode
+    ? 'OVATION probability grid (NOAA nowcast)'
+    : 'Kp-estimated oval (historical fallback)';
+
   container.innerHTML = `
     <dl class="orbital-metrics">
       <div><dt>Kp (max)</dt><dd>${g?.kpMax?.toFixed(1) ?? '—'}</dd></div>
-      <div><dt>Kp (avg)</dt><dd>${g?.kpAvg?.toFixed(1) ?? '—'}</dd></div>
+      <div><dt>Dst (min)</dt><dd>${g?.dstMin != null ? `${g.dstMin} nT` : '—'} <span class="metric-sub">${dstStormLabel(g?.dstMin)}</span></dd></div>
+      <div><dt>Solar wind</dt><dd>${g?.swSpeedKms != null ? `${g.swSpeedKms.toFixed(0)} km/s` : '—'}</dd></div>
+      <div><dt>Bz (GSM min)</dt><dd>${g?.swBzNt != null ? `${g.swBzNt.toFixed(1)} nT` : '—'}</dd></div>
       <div><dt>Storm level</dt><dd>${gScaleLabel(g?.gScale)}</dd></div>
-      <div><dt>Auroral oval</dt><dd>${auroraLat != null ? `~${auroraLat.toFixed(0)}° latitude` : 'Below threshold'}</dd></div>
+      <div><dt>Auroral oval</dt><dd>${auroraLat != null ? `~${auroraLat.toFixed(0)}° — ${auroraNote}` : 'Below threshold'}</dd></div>
     </dl>
     ${tags.length ? `<div class="orbital-tags">${tags.join('')}</div>` : ''}
     ${eventLines.length ? `<ul class="sw-event-list">${eventLines.join('')}</ul>` : ''}
-    <p class="orbital-note">Auroral extent is estimated from Kp (NOAA/SWPC scale). CMEs and storms from NASA DONKI. Overlay explores Sun–magnetosphere coupling — not earthquake causation.</p>
+    <p class="orbital-note">Dst and solar wind from OMNI / NOAA DSCOVR. ${auroraNote}. CMEs from NASA DONKI. Overlay explores Sun–magnetosphere coupling — not earthquake causation.</p>
   `;
 }
 
@@ -134,9 +220,9 @@ function ringPoints(latDeg, radius, segments = 128) {
   return points;
 }
 
-export function updateAuroraRings(group, kp, visible) {
+export function updateAuroraRings(group, kp, visible, { skipIfOvation = false } = {}) {
   group.clear();
-  if (!visible) return;
+  if (!visible || skipIfOvation) return;
 
   const lat = auroraLatitudeFromKp(kp);
   if (lat == null) return;

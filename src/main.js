@@ -2,7 +2,8 @@ import { EarthScene } from './earth.js';
 import { HeliocentricScene } from './heliocentric.js';
 import { drawPolhode, drawLodChart } from './charts.js';
 import { drawEclipticChart, renderOrbitalMetrics } from './ephemeris.js';
-import { drawKpChart, renderSpaceWeatherMetrics } from './space-weather.js';
+import { drawKpChart, drawDstChart, renderSpaceWeatherMetrics } from './space-weather.js';
+import { fetchOvation, isOvationCurrent, ovationEquatorwardEdge } from './ovation.js';
 import { renderEventInspect } from './event-inspect.js';
 import { formatDate } from './utils.js';
 import { loadCatalog, loadFrame } from './data-client.js';
@@ -17,6 +18,7 @@ const state = {
   dayAccumulator: 0,
   view: 'geocentric',
   eopSeries: [],
+  ovationData: null,
 };
 
 let geocentricScene = null;
@@ -107,6 +109,7 @@ function updateLegend() {
       <span class="legend__item legend__item--ecliptic">— Ecliptic north</span>
       <span class="legend__item legend__item--pole">● Instantaneous pole</span>
       <span class="legend__item legend__item--moon">◯ Moon</span>
+      <span class="legend__item legend__item--cme">▷ CME toward Earth</span>
       <span class="legend__item legend__item--quake">◉ Earthquake</span>
     `;
   } else {
@@ -121,7 +124,7 @@ function updateLegend() {
       <span class="legend__item legend__item--plates">— Plate boundaries</span>
       <span class="legend__item legend__item--motion">→ Plate motion (mm/yr)</span>
       <span class="legend__item legend__item--hotspot">◎ Mantle hotspot</span>
-      <span class="legend__item legend__item--aurora">◌ Aurora oval (Kp)</span>
+      <span class="legend__item legend__item--aurora">◌ Aurora (OVATION / Kp)</span>
       <span class="legend__item legend__item--field">⌇ Magnetic field (model)</span>
     `;
   }
@@ -137,6 +140,8 @@ function setView(view) {
   document.getElementById('show-bodies').closest('label').style.display =
     view === 'geocentric' ? '' : 'none';
   document.getElementById('show-moon-label').style.display =
+    view === 'heliocentric' ? '' : 'none';
+  document.getElementById('show-cme-label').style.display =
     view === 'heliocentric' ? '' : 'none';
   geocentricScene.setLabelsVisible?.(false);
   heliocentricScene.setLabelsVisible(view === 'heliocentric');
@@ -162,14 +167,26 @@ async function updateUI() {
   scene.updatePoleMotion(record, eopWindow);
   scene.setEarthquakes(frame.earthquakes);
   scene.setVolcanoes(frame.eruptions);
-  if (state.view === 'geocentric') {
-    geocentricScene.setSpaceWeather(frame.geomagnetic);
+  let ovationMode = false;
+  let ovationLat = null;
+  if (isOvationCurrent(date)) {
+    try {
+      state.ovationData = await fetchOvation();
+      ovationMode = !!state.ovationData?.coordinates?.length;
+      ovationLat = ovationMode ? ovationEquatorwardEdge(state.ovationData) : null;
+    } catch {
+      state.ovationData = null;
+    }
+  } else {
+    state.ovationData = null;
   }
 
   if (state.view === 'geocentric') {
+    geocentricScene.setSpaceWeather(frame.geomagnetic, { ovationData: state.ovationData });
     scene.updateBodies(ephemerisDay);
   } else {
     heliocentricScene.updateHeliocentric(ephemerisDay, frame.ephemerisOrbit || []);
+    heliocentricScene.setCmeEvents(frame.spaceWeather, date);
   }
 
   try {
@@ -192,10 +209,16 @@ async function updateUI() {
       frame.geomagneticWindow || [],
       date
     );
+    drawDstChart(
+      document.getElementById('dst-chart'),
+      frame.geomagneticWindow || [],
+      date
+    );
     renderSpaceWeatherMetrics(
       document.getElementById('space-weather-metrics'),
       frame.geomagnetic,
-      frame.spaceWeather
+      frame.spaceWeather,
+      { ovationLat, ovationMode }
     );
   } catch (err) {
     console.error('Chart render error:', err);
@@ -209,7 +232,15 @@ async function updateUI() {
     items.push(
       `<li><span class="geomag">Kp</span> ${frame.geomagnetic.kpMax.toFixed(1)}${g}${frame.geomagnetic.kpMax >= 5 ? ' — auroral activity' : ''}</li>`
     );
-  } else if (frame.solar?.sunspot_number != null) {
+  }
+  if (frame.geomagnetic?.dstMin != null && frame.geomagnetic.dstMin <= -30) {
+    items.push(`<li><span class="dst">Dst</span> ${frame.geomagnetic.dstMin} nT</li>`);
+  }
+  if (frame.geomagnetic?.swSpeedKms != null) {
+    const bz = frame.geomagnetic.swBzNt != null ? `, Bz ${frame.geomagnetic.swBzNt.toFixed(1)} nT` : '';
+    items.push(`<li><span class="wind">Wind</span> ${frame.geomagnetic.swSpeedKms.toFixed(0)} km/s${bz}</li>`);
+  }
+  if (!frame.geomagnetic?.kpMax && frame.solar?.sunspot_number != null) {
     items.push(
       `<li><span class="solar">☀</span> Sunspot ${frame.solar.sunspot_number.toFixed(1)}${frame.solar.kp_max ? `, Kp ${frame.solar.kp_max.toFixed(0)}` : ''}</li>`
     );
@@ -379,6 +410,10 @@ function setupControls() {
   });
   document.getElementById('show-moon').addEventListener('change', (e) => {
     heliocentricScene.showMoon = e.target.checked;
+    updateUI();
+  });
+  document.getElementById('show-cme').addEventListener('change', (e) => {
+    heliocentricScene.showCme = e.target.checked;
     updateUI();
   });
 }

@@ -9,6 +9,7 @@ import {
   magToSize,
   veiToSize,
 } from './utils.js';
+import { buildCmeMarkers } from './cme-heliocentric.js';
 
 const OBLIQUITY = (23.4367 * Math.PI) / 180;
 const AU_SCALE = 12;
@@ -26,6 +27,7 @@ export class HeliocentricScene {
     this.showVolcanoes = true;
     this.showTrail = true;
     this.showMoon = true;
+    this.showCme = true;
     this.ready = this.init(canvas);
   }
 
@@ -163,6 +165,9 @@ export class HeliocentricScene {
     this.labelRenderer = createLabelRenderer(canvas.parentElement);
     this.labelRenderer.domElement.classList.add('label-layer--hidden');
 
+    this.cmeGroup = new THREE.Group();
+    this.scene.add(this.cmeGroup);
+
     this.stars = this.createStars();
     this.scene.add(this.stars);
 
@@ -228,6 +233,14 @@ export class HeliocentricScene {
     this.lodFactor = 1 + eopRecord.lodSec / 86400;
   }
 
+  setCmeEvents(events, viewDate) {
+    this.cmeGroup.clear();
+    if (!this.showCme || !this.lastEarthPos) return;
+    const cmes = (events || []).filter((e) => e.eventType === 'CME');
+    const markers = buildCmeMarkers(cmes, viewDate, this.lastEarthPos);
+    this.cmeGroup.add(markers);
+  }
+
   updateHeliocentric(ephemerisDay, orbitHistory = []) {
     if (!ephemerisDay?.earthHelio) return;
 
@@ -236,6 +249,7 @@ export class HeliocentricScene {
       ephemerisDay.earthHelio.y,
       ephemerisDay.earthHelio.z
     );
+    this.lastEarthPos = earthPos;
     this.earthSystem.position.copy(earthPos);
 
     const sunDir = earthPos.clone().normalize();

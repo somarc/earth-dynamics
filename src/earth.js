@@ -9,6 +9,7 @@ import {
   veiToSize,
 } from './utils.js';
 import { updateAuroraRings } from './space-weather.js';
+import { updateOvationAurora } from './ovation.js';
 import { loadIgrfFieldLines, updateIgrfFieldLines } from './igrf.js';
 import { loadPlateBoundaries, buildPlateGroup, loadPlateMotion, buildMotionGroup } from './plates.js';
 import { loadHotspots, buildHotspotGroup } from './hotspots.js';
@@ -367,9 +368,15 @@ export class EarthScene {
     }
   }
 
-  setSpaceWeather(geomagnetic) {
+  setSpaceWeather(geomagnetic, { ovationData = null } = {}) {
     const kp = geomagnetic?.kpMax ?? null;
-    updateAuroraRings(this.auroraGroup, kp, this.showAurora);
+    const useOvation = this.showAurora && ovationData?.coordinates?.length;
+    if (useOvation) {
+      this.auroraGroup.clear();
+      updateOvationAurora(this.auroraGroup, ovationData, true);
+    } else {
+      updateAuroraRings(this.auroraGroup, kp, this.showAurora);
+    }
     updateIgrfFieldLines(this.fieldLinesGroup, kp, this.showFieldLines, this.igrfFieldData);
   }
 

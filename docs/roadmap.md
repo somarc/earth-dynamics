@@ -91,9 +91,9 @@ These connect existing layers, improve daily usability, or unlock patterns for e
 | T9 | CME / flare / GST events | NASA DONKI | `done` (seed + incremental; needs `NASA_API_KEY` for deep history) |
 | T10 | Auroral oval (Kp-driven) | Derived from Kp | `done` |
 | T11 | Dipole field lines (simple) | Model | `done` |
-| T12 | Dst index | Kyoto WDC / OMNI | `planned` |
-| T13 | Solar wind (speed, Bz) | NOAA DSCOVR / OMNI | `planned` |
-| T14 | OVATION aurora probability | NOAA SWPC | `planned` |
+| T12 | Dst index | Kyoto WDC / OMNI | `done` |
+| T13 | Solar wind (speed, Bz) | NOAA DSCOVR / OMNI | `done` |
+| T14 | OVATION aurora probability | NOAA SWPC | `done` |
 | T15 | Global tropical cyclones | IBTrACS | `planned` |
 | T16 | Atmospheric angular momentum | NASA GSFC AAM | `planned` |
 | T17 | ENSO / ONI | NOAA CPC | `icebox` |
@@ -108,7 +108,7 @@ These connect existing layers, improve daily usability, or unlock patterns for e
 | U2 | Heliocentric (obliquity, orbit trail) | `done` |
 | U3 | Heliocentric body labels | `done` |
 | U4 | Space weather panel + Kp chart | `done` |
-| U5 | CME markers on heliocentric view | `planned` |
+| U5 | CME markers on heliocentric view | `done` |
 | U6 | Compare two dates (ghost / split) | `planned` |
 | U7 | Deep links `?date=&layers=` | `planned` |
 | U8 | Time playback with event pulses | `planned` |
@@ -143,7 +143,7 @@ These connect existing layers, improve daily usability, or unlock patterns for e
 ```
 Phase A (now)     ~~P1 → P2 → P3 → P4~~ ✓
 Phase B (context) ~~R2 → R3 → R4 → R5 → R6~~ ✓
-Phase C (space)   T12 → T13 → T14 → U5
+Phase C (space)   ~~T12 → T13 → T14 → U5~~ ✓
 Phase D (global)  T15 → T6 complete → T16
 Phase E (ship)    I3 → I4 → I5
 Phase F (power)   U6 → U7 → U8
@@ -154,7 +154,8 @@ Phase F (power)   U6 → U7 → U8
 ## Quick commands (as layers land)
 
 ```bash
-npm run ingest -- --only=space-weather   # Kp + DONKI cache
+npm run ingest -- --only=space-weather   # Kp + DONKI + OMNI Dst/wind
+npm run ingest -- --only=omni            # Dst + solar wind only
 npm run fetch-space-weather              # Build DONKI JSON (slow on DEMO_KEY)
 NASA_API_KEY=xxx npm run fetch-space-weather
 ```

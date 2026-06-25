@@ -139,4 +139,28 @@ export const SOURCES = {
     citation: 'Planetary K-index and daily geomagnetic indices',
     link: 'https://www.swpc.noaa.gov/products/planetary-k-index',
   },
+  kyotoDst: {
+    name: 'Dst Geomagnetic Index',
+    org: 'WDC for Geomagnetism, Kyoto',
+    citation: 'Hourly equatorial Dst (storm-time ring current)',
+    link: 'https://wdc.kugi.kyoto-u.ac.jp/dstae/index.html',
+  },
+  omniSolarWind: {
+    name: 'OMNI Near-Earth Solar Wind',
+    org: 'NASA GSFC SPDF',
+    citation: 'OMNI2 hourly IMF and plasma parameters',
+    link: 'https://omniweb.gsfc.nasa.gov/',
+  },
+  noaaDscovr: {
+    name: 'DSCOVR Real-Time Solar Wind',
+    org: 'NOAA SWPC',
+    citation: 'ACE/DSCOVR L1 magnetic field and plasma (1-day)',
+    link: 'https://www.swpc.noaa.gov/products/real-time-solar-wind',
+  },
+  ovationAurora: {
+    name: 'OVATION Aurora Forecast',
+    org: 'NOAA SWPC',
+    citation: 'Auroral oval probability model (nowcast)',
+    link: 'https://www.swpc.noaa.gov/products/aurora-30-minute-forecast',
+  },
 };

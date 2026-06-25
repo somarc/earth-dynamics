@@ -216,6 +216,7 @@ body,
 .legend__item--motion { color: #6ec9a0; }
 .legend__item--hotspot { color: #ff7744; }
 .legend__item--aurora { color: #5cff8a; }
+.legend__item--cme { color: #ff8c42; }
 .legend__item--field { color: #7eb8ff; }
 
 .mode-badge {
@@ -234,6 +235,8 @@ body,
 .event-list .cme { color: #ff8c42; font-weight: 600; }
 .event-list .gst { color: #ff5c6a; font-weight: 600; }
 .event-list .flare { color: #ffd166; font-weight: 600; }
+.event-list .dst { color: #ff8c6a; font-weight: 600; }
+.event-list .wind { color: #7eb8ff; font-weight: 600; }
 
 .inspect-empty {
   font-size: 0.72rem;
@@ -291,6 +294,13 @@ body,
 
 .tag--storm { color: #ff5c6a; border-color: rgba(255, 92, 106, 0.35); }
 .tag--aurora { color: #5cff8a; border-color: rgba(92, 255, 138, 0.35); }
+.tag--dst { color: #ff8c6a; border-color: rgba(255, 140, 106, 0.35); }
+.tag--bz { color: #7eb8ff; border-color: rgba(126, 184, 255, 0.35); }
+
+.metric-sub {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
 
 .panels {
   display: flex;

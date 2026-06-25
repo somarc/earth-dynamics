@@ -4,6 +4,7 @@ import { ingestWeather } from './sources/weather.mjs';
 import { ingestStorms } from './sources/storms.mjs';
 import { ingestSolar } from './sources/solar.mjs';
 import { ingestSpaceWeather } from './sources/space-weather.mjs';
+import { ingestOmni } from './sources/omni.mjs';
 import { ingestEarthquakes } from './sources/earthquakes.mjs';
 import { dbPath } from './db.mjs';
 
@@ -37,6 +38,13 @@ async function main() {
   if (!only || only === 'space-weather') {
     console.log('5. Space weather (DONKI + Kp)…');
     await ingestSpaceWeather({ force });
+    console.log('5b. OMNI Dst + solar wind…');
+    await ingestOmni({ startYear: force ? 2010 : 2022 });
+  }
+
+  if (only === 'omni') {
+    console.log('OMNI Dst + solar wind…');
+    await ingestOmni({ startYear: force ? 2010 : 2022 });
   }
 
   if (!only || only === 'earthquakes') {

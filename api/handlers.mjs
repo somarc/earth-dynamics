@@ -135,7 +135,8 @@ export function createHandlers(db) {
 
     const geomagnetic = db.prepare(`
       SELECT date, kp_max AS kpMax, kp_avg AS kpAvg, dst_min AS dstMin,
-             g_scale AS gScale, aurora_level AS auroraLevel
+             g_scale AS gScale, aurora_level AS auroraLevel,
+             sw_speed_kms AS swSpeedKms, sw_bz_nt AS swBzNt, sw_density AS swDensity
       FROM geomagnetic_daily WHERE date = ?
     `).get(date);
 
@@ -161,7 +162,8 @@ export function createHandlers(db) {
   const getGeomagneticWindow = (endDate, days = 28) =>
     db.prepare(`
       SELECT date, kp_max AS kpMax, kp_avg AS kpAvg, dst_min AS dstMin,
-             g_scale AS gScale, aurora_level AS auroraLevel
+             g_scale AS gScale, aurora_level AS auroraLevel,
+             sw_speed_kms AS swSpeedKms, sw_bz_nt AS swBzNt, sw_density AS swDensity
       FROM geomagnetic_daily
       WHERE date <= ?
       ORDER BY date DESC

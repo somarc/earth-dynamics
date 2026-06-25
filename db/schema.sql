@@ -137,7 +137,10 @@ CREATE TABLE IF NOT EXISTS geomagnetic_daily (
   kp_avg REAL,
   dst_min REAL,
   g_scale INTEGER,
-  aurora_level INTEGER
+  aurora_level INTEGER,
+  sw_speed_kms REAL,
+  sw_bz_nt REAL,
+  sw_density REAL
 );
 CREATE INDEX IF NOT EXISTS idx_geomagnetic_kp ON geomagnetic_daily(kp_max);
 

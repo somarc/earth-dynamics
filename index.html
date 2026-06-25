@@ -61,8 +61,9 @@
 
           <div class="panel">
             <h2>Space Weather</h2>
-            <p class="panel__desc">Kp index, geomagnetic storms, CMEs &amp; flares (NASA DONKI / NOAA SWPC)</p>
-            <canvas id="kp-chart" width="320" height="120"></canvas>
+            <p class="panel__desc">Kp, Dst, solar wind, CMEs &amp; flares (OMNI / DONKI / NOAA SWPC)</p>
+            <canvas id="kp-chart" width="320" height="88"></canvas>
+            <canvas id="dst-chart" width="320" height="88"></canvas>
             <div id="space-weather-metrics"></div>
           </div>
 
@@ -119,6 +120,7 @@
           <label><input type="checkbox" id="show-field-lines" checked /> Field lines</label>
           <label><input type="checkbox" id="show-bodies" checked /> Moon &amp; Sun</label>
           <label id="show-moon-label" style="display:none"><input type="checkbox" id="show-moon" checked /> Moon</label>
+          <label id="show-cme-label" style="display:none"><input type="checkbox" id="show-cme" checked /> CME markers</label>
         </div>
       </footer>
     </div>
