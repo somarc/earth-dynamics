@@ -1,26 +1,27 @@
 # Session handoff — Wobblescope
 
-**Parked:** 2026-06-25  
+**Updated:** 2026-06-25  
 **Repo:** `/Users/mhess/marc_projects/ecdo` · GitHub `somarc/earth-dynamics`  
-**Latest commit:** `c0ae685` — Phase C (Dst, solar wind, OVATION, CME heliocentric)
+**Latest commit:** `62ce923` — wider panels + helical chart fixes
 
 ---
 
-## Where we left off
+## Where we are
 
-Phases **A**, **B**, and **C** are complete and committed. User pivoted away before starting **Phase D**. UX is getting busy but still manageable — consider an **Atmosphere preset** or panel collapse when D adds cyclone tracks.
+Phases **A**, **B**, **C**, and **G** (graphics) are complete. Macro review captured in [`wishlist.md`](wishlist.md). Prioritized delivery in [`roadmap.md`](roadmap.md).
+
+**Next up: Phase D — Physics loop** (T16 AAM, LOD overlay, space-weather chain highlights, ephemeris extend).
 
 ---
 
-## Completed (by phase)
+## Completed (recent)
 
-| Phase | Items | Notes |
-|-------|-------|-------|
-| **A** | P1–P4 | Plate motion, click inspect, incremental quakes, layer presets |
-| **B** | R2–R6 | Hotspots, plate hover tooltip, IGRF field lines, subduction tubes |
-| **C** | T12–T14, U5 | Dst chart, solar wind metrics, OVATION (near-now), CME cones in heliocentric |
-
-Full backlog status: [`docs/roadmap.md`](roadmap.md)
+| Area | Items |
+|------|-------|
+| **Graphics G1–G3** | Sun lighting, atmosphere shell, event halos, view crossfade, playback pulses |
+| **Charts** | Helical galactic-plane view beside ecliptic; ephemeris orbit window fix |
+| **UX** | Globe inspect (quakes, volcanoes, hotspots, plates); 420px panels column |
+| **Earlier** | Phases A–C per roadmap |
 
 ---
 
@@ -28,7 +29,7 @@ Full backlog status: [`docs/roadmap.md`](roadmap.md)
 
 ```bash
 npm run start                    # API :3001 + Vite :5173
-npm run ingest -- --only=omni    # Dst + solar wind (2022+ routine; 2010+ with --force on omni)
+npm run ingest -- --only=omni    # Dst + solar wind
 npm run ingest -- --only=weather # Resume Open-Meteo grid (rate-limited)
 ```
 
@@ -36,9 +37,9 @@ npm run ingest -- --only=weather # Resume Open-Meteo grid (rate-limited)
 
 | Date | Why |
 |------|-----|
-| 2024-05-11 | G5 storm — Dst −406 nT, Kp 9, wind 777 km/s, Bz −35.3 nT |
-| 2024-05-08–12 | Heliocentric — CME cone from DONKI cache |
-| Today (±2d) | OVATION aurora grid on globe (Kp fallback for historical) |
+| 2024-05-11 | G5 storm — Dst −406 nT, Kp 9, wind 777 km/s |
+| 2024-05-08–12 | Heliocentric CME cones |
+| Today (±2d) | OVATION aurora (historical uses Kp fallback) |
 
 ---
 
@@ -46,72 +47,44 @@ npm run ingest -- --only=weather # Resume Open-Meteo grid (rate-limited)
 
 | Source | Status |
 |--------|--------|
-| EOP / ephemeris | 1962–2026-05-25 (+ extended timeline for newer quakes) |
-| Earthquakes | 61,915 (incremental through 2026-06-25) |
-| Geomagnetic + OMNI | 1,630 days with Dst (2022–2026 ingested) |
-| US storms (T5) | 1,021,660 events — **sidebar only, not on globe** |
-| Weather (T6) | **4/16** grid points complete (NYC, Miami, LA, Anchorage) — 12 cities pending |
-| DONKI | JSON cache + 6 events in DB; live fetch needs `NASA_API_KEY` |
+| EOP / ephemeris | 1962–2026-05-25 (+ stale fallback on timeline) |
+| Earthquakes | Incremental through 2026-06-25 |
+| Geomagnetic + OMNI | ~2022–2026 (Dst) |
+| US storms (T5) | In DB — **sidebar only** |
+| Weather (T6) | **4/16** grid points |
+| DONKI | Cache + live; `NASA_API_KEY` for depth |
 
 ---
 
-## Next session: Phase D
+## Phase D kickoff checklist
 
-Roadmap order: **T15 → T6 complete → T16**
-
-### T15 — IBTrACS global tropical cyclones
-- **Data:** NOAA IBTrACS v04 CSV (public, verified)
-- **Build:** `cyclones` table, `ingest/sources/ibtracs.mjs`, track polylines on globe, inspect, citation in `ingest/constants.mjs`
-- **Pattern:** Reuse quake/volcano marker + plate boundary line rendering
-
-### T6 — Weather grid complete
-- **Mostly ops:** Re-run `npm run ingest -- --only=weather` until all 16 grid points land
-- **Optional:** Globe glyphs or heat hints; currently weather is **event-list only**
-- **Blocker:** Open-Meteo rate limits (ingest already resumes per grid point)
-
-### T16 — Atmospheric angular momentum
-- **Data:** IERS/GFZ geophysical fluids (EAM/AAM ASCII) — ties to LOD chart (established physics)
-- **Build:** `aam_daily` table, ingest, overlay on LOD panel or small side chart
-- **Science:** Primary rotation–atmosphere coupling lane; cite in Data Sources panel
-
-### UX decisions (discuss before or during D)
-1. Add **Atmosphere** layer preset (cyclones + weather, hide space/plates)?
-2. Put US storms (T5) on globe while adding IBTrACS, or keep storms list-only?
-3. Collapse / tab sidebar panels to offset density?
-
-**Assessment:** Platform is ready for D — ingest → SQLite → API → globe patterns exist. Phase D is new lanes + viz, not new plumbing. No Phase E (EDS/Workers) dependency.
+1. Read [`roadmap.md`](roadmap.md) Phase D acceptance criteria
+2. Implement `ingest/sources/aam.mjs` + `aam_daily` table
+3. Overlay AAM on LOD chart in `src/charts.js` or sibling module
+4. Optional: cross-highlight Kp/Dst/aurora on G5 demo dates (D3)
 
 ---
 
 ## Key files
 
 ```
-ingest/sources/omni.mjs      # Dst + solar wind (OMNI + NOAA)
-ingest/sources/weather.mjs   # Open-Meteo 16-pt grid (partial)
-ingest/sources/storms.mjs    # US NCEI storm events
-src/ovation.js               # OVATION aurora fetch + globe points
-src/cme-heliocentric.js      # CME cones in heliocentric view
-src/space-weather.js         # Kp/Dst charts, metrics panel
-api/handlers.mjs             # getDay, geomagnetic window
-docs/roadmap.md              # Living backlog
+docs/wishlist.md             # Full macro backlog
+docs/roadmap.md              # Prioritized phases D→J
+src/helical-chart.js         # Helical panel
+src/event-markers.js         # Halos + pulses
+src/globe-inspect.js         # Hover/click context
+ingest/sources/omni.mjs      # Dst + solar wind
+api/handlers.mjs             # Day + window endpoints
 ```
 
 ---
 
-## Known constraints
+## Open decisions (see wishlist)
 
-- `ecdo.db` and most `public/data/*.json` gitignored (seed reference files committed)
-- DONKI `DEMO_KEY` rate-limited; use `NASA_API_KEY` or `space-weather-donki.json` cache
-- OVATION is nowcast only (~2 days); historical aurora uses Kp-estimated rings
-- npm package name still `earth-dynamics`; DB still `ecdo.db`
-
----
-
-## After Phase D (unchanged)
-
-- **Phase E:** EDS static deploy, Cloudflare Worker + D1
-- **Phase F:** Compare dates, deep links, playback
+- US storms on globe vs IBTrACS-only
+- Deploy (Phase H) before or after Phase D
+- Co-analysis scope for Phase J
 
 ---
 
-*Update this file when resuming or completing a phase.*
+*Update when completing a roadmap phase or shifting priority.*

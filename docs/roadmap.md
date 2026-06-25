@@ -1,165 +1,243 @@
 # Wobblescope — Product Roadmap
 
-Living backlog for iterating toward full multi-sphere coverage.  
+Prioritized delivery plan for a **time-synchronized Earth-system correlation instrument**.  
 **Status:** `done` · `next` · `planned` · `icebox`
 
----
-
-## Highest leverage (do these first)
-
-These connect existing layers, improve daily usability, or unlock patterns for everything else.
-
-| ID | Item | Why now | Status |
-|----|------|---------|--------|
-| **P1** | [Plate motion vectors](#p1-plate-motion-vectors) | Makes plate boundaries *meaningful* — quakes/volcanoes drift in tectonic context | `done` |
-| **P2** | [Event inspect / click-through](#p2-event-inspect) | Turns markers into evidence (USGS, DONKI, GVP links, metadata) | `done` |
-| **P3** | [Incremental data refresh](#p3-incremental-ingest) | Timeline stays current without full 1990–2026 re-fetch | `done` |
-| **P4** | [Layer presets](#p4-layer-presets) | Reduces toggle fatigue as overlay count grows | `done` |
+Full idea backlog → [`wishlist.md`](wishlist.md)
 
 ---
 
-## P1 — Plate motion vectors
+## North star
 
-**Goal:** Short arrows on the globe showing cm/yr plate velocity (NUVEL-1 or GSRM v2).
-
-| | |
-|--|--|
-| **Source** | [UNAVCO GSRM](https://www.unavco.org/) / NOAA PB2002 companion motion model |
-| **Render** | Tangent vectors on `surfaceGroup`, scaled for visibility, toggle with plates |
-| **API** | Static GeoJSON or precomputed arrow table (no daily ingest) |
-| **Done when** | User can see convergence/divergence near recent M≥7 quakes (e.g. Venezuela, Japan) |
+Close the gap between **co-display** (many lanes, one timeline) and **co-analysis** (physics coupling, globe equity, shareable evidence). Ship a public read-only instrument when the narrative is trustworthy.
 
 ---
 
-## P2 — Event inspect
+## Shipped foundation (Phases A–C + graphics)
 
-**Goal:** Click or hover on quake, volcano, CME, storm → sidebar detail + external citation link.
+| Phase | Scope | Status |
+|-------|--------|--------|
+| **A** | P1–P4: plate motion, inspect, incremental ingest, presets | `done` |
+| **B** | R2–R6: hotspots, plate hover, IGRF, subduction emphasis | `done` |
+| **C** | T12–T14, U5: Dst, solar wind, OVATION, CME heliocentric | `done` |
+| **G** | G1–G3 graphics, helical chart, globe inspect, playback pulses | `done` |
 
-| | |
-|--|--|
-| **Scope** | Raycast on globe markers; keyboard-accessible list selection fallback |
-| **Done when** | Clicking Yumare M7.5 opens USGS event page context in panel |
+### Graphics & UX recently completed
 
----
-
-## P3 — Incremental ingest
-
-**Goal:** `npm run ingest` only fetches new rows since last `ingest_log` entry.
-
-| | |
-|--|--|
-| **Sources** | USGS (last 30d), NOAA Kp (daily), DONKI (incremental), Open-Meteo (resume grid) |
-| **Done when** | New earthquake appears within 24h of USGS publish without manual `fetch-data` |
-
----
-
-## P4 — Layer presets
-
-**Goal:** One-click stacks: **Solid Earth** · **Space Weather** · **Orbital** · **Full stack**
-
-| | |
-|--|--|
-| **Done when** | Preset buttons set all footer toggles and legend updates |
+| ID | Item | Status |
+|----|------|--------|
+| G1 | Ephemeris-driven sun lighting + earth textures | `done` |
+| G2 | Sun-aligned atmosphere shell, ACES tone map | `done` |
+| G3 | Event halos, view crossfade, playback pulses | `done` |
+| U10 | Helical galactic-plane chart (beside ecliptic) | `done` |
+| U11 | Rich globe inspect (quakes, volcanoes, hotspots, plates) | `done` |
+| U12 | Wider panels column (420px) for orbital charts | `done` |
 
 ---
 
-## Reference geometry (static context)
+## Delivery phases (highest value first)
+
+```
+Phase D  Physics loop      T16 → LOD coupling → ephemeris refresh     ← NEXT
+Phase E  Globe equity      T15 → T6 complete → weather glyphs → preset
+Phase F  Trust layer       I7 → staleness badges → lane epistemics
+Phase G  Share & compare   U7 → U6 → change summary
+Phase H  Ship              I3 → I4 → I5 → I6
+Phase I  Graphics harden   G4 → visual contracts → helio parity
+Phase J  Co-analysis       lag explorer → anomalies (from wishlist)
+```
+
+---
+
+## Phase D — Physics loop `next`
+
+**Why:** Makes the rotation lane scientifically legible; fulfills “correlation instrument” thesis more than adding another decorative layer.
+
+| ID | Item | Source / scope | Status |
+|----|------|----------------|--------|
+| **D1** | Atmospheric angular momentum (T16) | IERS / GFZ EAM AAM ASCII → `aam_daily` | `next` |
+| **D2** | AAM ↔ LOD chart overlay | Dual-axis or normalized overlay on LOD panel; cite established coupling | `planned` |
+| **D3** | CME → Dst → aurora linked highlights | Cross-panel emphasis on same scrub date (no new ingest) | `planned` |
+| **D4** | Ephemeris incremental extend | Horizons ingest past last row; shrink stale fallback window | `planned` |
+
+**Done when:** Scrubbing 2024-05-11 shows LOD deviation alongside AAM anomaly; space-weather chain is visually linked; ephemeris row count tracks timeline end.
+
+```bash
+npm run ingest -- --only=aam        # after D1 lands
+npm run ingest -- --only=ephemeris  # after D4 lands
+```
+
+---
+
+## Phase E — Globe equity
+
+**Why:** Several ingested lanes are list-only; users expect “on globe = real layer.”
+
+| ID | Item | Source / scope | Status |
+|----|------|----------------|--------|
+| **E1** | IBTrACS tropical cyclones (T15) | Track polylines + inspect + citation | `planned` |
+| **E2** | Weather grid completion (T6) | Resume Open-Meteo 16-pt ingest | `planned` |
+| **E3** | Weather glyphs on globe | Temp/wind hints at grid points | `planned` |
+| **E4** | **Atmosphere** layer preset | Cyclones + weather; hides space/plates | `planned` |
+| **E5** | US storms on globe *(decision)* | NCEI markers vs list-only — see wishlist W-decision | `icebox` |
+
+**Decision (before E1):** IBTrACS owns global “storms on globe”; US NCEI stays list-only unless E5 explicitly approved.
+
+**Done when:** Hurricane track visible on globe; 16/16 weather cities ingested; Atmosphere preset one-click.
+
+```bash
+npm run ingest -- --only=weather
+npm run ingest -- --only=ibtracs      # after E1 lands
+```
+
+---
+
+## Phase F — Trust layer
+
+**Why:** As layers multiply, users must know what is measured, modeled, or pedagogical.
+
+| ID | Item | Status |
+|----|------|--------|
+| **F1** | Lane epistemic badges (I7) | `measured` · `modeled` · `derived` · `pedagogical` · `exploratory` | `planned` |
+| **F2** | Per-source staleness in UI | Header or panel chips from `ingest_log` + `/api/meta` | `planned` |
+| **F3** | Helical + exploratory callouts | Pedagogical label on helical chart; align with orbital disclaimer | `planned` |
+| **F4** | Data Sources panel enrichment | Epistemic class per citation row | `planned` |
+
+**Done when:** Every sidebar panel and globe layer type shows epistemic class; stale ephemeris/OMNI clearly flagged.
+
+---
+
+## Phase G — Share & compare
+
+**Why:** Correlation exploration needs shareable state and temporal diff.
+
+| ID | Item | Status |
+|----|------|--------|
+| **G-UX1** | Deep links `?date=&view=&preset=` (U7) | `planned` |
+| **G-UX2** | Compare two dates (U6) | Ghost markers or split scrub | `planned` |
+| **G-UX3** | “Since last week” change summary | New events / Kp spikes / LOD delta in events panel | `planned` |
+| **G-UX4** | Sidebar tabs or collapse | Offset density from Phases D–E | `planned` |
+
+**Done when:** URL restores full app state; user pins date A vs B and sees globe/list diff.
+
+---
+
+## Phase H — Ship
+
+**Why:** Instrument only matters if it stays current outside one laptop.
+
+| ID | Item | Status |
+|----|------|--------|
+| **H1** | EDS static deploy (I3) | `planned` |
+| **H2** | Cloudflare Worker + D1 (I4) | `planned` |
+| **H3** | CI ingest → D1 seed (I5) | `planned` |
+| **H4** | `NASA_API_KEY` in CI (I6) | `planned` |
+| **H5** | API smoke test in CI | Day snapshot + meta contract | `planned` |
+
+**Done when:** Public EDS URL loads; API served from Worker+D1; weekly ingest updates quakes/Kp.
+
+---
+
+## Phase I — Graphics harden
+
+**Why:** Visual quality is ahead of visual proof; harden before more VFX.
+
+| ID | Item | Status |
+|----|------|--------|
+| **I-GR1** | Selective bloom + exposure (G4) | `planned` |
+| **I-GR2** | Fixed-view visual contracts | Regression baselines for globe + charts | `planned` |
+| **I-GR3** | Heliocentric atmosphere / lighting parity | Align with geocentric G1–G2 | `planned` |
+
+---
+
+## Phase J — Co-analysis (wishlist promotion)
+
+**Why:** Completes the product thesis from [`wishlist.md`](wishlist.md) W1–W5.
+
+| ID | Item | Status |
+|----|------|--------|
+| **J1** | Lag / lead lane shift | `icebox` |
+| **J2** | Per-lane anomaly z-scores | `icebox` |
+| **J3** | Ingest provenance on chart click | `icebox` |
+
+Promote to `planned` after Phase D + F establish trustworthy baselines.
+
+---
+
+## Reference tables (inventory)
+
+### Platform primitives — done
+
+| ID | Item | Status |
+|----|------|--------|
+| P1–P4 | Plate motion, inspect, incremental ingest, presets | `done` |
+| R1–R6 | Plates, motion, hotspots, hover, IGRF, trenches | `done` |
+| I1–I2 | SQLite API, extended timeline | `done` |
+
+### Time-series lanes
 
 | ID | Item | Source | Status |
 |----|------|--------|--------|
-| R1 | Plate boundaries (PB2002) | Bird 2003 / NOAA | `done` |
-| R2 | Plate motion vectors | PB2002 Euler poles | `done` |
-| R3 | Mantle hotspots | GVP / Wilson hotspot list | `done` |
-| R4 | Boundary labels on hover | PB2002 `Name` + `Type` | `done` |
-| R5 | IGRF field lines (proper) | NOAA WMM/IGRF coefficients | `done` |
-| R6 | Trench / ridge emphasis | Subduction polylines (thicker) | `done` |
-
----
-
-## Time-series lanes (scrubbable data)
-
-| ID | Item | Source | Status |
-|----|------|--------|--------|
-| T1 | Polar motion, LOD, ω₃ | IERS EOP C04 | `done` |
-| T2 | Ephemeris + tidal metrics | JPL Horizons DE441 | `done` |
-| T3 | Earthquakes M≥5 | USGS FDSN | `done` |
-| T4 | Volcanoes / eruptions | Smithsonian GVP | `done` |
-| T5 | US storms | NOAA NCEI Storm Events | `done` |
-| T6 | Weather grid (16 pts) | Open-Meteo ERA5 | `done` (partial — rate limits) |
-| T7 | Sunspot number | NASA MSFC | `done` |
-| T8 | Geomagnetic Kp + G-scale | NOAA SWPC + DONKI GST | `done` |
-| T9 | CME / flare / GST events | NASA DONKI | `done` (seed + incremental; needs `NASA_API_KEY` for deep history) |
-| T10 | Auroral oval (Kp-driven) | Derived from Kp | `done` |
-| T11 | Dipole field lines (simple) | Model | `done` |
-| T12 | Dst index | Kyoto WDC / OMNI | `done` |
-| T13 | Solar wind (speed, Bz) | NOAA DSCOVR / OMNI | `done` |
-| T14 | OVATION aurora probability | NOAA SWPC | `done` |
-| T15 | Global tropical cyclones | IBTrACS | `planned` |
-| T16 | Atmospheric angular momentum | NASA GSFC AAM | `planned` |
+| T1 | Polar motion, LOD, ω₃ | IERS EOP | `done` |
+| T2 | Ephemeris + tidal metrics | JPL DE441 | `done` (stale past ingest end) |
+| T3 | Earthquakes M≥5 | USGS | `done` |
+| T4 | GVP eruption episodes | Smithsonian | `done` |
+| T5 | US storms | NOAA NCEI | `done` (list only) |
+| T6 | Weather grid 16 pts | Open-Meteo | `debt` (4/16) |
+| T7–T14 | Solar, Kp, CME, aurora, Dst, wind, OVATION | Various | `done` |
+| T15 | IBTrACS cyclones | NOAA | `planned` (Phase E) |
+| T16 | Atmospheric angular momentum | IERS/GFZ | `planned` (Phase D) |
 | T17 | ENSO / ONI | NOAA CPC | `icebox` |
 
----
-
-## Views & UX
+### Views & UX
 
 | ID | Item | Status |
 |----|------|--------|
-| U1 | Geocentric globe | `done` |
-| U2 | Heliocentric (obliquity, orbit trail) | `done` |
-| U3 | Heliocentric body labels | `done` |
-| U4 | Space weather panel + Kp chart | `done` |
-| U5 | CME markers on heliocentric view | `done` |
-| U6 | Compare two dates (ghost / split) | `planned` |
-| U7 | Deep links `?date=&layers=` | `planned` |
-| U8 | Time playback with event pulses | `planned` |
-| U9 | Mobile / narrow layout polish | `planned` |
-
----
-
-## Infrastructure & ops
-
-| ID | Item | Status |
-|----|------|--------|
-| I1 | SQLite local + dev API | `done` |
-| I2 | Extended timeline past EOP end | `done` |
-| I3 | EDS static deploy (`dist/`) | `planned` |
-| I4 | Cloudflare Worker + D1 API | `planned` |
-| I5 | CI ingest → D1 seed | `planned` |
-| I6 | `NASA_API_KEY` in CI secrets | `planned` |
-| I7 | Correlation disclaimer governance per lane | `planned` |
+| U1–U5 | Geocentric, heliocentric, space weather, CME | `done` |
+| U6 | Compare two dates | `planned` (Phase G) |
+| U7 | Deep links | `planned` (Phase G) |
+| U8 | Playback pulses | `done` |
+| U9 | Mobile polish | `planned` (Phase G) |
 
 ---
 
 ## Science integrity (always on)
 
-- **Established physics:** LOD↔AAM, tidal forcing, CME→geomagnetic storm→aurora, plate tectonics
-- **Exploratory overlay only:** planetary alignment ↔ quakes, temporal clustering, Kp ↔ eruptions
-- Every new lane must cite a source in `ingest/constants.mjs` → Data Sources panel
+| Class | Examples |
+|-------|----------|
+| **Established physics** | LOD↔AAM, tidal forcing, CME→storm→aurora, plate tectonics |
+| **Measured** | USGS quakes, IERS EOP, JPL ephemeris, OMNI Dst |
+| **Derived** | Kp aurora rings, tidal index, OVATION nowcast |
+| **Pedagogical** | Helical chart (LSR advance + heliocentric coil) |
+| **Exploratory only** | Planetary alignment ↔ quakes, temporal clustering |
+
+Every new lane: source in `ingest/constants.mjs` → Data Sources panel → epistemic class (Phase F).
 
 ---
 
-## Suggested iteration order
-
-```
-Phase A (now)     ~~P1 → P2 → P3 → P4~~ ✓
-Phase B (context) ~~R2 → R3 → R4 → R5 → R6~~ ✓
-Phase C (space)   ~~T12 → T13 → T14 → U5~~ ✓
-Phase D (global)  T15 → T6 complete → T16
-Phase E (ship)    I3 → I4 → I5
-Phase F (power)   U6 → U7 → U8
-```
-
----
-
-## Quick commands (as layers land)
+## Quick commands
 
 ```bash
-npm run ingest -- --only=space-weather   # Kp + DONKI + OMNI Dst/wind
-npm run ingest -- --only=omni            # Dst + solar wind only
-npm run fetch-space-weather              # Build DONKI JSON (slow on DEMO_KEY)
+npm run start
+npm run ingest -- --only=space-weather
+npm run ingest -- --only=omni
+npm run ingest -- --only=weather
 NASA_API_KEY=xxx npm run fetch-space-weather
 ```
 
 ---
 
-*Last updated: 2026-06-25 — Phases A–C shipped; parked before Phase D. See [`session-handoff.md`](session-handoff.md).*
+## Milestone targets
+
+| Milestone | Phases | User-visible outcome |
+|-----------|--------|-------------------|
+| **M1 — Credible rotation** | D | AAM on LOD chart; physics story closed |
+| **M2 — Full atmosphere** | E | Cyclones + weather on globe; Atmosphere preset |
+| **M3 — Trustworthy UI** | F | Badges + staleness; no false equivalence |
+| **M4 — Shareable** | G | URLs + date compare |
+| **M5 — Public instrument** | H | EDS + Worker + scheduled ingest |
+| **M6 — Production graphics** | I | G4 + visual regression |
+
+---
+
+*Last updated: 2026-06-25 — Phases A–C + G shipped; **Phase D (physics loop)** is next. See [`wishlist.md`](wishlist.md) for full backlog and [`session-handoff.md`](session-handoff.md) for runbook.*
