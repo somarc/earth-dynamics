@@ -42,6 +42,7 @@ npm run start
 |---------|---------|
 | `npm run ingest` | Migrate JSON + ingest new sources |
 | `npm run ingest -- --only=weather` | Single source |
+| `npm run ingest -- --only=earthquakes` | USGS incremental (last 14d overlap) |
 | `npm run ingest:force` | Re-ingest all |
 | `npm run api` | SQLite API server |
 | `npm run fetch-data` | Refresh JSON from APIs |

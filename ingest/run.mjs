@@ -4,6 +4,7 @@ import { ingestWeather } from './sources/weather.mjs';
 import { ingestStorms } from './sources/storms.mjs';
 import { ingestSolar } from './sources/solar.mjs';
 import { ingestSpaceWeather } from './sources/space-weather.mjs';
+import { ingestEarthquakes } from './sources/earthquakes.mjs';
 import { dbPath } from './db.mjs';
 
 const args = new Set(process.argv.slice(2));
@@ -36,6 +37,11 @@ async function main() {
   if (!only || only === 'space-weather') {
     console.log('5. Space weather (DONKI + Kp)…');
     await ingestSpaceWeather({ force });
+  }
+
+  if (!only || only === 'earthquakes') {
+    console.log('6. USGS earthquakes (incremental)…');
+    await ingestEarthquakes({ force });
   }
 
   console.log('\nDone.');
