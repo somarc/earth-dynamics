@@ -1,4 +1,4 @@
-const BODY_COLORS = {
+export const BODY_COLORS = {
   moon: '#c8c8d8',
   sun: '#ffd54a',
   mercury: '#9a9a9a',
@@ -8,7 +8,7 @@ const BODY_COLORS = {
   saturn: '#c9b896',
 };
 
-const BODY_LABELS = {
+export const BODY_LABELS = {
   moon: 'Moon',
   sun: 'Sun',
   mercury: 'Me',

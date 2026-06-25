@@ -51,10 +51,19 @@
             <canvas id="lod-chart" width="320" height="160"></canvas>
           </div>
 
-          <div class="panel">
-            <h2>Ecliptic Plane</h2>
-            <p class="panel__desc">Geocentric positions (JPL Horizons, DE441) — Moon trail last 28 d</p>
-            <canvas id="ecliptic-chart" width="320" height="220"></canvas>
+          <div class="panel panel--orbital-split">
+            <div class="orbital-split">
+              <div class="orbital-split__pane">
+                <h3 class="orbital-split__title">Ecliptic Plane</h3>
+                <p class="panel__desc">Geocentric XY (JPL DE441) — Moon trail 28 d</p>
+                <canvas id="ecliptic-chart" width="155" height="220"></canvas>
+              </div>
+              <div class="orbital-split__pane">
+                <h3 class="orbital-split__title">Helical Motion</h3>
+                <p class="panel__desc">Sun through galactic plane; planets coil in heliocentric frame</p>
+                <canvas id="helical-chart" width="155" height="220"></canvas>
+              </div>
+            </div>
           </div>
 
           <div class="panel">

@@ -537,6 +537,28 @@ body,
   background: rgba(0, 0, 0, 0.35);
 }
 
+.panel--orbital-split {
+  padding: 0.65rem 0.55rem;
+}
+
+.orbital-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.orbital-split__title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.orbital-split__pane .panel__desc {
+  font-size: 0.6rem;
+  margin-bottom: 0.35rem;
+  min-height: 2.5em;
+}
+
 .panel--events {
   flex: 1 1 300px;
   min-height: 300px;

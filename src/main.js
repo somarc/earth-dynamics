@@ -2,6 +2,7 @@ import { EarthScene } from './earth.js';
 import { HeliocentricScene } from './heliocentric.js';
 import { drawPolhode, drawLodChart } from './charts.js';
 import { drawEclipticChart, renderOrbitalMetrics } from './ephemeris.js';
+import { drawHelicalChart } from './helical-chart.js';
 import { drawKpChart, drawDstChart, renderSpaceWeatherMetrics } from './space-weather.js';
 import { fetchOvation, isOvationCurrent, ovationEquatorwardEdge } from './ovation.js';
 import { renderEventInspect } from './event-inspect.js';
@@ -321,6 +322,14 @@ async function updateUI() {
 
     if (ephemerisForChart) {
       drawEclipticChart(document.getElementById('ecliptic-chart'), ephemerisForChart, date);
+      const helicalSource = frame.ephemerisOrbit || ephemerisForChart;
+      const helicalDays = frame.ephemerisOrbit ? 365 : 90;
+      drawHelicalChart(
+        document.getElementById('helical-chart'),
+        helicalSource,
+        date,
+        helicalDays,
+      );
     }
     if (ephemerisDay) {
       renderOrbitalMetrics(
