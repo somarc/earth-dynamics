@@ -3,6 +3,7 @@ import { migrateFromJson } from './migrate-json.mjs';
 import { ingestWeather } from './sources/weather.mjs';
 import { ingestStorms } from './sources/storms.mjs';
 import { ingestSolar } from './sources/solar.mjs';
+import { ingestSpaceWeather } from './sources/space-weather.mjs';
 import { dbPath } from './db.mjs';
 
 const args = new Set(process.argv.slice(2));
@@ -10,7 +11,7 @@ const force = args.has('--force');
 const only = [...args].find((a) => a.startsWith('--only='))?.split('=')[1];
 
 async function main() {
-  console.log(`Earth Dynamics ingest → ${dbPath()}\n`);
+  console.log(`Wobblescope ingest → ${dbPath()}\n`);
 
   if (!only || only === 'json') {
     console.log('1. Migrate existing JSON…');
@@ -30,6 +31,11 @@ async function main() {
   if (!only || only === 'solar') {
     console.log('4. Solar / sunspot…');
     await ingestSolar({ force });
+  }
+
+  if (!only || only === 'space-weather') {
+    console.log('5. Space weather (DONKI + Kp)…');
+    await ingestSpaceWeather({ force });
   }
 
   console.log('\nDone.');

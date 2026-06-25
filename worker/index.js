@@ -7,7 +7,7 @@ export default {
   async fetch(request, env) {
     return Response.json(
       {
-        message: 'Earth Dynamics API worker stub',
+        message: 'Wobblescope API worker stub',
         hint: 'Bind D1 and port routeRequest() from api/handlers.mjs',
         docs: 'docs/architecture.md',
       },

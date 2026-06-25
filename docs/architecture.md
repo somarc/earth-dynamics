@@ -1,4 +1,4 @@
-# Earth Dynamics — Architecture
+# Wobblescope — Architecture
 
 ## What we're building
 

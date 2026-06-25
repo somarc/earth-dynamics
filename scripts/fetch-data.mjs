@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Fetches and preprocesses verifiable geophysical datasets for the ECDO visualization.
+ * Fetches and preprocesses verifiable geophysical datasets for Wobblescope.
  *
  * Sources:
  * - IERS EOP C04 (polar motion x,y, LOD, pole rates)

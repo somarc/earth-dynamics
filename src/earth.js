@@ -8,6 +8,8 @@ import {
   magToSize,
   veiToSize,
 } from './utils.js';
+import { updateAuroraRings, updateFieldLines } from './space-weather.js';
+import { loadPlateBoundaries, buildPlateGroup } from './plates.js';
 
 export class EarthScene {
   constructor(canvas) {
@@ -16,6 +18,9 @@ export class EarthScene {
     this.showVolcanoes = true;
     this.showTrail = true;
     this.showBodies = true;
+    this.showAurora = true;
+    this.showFieldLines = true;
+    this.showPlates = true;
     this.ready = this.init(canvas);
   }
 
@@ -101,6 +106,20 @@ export class EarthScene {
     this.surfaceGroup.add(this.quakeGroup);
     this.volcanoGroup = new THREE.Group();
     this.surfaceGroup.add(this.volcanoGroup);
+    this.auroraGroup = new THREE.Group();
+    this.surfaceGroup.add(this.auroraGroup);
+    this.plateGroup = new THREE.Group();
+    this.surfaceGroup.add(this.plateGroup);
+    this.fieldLinesGroup = new THREE.Group();
+    this.axisGroup.add(this.fieldLinesGroup);
+
+    try {
+      const plateGeo = await loadPlateBoundaries();
+      this.plateGroup.add(buildPlateGroup(plateGeo));
+      this.plateGroup.visible = this.showPlates;
+    } catch (err) {
+      console.warn('Plate boundaries unavailable:', err);
+    }
 
     this.bodiesGroup = new THREE.Group();
     this.earthGroup.add(this.bodiesGroup);
@@ -291,6 +310,17 @@ export class EarthScene {
       this.sunLine.geometry.dispose();
       this.sunLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
     }
+  }
+
+  setPlatesVisible(visible) {
+    this.showPlates = visible;
+    if (this.plateGroup) this.plateGroup.visible = visible;
+  }
+
+  setSpaceWeather(geomagnetic) {
+    const kp = geomagnetic?.kpMax ?? null;
+    updateAuroraRings(this.auroraGroup, kp, this.showAurora);
+    updateFieldLines(this.fieldLinesGroup, kp, this.showFieldLines);
   }
 
   setVolcanoes(volcs) {

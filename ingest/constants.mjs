@@ -103,4 +103,22 @@ export const SOURCES = {
     citation: 'Monthly sunspot (expanded to daily)',
     link: 'https://solarscience.msfc.nasa.gov/greenwch/',
   },
+  nasaDonki: {
+    name: 'NASA DONKI Space Weather',
+    org: 'NASA CCMC',
+    citation: 'CME, flare, and geomagnetic storm catalog',
+    link: 'https://api.nasa.gov/DONKI/docs',
+  },
+  plateBoundaries: {
+    name: 'PB2002 Plate Boundaries',
+    org: 'Bird (2003) / NOAA NGDC',
+    citation: 'Global tectonic plate boundary model PB2002',
+    link: 'https://www.ngdc.noaa.gov/mgg/ocean/plate_boundary/',
+  },
+  noaaSwpc: {
+    name: 'NOAA Space Weather Prediction Center',
+    org: 'NOAA SWPC',
+    citation: 'Planetary K-index and daily geomagnetic indices',
+    link: 'https://www.swpc.noaa.gov/products/planetary-k-index',
+  },
 };

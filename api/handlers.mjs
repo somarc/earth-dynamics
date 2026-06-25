@@ -47,6 +47,7 @@ function rowToEphemeris(r) {
       illumination: r.illumination,
       moonDistanceKm: r.moon_distance_km,
       tidalIndex: r.tidal_index,
+      sunElongation: r.phase_angle,
       syzygy: r.syzygy,
       isPerigee: !!r.is_perigee,
       isApogee: !!r.is_apogee,
@@ -76,9 +77,24 @@ export function createHandlers(db) {
     `).all(endDate, days).reverse().map(rowToEop);
   };
 
+  const getEopForDate = (date) => {
+    let row = db.prepare('SELECT * FROM eop_daily WHERE date = ?').get(date);
+    if (!row) {
+      row = db.prepare(
+        'SELECT * FROM eop_daily WHERE date <= ? ORDER BY date DESC LIMIT 1'
+      ).get(date);
+    }
+    return rowToEop(row);
+  };
+
   const getDay = (date) => {
-    const eop = rowToEop(db.prepare('SELECT * FROM eop_daily WHERE date = ?').get(date));
-    const ephRow = db.prepare('SELECT * FROM ephemeris_daily WHERE date = ?').get(date);
+    const eop = getEopForDate(date);
+    let ephRow = db.prepare('SELECT * FROM ephemeris_daily WHERE date = ?').get(date);
+    if (!ephRow) {
+      ephRow = db.prepare(
+        'SELECT * FROM ephemeris_daily WHERE date <= ? ORDER BY date DESC LIMIT 1'
+      ).get(date);
+    }
     const eph = rowToEphemeris(ephRow);
 
     const quakes = db.prepare(`
@@ -117,11 +133,65 @@ export function createHandlers(db) {
 
     const solar = db.prepare('SELECT * FROM solar_daily WHERE date = ?').get(date);
 
-    return { date, eop, ephemeris: eph, earthquakes: quakes, eruptions: volcs, storms, weather, solar };
+    const geomagnetic = db.prepare(`
+      SELECT date, kp_max AS kpMax, kp_avg AS kpAvg, dst_min AS dstMin,
+             g_scale AS gScale, aurora_level AS auroraLevel
+      FROM geomagnetic_daily WHERE date = ?
+    `).get(date);
+
+    const spaceEvents = db.prepare(`
+      SELECT id, event_type AS eventType, start_time AS startTime, date,
+             end_time AS endTime, speed, magnitude, kp_peak AS kpPeak,
+             half_angle AS halfAngle, source_location AS sourceLocation,
+             description, source_url AS sourceUrl
+      FROM space_weather_events
+      WHERE date BETWEEN date(?, '-5 days') AND date(?, '+5 days')
+      ORDER BY
+        CASE event_type WHEN 'GST' THEN 0 WHEN 'CME' THEN 1 WHEN 'FLR' THEN 2 ELSE 3 END,
+        kp_peak DESC, speed DESC
+      LIMIT 40
+    `).all(date, date);
+
+    return {
+      date, eop, ephemeris: eph, earthquakes: quakes, eruptions: volcs,
+      storms, weather, solar, geomagnetic: geomagnetic || null, spaceWeather: spaceEvents,
+    };
   };
 
-  const getDates = () =>
-    db.prepare('SELECT date FROM eop_daily ORDER BY date').all().map((r) => r.date);
+  const getGeomagneticWindow = (endDate, days = 28) =>
+    db.prepare(`
+      SELECT date, kp_max AS kpMax, kp_avg AS kpAvg, dst_min AS dstMin,
+             g_scale AS gScale, aurora_level AS auroraLevel
+      FROM geomagnetic_daily
+      WHERE date <= ?
+      ORDER BY date DESC
+      LIMIT ?
+    `).all(endDate, days).reverse();
+
+  const getDates = () => {
+    const dates = db.prepare('SELECT date FROM eop_daily ORDER BY date').all().map((r) => r.date);
+    if (!dates.length) return dates;
+
+    const lastEop = dates[dates.length - 1];
+    const { maxDate } = db.prepare(`
+      SELECT MAX(d) AS maxDate FROM (
+        SELECT MAX(date) AS d FROM earthquakes
+        UNION ALL SELECT MAX(start_date) AS d FROM eruptions
+        UNION ALL SELECT MAX(date) AS d FROM ephemeris_daily
+      )
+    `).get();
+    if (!maxDate || maxDate <= lastEop) return dates;
+
+    const extended = [...dates];
+    const cursor = new Date(`${lastEop}T12:00:00Z`);
+    const end = new Date(`${maxDate}T12:00:00Z`);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    while (cursor <= end) {
+      extended.push(cursor.toISOString().slice(0, 10));
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+    return extended;
+  };
 
   const getEphemerisWindow = (endDate, days = 28) =>
     db.prepare(`
@@ -132,7 +202,7 @@ export function createHandlers(db) {
       ...rowToEphemeris(r),
     }));
 
-  return { getMeta, getEopWindow, getDay, getDates, getEphemerisWindow };
+  return { getMeta, getEopWindow, getDay, getDates, getEphemerisWindow, getGeomagneticWindow };
 }
 
 export function routeRequest(db, url) {
@@ -160,6 +230,12 @@ export function routeRequest(db, url) {
     const end = params.get('end');
     const days = parseInt(params.get('days') || '28', 10);
     return { status: 200, body: handlers.getEphemerisWindow(end, days) };
+  }
+  if (path === '/api/geomagnetic/window') {
+    const params = new URL(url, 'http://local').searchParams;
+    const end = params.get('end');
+    const days = parseInt(params.get('days') || '28', 10);
+    return { status: 200, body: handlers.getGeomagneticWindow(end, days) };
   }
 
   return { status: 404, body: { error: 'Not found' } };

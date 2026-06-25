@@ -2,6 +2,7 @@ import { EarthScene } from './earth.js';
 import { HeliocentricScene } from './heliocentric.js';
 import { drawPolhode, drawLodChart } from './charts.js';
 import { drawEclipticChart, renderOrbitalMetrics } from './ephemeris.js';
+import { drawKpChart, renderSpaceWeatherMetrics } from './space-weather.js';
 import { formatDate } from './utils.js';
 import { loadCatalog, loadFrame } from './data-client.js';
 
@@ -61,6 +62,9 @@ function updateLegend() {
       <span class="legend__item legend__item--storm">◈ Storm event</span>
       <span class="legend__item legend__item--moon">◯ Moon (scaled)</span>
       <span class="legend__item legend__item--sun">☀ Sun direction</span>
+      <span class="legend__item legend__item--plates">— Plate boundaries</span>
+      <span class="legend__item legend__item--aurora">◌ Aurora oval (Kp)</span>
+      <span class="legend__item legend__item--field">⌇ Magnetic field (model)</span>
     `;
   }
 }
@@ -76,6 +80,8 @@ function setView(view) {
     view === 'geocentric' ? '' : 'none';
   document.getElementById('show-moon-label').style.display =
     view === 'heliocentric' ? '' : 'none';
+  geocentricScene.setLabelsVisible?.(false);
+  heliocentricScene.setLabelsVisible(view === 'heliocentric');
   updateLegend();
   updateUI();
   activeScene().handleResize();
@@ -96,20 +102,10 @@ async function updateUI() {
   document.getElementById('time-slider').value = state.currentIndex;
 
   scene.updatePoleMotion(record, eopWindow);
-
-  const chartIndex = eopWindow.length - 1;
-  drawPolhode(document.getElementById('polhode-chart'), eopWindow, chartIndex);
-  drawLodChart(document.getElementById('lod-chart'), eopWindow, chartIndex);
-
-  if (ephemerisForChart) {
-    drawEclipticChart(document.getElementById('ecliptic-chart'), ephemerisForChart, date);
-  }
-  if (ephemerisDay) {
-    renderOrbitalMetrics(
-      document.getElementById('orbital-metrics'),
-      { byDate: { [date]: ephemerisDay } },
-      date
-    );
+  scene.setEarthquakes(frame.earthquakes);
+  scene.setVolcanoes(frame.eruptions);
+  if (state.view === 'geocentric') {
+    geocentricScene.setSpaceWeather(frame.geomagnetic);
   }
 
   if (state.view === 'geocentric') {
@@ -118,16 +114,57 @@ async function updateUI() {
     heliocentricScene.updateHeliocentric(ephemerisDay, frame.ephemerisOrbit || []);
   }
 
-  scene.setEarthquakes(frame.earthquakes);
-  scene.setVolcanoes(frame.eruptions);
+  try {
+    const chartIndex = eopWindow.length - 1;
+    drawPolhode(document.getElementById('polhode-chart'), eopWindow, chartIndex);
+    drawLodChart(document.getElementById('lod-chart'), eopWindow, chartIndex);
+
+    if (ephemerisForChart) {
+      drawEclipticChart(document.getElementById('ecliptic-chart'), ephemerisForChart, date);
+    }
+    if (ephemerisDay) {
+      renderOrbitalMetrics(
+        document.getElementById('orbital-metrics'),
+        { byDate: { [date]: ephemerisDay } },
+        date
+      );
+    }
+    drawKpChart(
+      document.getElementById('kp-chart'),
+      frame.geomagneticWindow || [],
+      date
+    );
+    renderSpaceWeatherMetrics(
+      document.getElementById('space-weather-metrics'),
+      frame.geomagnetic,
+      frame.spaceWeather
+    );
+  } catch (err) {
+    console.error('Chart render error:', err);
+  }
 
   const list = document.getElementById('event-list');
   const items = [];
 
-  if (frame.solar?.sunspot_number != null) {
+  if (frame.geomagnetic?.kpMax != null) {
+    const g = frame.geomagnetic.gScale ? ` G${frame.geomagnetic.gScale}` : '';
+    items.push(
+      `<li><span class="geomag">Kp</span> ${frame.geomagnetic.kpMax.toFixed(1)}${g}${frame.geomagnetic.kpMax >= 5 ? ' — auroral activity' : ''}</li>`
+    );
+  } else if (frame.solar?.sunspot_number != null) {
     items.push(
       `<li><span class="solar">☀</span> Sunspot ${frame.solar.sunspot_number.toFixed(1)}${frame.solar.kp_max ? `, Kp ${frame.solar.kp_max.toFixed(0)}` : ''}</li>`
     );
+  }
+
+  for (const ev of (frame.spaceWeather || []).slice(0, 4)) {
+    if (ev.eventType === 'CME' && ev.speed) {
+      items.push(`<li><span class="cme">CME</span> ${Math.round(ev.speed)} km/s</li>`);
+    } else if (ev.eventType === 'GST') {
+      items.push(`<li><span class="gst">Storm</span> ${ev.magnitude || `Kp ${ev.kpPeak?.toFixed(1) ?? '—'}`}</li>`);
+    } else if (ev.eventType === 'FLR' && /^[XM]/i.test(ev.magnitude || '')) {
+      items.push(`<li><span class="flare">${ev.magnitude}</span> flare ${ev.sourceLocation || ''}</li>`);
+    }
   }
 
   if (ephemerisDay?.lunar) {
@@ -212,6 +249,19 @@ function setupControls() {
   sync('show-volcanoes', 'showVolcanoes');
   sync('show-trail', 'showTrail');
 
+  document.getElementById('show-plates').addEventListener('change', (e) => {
+    geocentricScene.setPlatesVisible(e.target.checked);
+  });
+
+  document.getElementById('show-aurora').addEventListener('change', (e) => {
+    geocentricScene.showAurora = e.target.checked;
+    updateUI();
+  });
+  document.getElementById('show-field-lines').addEventListener('change', (e) => {
+    geocentricScene.showFieldLines = e.target.checked;
+    updateUI();
+  });
+
   document.getElementById('show-bodies').addEventListener('change', (e) => {
     geocentricScene.showBodies = e.target.checked;
     updateUI();
@@ -247,7 +297,7 @@ async function main() {
   try {
     state.catalog = await loadCatalog();
     state.dates = state.catalog.dates;
-    state.currentIndex = Math.max(0, state.dates.length - 365);
+    state.currentIndex = Math.max(0, state.dates.length - 1);
   } catch (err) {
     document.getElementById('date-display').textContent = 'Run npm run ingest';
     console.error(err);

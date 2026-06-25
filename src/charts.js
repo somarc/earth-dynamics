@@ -75,8 +75,9 @@ export function drawPolhode(canvas, eop, currentIndex, trailLength = 400) {
   ctx.fillStyle = 'rgba(138, 155, 181, 0.8)';
   ctx.font = '10px IBM Plex Mono, monospace';
   ctx.fillText('mas', w - 30, 14);
-  ctx.fillText(`x: ${slice.at(-1)?.xMas.toFixed(1) ?? '—'}`, 8, h - 20);
-  ctx.fillText(`−y: ${slice.at(-1) ? (-slice.at(-1).yMas).toFixed(1) : '—'}`, 8, h - 8);
+  const last = slice.at(-1);
+  ctx.fillText(`x: ${last?.xMas != null ? last.xMas.toFixed(1) : '—'}`, 8, h - 20);
+  ctx.fillText(`−y: ${last?.yMas != null ? (-last.yMas).toFixed(1) : '—'}`, 8, h - 8);
 }
 
 export function drawLodChart(canvas, eop, currentIndex, windowSize = 365) {
@@ -118,7 +119,8 @@ export function drawLodChart(canvas, eop, currentIndex, windowSize = 365) {
     ctx.fillStyle = 'rgba(138, 155, 181, 0.7)';
     ctx.font = '9px IBM Plex Mono, monospace';
     ctx.fillText(label, pad.left, y0 - 2);
-    ctx.fillText(`${values.at(-1).toFixed(2)}`, w - pad.right - 50, y0 + 10);
+    const lastVal = values.at(-1);
+    if (lastVal != null) ctx.fillText(`${lastVal.toFixed(2)}`, w - pad.right - 50, y0 + 10);
   };
 
   drawSeries(lodValues, minLod, maxLod, pad.top, '#4da3ff', 'ΔLOD (ms)');

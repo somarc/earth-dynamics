@@ -130,18 +130,23 @@ export function renderOrbitalMetrics(container, ephemeris, date) {
   if (lunar.isApogee) tags.push('<span class="tag tag--apogee">Apogee</span>');
 
   for (const a of alignments || []) {
+    if (a.separationDeg == null) continue;
     tags.push(`<span class="tag tag--align">${a.planets.join('–')} ${a.separationDeg.toFixed(1)}°</span>`);
   }
 
-  const illumPct = (lunar.illumination * 100).toFixed(0);
+  const illumPct = lunar.illumination != null ? (lunar.illumination * 100).toFixed(0) : '—';
+  const moonDist = lunar.moonDistanceKm != null ? lunar.moonDistanceKm.toLocaleString() : '—';
+  const phaseAngle = lunar.phaseAngle != null ? `${lunar.phaseAngle.toFixed(1)}°` : '—';
+  const tidal = lunar.tidalIndex != null ? lunar.tidalIndex.toFixed(3) : '—';
+  const elong = lunar.sunElongation != null ? `${lunar.sunElongation.toFixed(1)}°` : '—';
 
   container.innerHTML = `
     <dl class="orbital-metrics">
-      <div><dt>Moon phase</dt><dd>${lunar.phaseName} (${illumPct}% lit)</dd></div>
-      <div><dt>Moon distance</dt><dd>${lunar.moonDistanceKm.toLocaleString()} km</dd></div>
-      <div><dt>Phase angle</dt><dd>${lunar.phaseAngle.toFixed(1)}°</dd></div>
-      <div><dt>Tidal index</dt><dd>${lunar.tidalIndex.toFixed(3)} <span class="metric-hint">(1.0 = mean)</span></dd></div>
-      <div><dt>Sun elongation</dt><dd>${lunar.sunElongation.toFixed(1)}°</dd></div>
+      <div><dt>Moon phase</dt><dd>${lunar.phaseName || '—'} (${illumPct}% lit)</dd></div>
+      <div><dt>Moon distance</dt><dd>${moonDist} km</dd></div>
+      <div><dt>Phase angle</dt><dd>${phaseAngle}</dd></div>
+      <div><dt>Tidal index</dt><dd>${tidal} <span class="metric-hint">(1.0 = mean)</span></dd></div>
+      <div><dt>Sun elongation</dt><dd>${elong}</dd></div>
     </dl>
     ${tags.length ? `<div class="orbital-tags">${tags.join('')}</div>` : ''}
     <p class="orbital-note">Tidal forcing is physically real. USGS and seismology literature find no reliable prediction of individual earthquakes from lunar phase or planetary alignments — overlay is for exploration only.</p>

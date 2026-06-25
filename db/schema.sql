@@ -1,4 +1,4 @@
--- Earth Dynamics local store (SQLite / Cloudflare D1 compatible)
+-- Wobblescope local store (SQLite / Cloudflare D1 compatible)
 
 PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
@@ -130,3 +130,31 @@ CREATE TABLE IF NOT EXISTS solar_daily (
   kp_max REAL,
   kp_avg REAL
 );
+
+CREATE TABLE IF NOT EXISTS geomagnetic_daily (
+  date TEXT PRIMARY KEY,
+  kp_max REAL,
+  kp_avg REAL,
+  dst_min REAL,
+  g_scale INTEGER,
+  aurora_level INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_geomagnetic_kp ON geomagnetic_daily(kp_max);
+
+CREATE TABLE IF NOT EXISTS space_weather_events (
+  id TEXT PRIMARY KEY,
+  event_type TEXT NOT NULL,
+  start_time TEXT NOT NULL,
+  date TEXT NOT NULL,
+  end_time TEXT,
+  speed REAL,
+  magnitude TEXT,
+  kp_peak REAL,
+  half_angle REAL,
+  source_location TEXT,
+  description TEXT,
+  source_url TEXT,
+  linked_events TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_swe_date ON space_weather_events(date);
+CREATE INDEX IF NOT EXISTS idx_swe_type ON space_weather_events(event_type);

@@ -1,6 +1,6 @@
-# Earth Dynamics
+# Wobblescope
 
-Time-synchronized **Earth-system correlation explorer** — polar motion, orbital geometry, earthquakes, volcanoes, weather, storms, and solar activity on one scrubbable timeline. Inspired by [ECDO](https://x.com/Winston_104/status/2069692182634885555) pole-motion visualization.
+**Spin, shake, storm & syzygy** — a time-synchronized Earth-system explorer. Scrub one timeline across polar motion, orbital geometry, earthquakes, volcanoes, space weather, aurora, weather, and storms. Inspired by [ECDO](https://x.com/Winston_104/status/2069692182634885555) pole-motion visualization.
 
 **Production target:** AEM Edge Delivery Services (static app) + Cloudflare Worker API + D1. See [docs/architecture.md](docs/architecture.md).
 

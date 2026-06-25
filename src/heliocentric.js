@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { loadEarthTexture } from './textures.js';
+import { createLabelRenderer, makeLabel, resizeLabelRenderer } from './labels.js';
 import {
   EARTH_RADIUS,
   latLonToVector3,
@@ -44,9 +45,13 @@ export class HeliocentricScene {
       new THREE.MeshBasicMaterial({ color: 0xffd54a })
     );
     this.scene.add(this.sunMesh);
+    this.sunLabel = makeLabel('Sun', 'body-label body-label--sun');
+    this.sunLabel.position.set(0, 0.75, 0);
+    this.sunMesh.add(this.sunLabel);
 
-    const sunGlow = new THREE.PointLight(0xfff0cc, 2.5, 80, 1);
-    this.scene.add(sunGlow);
+    this.sunPointLight = new THREE.PointLight(0xfff4dd, 12, 200, 0.4);
+    this.sunPointLight.position.set(0, 0, 0);
+    this.scene.add(this.sunPointLight);
 
     const eclipticGeo = new THREE.RingGeometry(AU_SCALE * 0.95, AU_SCALE * 1.05, 128);
     const eclipticMat = new THREE.MeshBasicMaterial({
@@ -84,13 +89,18 @@ export class HeliocentricScene {
     const earthGeo = new THREE.SphereGeometry(HELIO_EARTH_RADIUS, 48, 48);
     this.earth = new THREE.Mesh(
       earthGeo,
-      new THREE.MeshPhongMaterial({
+      new THREE.MeshStandardMaterial({
         map: earthTexture,
-        shininess: 8,
-        specular: new THREE.Color(0x223344),
+        roughness: 0.85,
+        metalness: 0.05,
+        emissive: new THREE.Color(0x050810),
+        emissiveIntensity: 0.15,
       })
     );
     this.surfaceGroup.add(this.earth);
+    this.earthLabel = makeLabel('Earth', 'body-label body-label--earth');
+    this.earthLabel.position.set(0, HELIO_EARTH_RADIUS + 0.18, 0);
+    this.earthSystem.add(this.earthLabel);
 
     const axisPoints = [
       new THREE.Vector3(0, -HELIO_EARTH_RADIUS * 1.6, 0),
@@ -111,6 +121,9 @@ export class HeliocentricScene {
       new THREE.LineBasicMaterial({ color: 0x667788, transparent: true, opacity: 0.35 })
     );
     this.scene.add(this.eclipticNorthLine);
+    this.eclipticLabel = makeLabel('Ecliptic N', 'body-label body-label--muted');
+    this.eclipticLabel.position.set(0, AU_SCALE * 0.52, 0);
+    this.scene.add(this.eclipticLabel);
 
     const poleGeo = new THREE.SphereGeometry(0.02, 12, 12);
     this.poleMarker = new THREE.Mesh(
@@ -126,15 +139,29 @@ export class HeliocentricScene {
 
     this.moonMesh = new THREE.Mesh(
       new THREE.SphereGeometry(0.04, 16, 16),
-      new THREE.MeshPhongMaterial({ color: 0xc8c8d8 })
+      new THREE.MeshStandardMaterial({
+        color: 0xc8c8d8,
+        roughness: 0.95,
+        metalness: 0,
+        emissive: 0x111118,
+        emissiveIntensity: 0.1,
+      })
     );
     this.scene.add(this.moonMesh);
+    this.moonLabel = makeLabel('Moon', 'body-label body-label--moon');
+    this.moonLabel.position.set(0, 0.08, 0);
+    this.moonMesh.add(this.moonLabel);
 
-    this.scene.add(new THREE.AmbientLight(0x223344, 0.25));
-    this.sunDirectional = new THREE.DirectionalLight(0xfff8ee, 1.4);
+    this.scene.add(new THREE.AmbientLight(0x1a2030, 0.06));
+    this.hemiLight = new THREE.HemisphereLight(0xfff0cc, 0x080810, 0.22);
+    this.scene.add(this.hemiLight);
+    this.sunDirectional = new THREE.DirectionalLight(0xfff8ee, 5.5);
     this.sunDirectional.target = new THREE.Object3D();
     this.scene.add(this.sunDirectional);
     this.scene.add(this.sunDirectional.target);
+
+    this.labelRenderer = createLabelRenderer(canvas.parentElement);
+    this.labelRenderer.domElement.classList.add('label-layer--hidden');
 
     this.stars = this.createStars();
     this.scene.add(this.stars);
@@ -172,11 +199,18 @@ export class HeliocentricScene {
     );
   }
 
+  setLabelsVisible(visible) {
+    if (this.labelRenderer) {
+      this.labelRenderer.domElement.classList.toggle('label-layer--hidden', !visible);
+    }
+  }
+
   handleResize() {
     const rect = this.canvas.parentElement.getBoundingClientRect();
     this.renderer.setSize(rect.width, rect.height);
     this.camera.aspect = rect.width / rect.height;
     this.camera.updateProjectionMatrix();
+    if (this.labelRenderer) resizeLabelRenderer(this.labelRenderer, this.canvas.parentElement);
   }
 
   updatePoleMotion(eopRecord, _trailHistory) {
@@ -203,7 +237,9 @@ export class HeliocentricScene {
       ephemerisDay.earthHelio.z
     );
     this.earthSystem.position.copy(earthPos);
-    this.sunDirectional.position.set(0, 0, 0);
+
+    const sunDir = earthPos.clone().normalize();
+    this.sunDirectional.position.copy(sunDir.clone().multiplyScalar(-50));
     this.sunDirectional.target.position.copy(earthPos);
     this.sunDirectional.target.updateMatrixWorld();
 
@@ -230,10 +266,11 @@ export class HeliocentricScene {
       this.moonMesh.visible = true;
       const illum = ephemerisDay.lunar?.illumination ?? 0.5;
       this.moonMesh.material.color.setRGB(
-        0.55 + illum * 0.45,
-        0.55 + illum * 0.45,
-        0.58 + illum * 0.4
+        0.45 + illum * 0.55,
+        0.45 + illum * 0.55,
+        0.48 + illum * 0.5
       );
+      this.moonMesh.material.emissiveIntensity = 0.05 + illum * 0.12;
     } else {
       this.moonMesh.visible = false;
     }
@@ -283,5 +320,8 @@ export class HeliocentricScene {
     this.surfaceGroup.rotation.y += this.autoRotate * this.lodFactor;
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
+    if (this.labelRenderer) {
+      this.labelRenderer.render(this.scene, this.camera);
+    }
   }
 }

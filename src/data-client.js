@@ -54,11 +54,12 @@ function ephWindowToChart(ephWindow) {
 
 export async function loadFrame(catalog, date, currentIndex) {
   if (catalog.mode === 'api') {
-    const [day, eopWindow, ephWindow, ephOrbit] = await Promise.all([
+    const [day, eopWindow, ephWindow, ephOrbit, geoWindow] = await Promise.all([
       api(`/api/day/${date}`),
       api(`/api/eop/window?end=${date}&days=400`),
       api(`/api/ephemeris/window?end=${date}&days=28`),
       api(`/api/ephemeris/window?end=${date}&days=365`),
+      api(`/api/geomagnetic/window?end=${date}&days=28`).catch(() => []),
     ]);
     return {
       record: day.eop,
@@ -71,6 +72,9 @@ export async function loadFrame(catalog, date, currentIndex) {
       storms: day.storms || [],
       weather: day.weather || [],
       solar: day.solar,
+      geomagnetic: day.geomagnetic,
+      spaceWeather: day.spaceWeather || [],
+      geomagneticWindow: geoWindow,
     };
   }
 
