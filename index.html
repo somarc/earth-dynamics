@@ -21,7 +21,10 @@
             <button class="view-btn view-btn--active" data-view="geocentric">Geocentric</button>
             <button class="view-btn" data-view="heliocentric">Heliocentric</button>
           </div>
-          <div class="header__meta" id="date-display">—</div>
+          <div class="header__meta">
+            <span id="date-display">—</span>
+            <span id="filter-badge" class="filter-badge filter-badge--hidden" aria-live="polite"></span>
+          </div>
         </div>
       </header>
 
@@ -105,7 +108,8 @@
         </div>
         <div class="controls__filter">
           <label class="filter-label" title="Limit quakes, storms, volcanoes, and space-weather events to the 7 days before the selected date">
-            <input type="checkbox" id="recent-only" checked /> Past week only
+            <input type="checkbox" id="recent-only" checked />
+            <span id="recent-only-label">Past week only</span>
           </label>
         </div>
         <div class="controls__presets">

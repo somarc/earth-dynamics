@@ -444,7 +444,12 @@ export class EarthScene {
   }
 
   render(delta) {
-    this.surfaceGroup.rotation.y += this.baseSpin + this.autoRotate * this.lodFactor;
+    const spin = this.baseSpin + this.autoRotate * this.lodFactor;
+    this.surfaceGroup.rotation.y += spin;
+    // Field lines are body-fixed to the dipole / spin axis — co-rotate with geography.
+    if (this.fieldLinesGroup?.visible) {
+      this.fieldLinesGroup.rotation.y += spin;
+    }
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
   }

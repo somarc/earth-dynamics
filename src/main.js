@@ -88,10 +88,36 @@ function updateEventsPanelMeta(date, counts = null) {
   const eventsTitle = document.getElementById('events-panel-title');
   const eventsDesc = document.getElementById('events-panel-desc');
   const recentEl = document.getElementById('recent-only');
+  const recentLabel = document.getElementById('recent-only-label');
+  const filterBadge = document.getElementById('filter-badge');
   const filterLabel = document.querySelector('.filter-label');
 
   if (recentEl) recentEl.checked = state.recentOnly;
   filterLabel?.classList.toggle('filter-label--active', state.recentOnly);
+
+  const quakeCount = counts?.quakes;
+  if (recentLabel) {
+    if (state.recentOnly) {
+      recentLabel.textContent = quakeCount != null
+        ? `Past week only · ${quakeCount} quake${quakeCount === 1 ? '' : 's'}`
+        : 'Past week only · …';
+    } else {
+      recentLabel.textContent = quakeCount != null
+        ? `Past week only (off · ${quakeCount} quakes ±7d)`
+        : 'Past week only (off)';
+    }
+  }
+
+  if (filterBadge) {
+    if (state.recentOnly && date) {
+      filterBadge.textContent = quakeCount != null
+        ? `7d · ${quakeCount} quakes`
+        : '7d filter';
+      filterBadge.classList.remove('filter-badge--hidden');
+    } else {
+      filterBadge.classList.add('filter-badge--hidden');
+    }
+  }
 
   if (!eventsTitle || !eventsDesc) return;
 
@@ -99,16 +125,16 @@ function updateEventsPanelMeta(date, counts = null) {
     eventsTitle.textContent = 'Events (past 7 days)';
     const range = date ? `${addDays(date, -7)} → ${date}` : 'past 7 days';
     const tally = counts
-      ? `${counts.quakes} quake${counts.quakes === 1 ? '' : 's'}`
+      ? `${counts.quakes} quake${counts.quakes === 1 ? '' : 's'} on globe`
         + `${counts.storms ? `, ${counts.storms} storm${counts.storms === 1 ? '' : 's'}` : ''}`
       : 'loading…';
-    eventsDesc.textContent = `${range} — ${tally}`;
+    eventsDesc.textContent = `${range} — ${tally}. Uncheck footer filter for ±7d.`;
   } else {
     eventsTitle.textContent = 'Events at Date';
     const tally = counts
-      ? `${counts.quakes} quake${counts.quakes === 1 ? '' : 's'} (±7d)`
+      ? `${counts.quakes} quake${counts.quakes === 1 ? '' : 's'} on globe (±7d)`
       : '±7 day windows around selected date';
-    eventsDesc.textContent = tally;
+    eventsDesc.textContent = `${tally}. Check “Past week only” to hide older markers.`;
   }
 }
 

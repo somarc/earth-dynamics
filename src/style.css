@@ -63,6 +63,10 @@ body,
 }
 
 .header__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
   font-family: var(--font-mono);
   font-size: 0.85rem;
   color: var(--accent);
@@ -532,6 +536,24 @@ body,
 
 .filter-label--active {
   color: var(--accent-earth);
+}
+
+.filter-label--active #recent-only-label,
+.filter-label--active {
+  font-weight: 500;
+}
+
+.filter-badge {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--accent-earth);
+  border: 1px solid rgba(62, 207, 142, 0.35);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+}
+
+.filter-badge--hidden {
+  display: none;
 }
 
 .controls__presets {
