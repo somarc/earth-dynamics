@@ -38,8 +38,8 @@ Close the gap between **co-display** (many lanes, one timeline) and **co-analysi
 ## Delivery phases (highest value first)
 
 ```
-Phase D  Physics loop      T16 → LOD coupling → ephemeris refresh     ← NEXT
-Phase E  Globe equity      T15 → T6 complete → weather glyphs → preset
+Phase D  Physics loop      T16 → LOD coupling → ephemeris refresh     ✓
+Phase E  Globe equity      T15 → T6 complete → weather glyphs → preset  ← NEXT
 Phase F  Trust layer       I7 → staleness badges → lane epistemics
 Phase G  Share & compare   U7 → U6 → change summary
 Phase H  Ship              I3 → I4 → I5 → I6
@@ -55,16 +55,16 @@ Phase J  Co-analysis       lag explorer → anomalies (from wishlist)
 
 | ID | Item | Source / scope | Status |
 |----|------|----------------|--------|
-| **D1** | Atmospheric angular momentum (T16) | IERS / GFZ EAM AAM ASCII → `aam_daily` | `next` |
-| **D2** | AAM ↔ LOD chart overlay | Dual-axis or normalized overlay on LOD panel; cite established coupling | `planned` |
-| **D3** | CME → Dst → aurora linked highlights | Cross-panel emphasis on same scrub date (no new ingest) | `planned` |
-| **D4** | Ephemeris incremental extend | Horizons ingest past last row; shrink stale fallback window | `planned` |
+| **D1** | Atmospheric angular momentum (T16) | GFZ ESMGFZ operational AAM → `aam_daily` | `done` |
+| **D2** | AAM ↔ LOD chart overlay | Normalized AAM z anomaly on ΔLOD panel | `done` |
+| **D3** | CME → Dst → aurora linked highlights | Space weather panel chain badge + chart outlines | `done` |
+| **D4** | Ephemeris incremental extend | `npm run ingest -- --only=ephemeris` | `done` |
 
 **Done when:** Scrubbing 2024-05-11 shows LOD deviation alongside AAM anomaly; space-weather chain is visually linked; ephemeris row count tracks timeline end.
 
 ```bash
-npm run ingest -- --only=aam        # after D1 lands
-npm run ingest -- --only=ephemeris  # after D4 lands
+npm run ingest -- --only=aam
+npm run ingest -- --only=ephemeris
 ```
 
 ---
@@ -186,7 +186,7 @@ Promote to `planned` after Phase D + F establish trustworthy baselines.
 | T6 | Weather grid 16 pts | Open-Meteo | `debt` (4/16) |
 | T7–T14 | Solar, Kp, CME, aurora, Dst, wind, OVATION | Various | `done` |
 | T15 | IBTrACS cyclones | NOAA | `planned` (Phase E) |
-| T16 | Atmospheric angular momentum | IERS/GFZ | `planned` (Phase D) |
+| T16 | Atmospheric angular momentum | GFZ ESMGFZ AAM | `done` |
 | T17 | ENSO / ONI | NOAA CPC | `icebox` |
 
 ### Views & UX
@@ -240,4 +240,4 @@ NASA_API_KEY=xxx npm run fetch-space-weather
 
 ---
 
-*Last updated: 2026-06-25 — Phases A–C + G shipped; **Phase D (physics loop)** is next. See [`wishlist.md`](wishlist.md) for full backlog and [`session-handoff.md`](session-handoff.md) for runbook.*
+*Last updated: 2026-06-25 — Phases A–C, G, and **D (physics loop)** shipped; **Phase E (globe equity)** is next. See [`wishlist.md`](wishlist.md) and [`session-handoff.md`](session-handoff.md).*
