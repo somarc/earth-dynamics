@@ -1,5 +1,6 @@
 {
   "source": "PB2002 Euler poles (Bird 2003); plate centroids from PB2002 polygons",
+  "about": "Plate motion arrows show how fast each tectonic plate moves over the mantle, derived from PB2002 Euler poles. Longer arrows mean faster motion toward the arrowhead.",
   "plates": [
     {
       "code": "TO",

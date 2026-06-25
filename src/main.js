@@ -5,6 +5,7 @@ import { drawEclipticChart, renderOrbitalMetrics } from './ephemeris.js';
 import { drawKpChart, drawDstChart, renderSpaceWeatherMetrics } from './space-weather.js';
 import { fetchOvation, isOvationCurrent, ovationEquatorwardEdge } from './ovation.js';
 import { renderEventInspect } from './event-inspect.js';
+import { getGlobeInspectContext, renderGlobeTooltip } from './globe-inspect.js';
 import { formatDate, addDays } from './utils.js';
 import { loadCatalog, loadFrame } from './data-client.js';
 
@@ -84,6 +85,21 @@ function activeScene() {
   return state.view === 'heliocentric' ? heliocentricScene : geocentricScene;
 }
 
+function pluralCount(n, singular, pluralForm = `${singular}s`) {
+  return `${n} ${n === 1 ? singular : pluralForm}`;
+}
+
+function formatGlobeTally(counts) {
+  if (!counts) return null;
+  const parts = [];
+  if (counts.quakes != null) parts.push(pluralCount(counts.quakes, 'quake'));
+  if (counts.eruptions != null) {
+    parts.push(pluralCount(counts.eruptions, 'active GVP eruption', 'active GVP eruptions'));
+  }
+  if (counts.storms) parts.push(pluralCount(counts.storms, 'storm'));
+  return parts.join(', ');
+}
+
 function updateEventsPanelMeta(date, counts = null) {
   const eventsTitle = document.getElementById('events-panel-title');
   const eventsDesc = document.getElementById('events-panel-desc');
@@ -95,24 +111,22 @@ function updateEventsPanelMeta(date, counts = null) {
   if (recentEl) recentEl.checked = state.recentOnly;
   filterLabel?.classList.toggle('filter-label--active', state.recentOnly);
 
-  const quakeCount = counts?.quakes;
+  const tally = formatGlobeTally(counts);
   if (recentLabel) {
     if (state.recentOnly) {
-      recentLabel.textContent = quakeCount != null
-        ? `Past week only · ${quakeCount} quake${quakeCount === 1 ? '' : 's'}`
+      recentLabel.textContent = tally
+        ? `Past week only · ${tally}`
         : 'Past week only · …';
     } else {
-      recentLabel.textContent = quakeCount != null
-        ? `Past week only (off · ${quakeCount} quakes ±7d)`
+      recentLabel.textContent = tally
+        ? `Past week only (off · ${tally} ±7d)`
         : 'Past week only (off)';
     }
   }
 
   if (filterBadge) {
     if (state.recentOnly && date) {
-      filterBadge.textContent = quakeCount != null
-        ? `7d · ${quakeCount} quakes`
-        : '7d filter';
+      filterBadge.textContent = tally ? `7d · ${tally}` : '7d filter';
       filterBadge.classList.remove('filter-badge--hidden');
     } else {
       filterBadge.classList.add('filter-badge--hidden');
@@ -124,17 +138,14 @@ function updateEventsPanelMeta(date, counts = null) {
   if (state.recentOnly) {
     eventsTitle.textContent = 'Events (past 7 days)';
     const range = date ? `${addDays(date, -7)} → ${date}` : 'past 7 days';
-    const tally = counts
-      ? `${counts.quakes} quake${counts.quakes === 1 ? '' : 's'} on globe`
-        + `${counts.storms ? `, ${counts.storms} storm${counts.storms === 1 ? '' : 's'}` : ''}`
-      : 'loading…';
-    eventsDesc.textContent = `${range} — ${tally}. Uncheck footer filter for ±7d.`;
+    const globeTally = counts ? formatGlobeTally(counts) : null;
+    const onGlobe = globeTally ? `${globeTally} on globe` : 'loading…';
+    eventsDesc.textContent = `${range} — ${onGlobe}. ▲ = GVP eruption episodes active in window. Uncheck footer for ±7d.`;
   } else {
     eventsTitle.textContent = 'Events at Date';
-    const tally = counts
-      ? `${counts.quakes} quake${counts.quakes === 1 ? '' : 's'} on globe (±7d)`
-      : '±7 day windows around selected date';
-    eventsDesc.textContent = `${tally}. Check “Past week only” to hide older markers.`;
+    const globeTally = counts ? formatGlobeTally(counts) : null;
+    const onGlobe = globeTally ? `${globeTally} on globe (±7d)` : '±7 day windows around selected date';
+    eventsDesc.textContent = `${onGlobe}. ▲ = one GVP episode overlapping this date. Check “Past week only” to trim older markers.`;
   }
 }
 
@@ -180,7 +191,7 @@ function updateLegend() {
       <span class="legend__item legend__item--pole">● Instantaneous pole</span>
       <span class="legend__item legend__item--axis">— Rotation axis</span>
       <span class="legend__item legend__item--quake">◉ Earthquake (M≥5)</span>
-      <span class="legend__item legend__item--volcano">▲ Volcanic eruption</span>
+      <span class="legend__item legend__item--volcano">▲ Active GVP eruption (size ∝ VEI)</span>
       <span class="legend__item legend__item--storm">◈ Storm event</span>
       <span class="legend__item legend__item--moon">◯ Moon (scaled)</span>
       <span class="legend__item legend__item--sun">☀ Sun direction</span>
@@ -227,6 +238,7 @@ async function updateUI() {
 
   updateEventsPanelMeta(date, {
     quakes: frame.earthquakes?.length ?? 0,
+    eruptions: frame.eruptions?.length ?? 0,
     storms: frame.storms?.length ?? 0,
   });
 
@@ -235,11 +247,6 @@ async function updateUI() {
 
   applyEventLayers(frame, date);
 
-  if (!record) return;
-
-  state.eopSeries = eopWindow;
-
-  scene.updatePoleMotion(record, eopWindow);
   let ovationMode = false;
   let ovationLat = null;
   if (isOvationCurrent(date)) {
@@ -256,10 +263,15 @@ async function updateUI() {
 
   if (state.view === 'geocentric') {
     geocentricScene.setSpaceWeather(frame.geomagnetic, { ovationData: state.ovationData });
-    scene.updateBodies(ephemerisDay);
+    geocentricScene.updateBodies(ephemerisDay);
   } else {
     heliocentricScene.updateHeliocentric(ephemerisDay, frame.ephemerisOrbit || []);
   }
+
+  if (!record) return;
+
+  state.eopSeries = eopWindow;
+  scene.updatePoleMotion(record, eopWindow);
 
   try {
     const chartIndex = eopWindow.length - 1;
@@ -359,9 +371,11 @@ async function updateUI() {
     );
   }
   for (const v of frame.eruptions.slice(0, 4)) {
-    const status = v.continuing ? 'ongoing' : `ended ${v.endDate || '—'}`;
+    const status = v.continuing
+      ? `ongoing since ${v.startDate || '—'}`
+      : `${v.startDate || '—'} → ${v.endDate || '—'}`;
     items.push(
-      `<li><span class="vei">VEI ${v.vei ?? '—'}</span> ${v.name} (${status})</li>`
+      `<li><span class="vei">GVP VEI ${v.vei ?? '—'}</span> ${v.name} <span class="event-range">(${status})</span></li>`
     );
   }
 
@@ -540,7 +554,11 @@ async function main() {
   modeBadge.textContent = state.catalog.mode === 'api' ? 'SQLite API' : 'JSON fallback';
   document.querySelector('.header__right').prepend(modeBadge);
 
-  renderEventInspect(document.getElementById('event-inspect'), null);
+  renderEventInspect(
+    document.getElementById('event-inspect'),
+    null,
+    getGlobeInspectContext(geocentricScene),
+  );
 
   renderCitations();
   setupControls();
@@ -556,10 +574,12 @@ function setupGlobePick() {
   const tooltip = document.getElementById('plate-tooltip');
   canvas.classList.add('scene-canvas--pickable');
 
+  const inspectContext = () => getGlobeInspectContext(geocentricScene);
+
   canvas.addEventListener('click', (e) => {
     if (state.view !== 'geocentric') return;
     const picked = geocentricScene.pickAt(e.clientX, e.clientY);
-    renderEventInspect(document.getElementById('event-inspect'), picked);
+    renderEventInspect(document.getElementById('event-inspect'), picked, inspectContext());
   });
 
   canvas.addEventListener('mousemove', (e) => {
@@ -567,18 +587,19 @@ function setupGlobePick() {
       tooltip.classList.add('plate-tooltip--hidden');
       return;
     }
-    const hit = geocentricScene.hoverPlateAt(e.clientX, e.clientY);
-    if (!hit) {
+
+    const hover = geocentricScene.hoverPickAt(e.clientX, e.clientY);
+    const rendered = renderGlobeTooltip(hover);
+    if (!rendered) {
       tooltip.classList.add('plate-tooltip--hidden');
       return;
     }
+
     tooltip.classList.remove('plate-tooltip--hidden');
-    tooltip.style.left = `${hit.x}px`;
-    tooltip.style.top = `${hit.y}px`;
-    tooltip.innerHTML = `
-      <strong>${hit.name}</strong> (${hit.plates})<br />
-      <span class="plate-type">${hit.type}</span>
-    `;
+    tooltip.className = `plate-tooltip ${rendered.className}`;
+    tooltip.style.left = `${hover.x}px`;
+    tooltip.style.top = `${hover.y}px`;
+    tooltip.innerHTML = rendered.html;
   });
 
   canvas.addEventListener('mouseleave', () => {

@@ -202,6 +202,81 @@ body,
   font-size: 0.62rem;
 }
 
+.globe-tooltip--hotspot,
+.globe-tooltip--quake,
+.globe-tooltip--volcano,
+.globe-tooltip--motion,
+.globe-tooltip--boundary {
+  max-width: 280px;
+}
+
+.globe-tooltip--hotspot {
+  border-color: rgba(255, 119, 68, 0.35);
+}
+
+.globe-tooltip--hotspot strong {
+  color: #ff8855;
+}
+
+.globe-tooltip--quake {
+  border-color: rgba(255, 92, 106, 0.35);
+}
+
+.globe-tooltip--quake strong {
+  color: #ff6b7a;
+}
+
+.globe-tooltip--volcano {
+  border-color: rgba(255, 140, 66, 0.35);
+}
+
+.globe-tooltip--volcano strong {
+  color: #ff9a55;
+}
+
+.globe-tooltip--motion {
+  border-color: rgba(110, 201, 160, 0.35);
+}
+
+.globe-tooltip--motion strong {
+  color: #6ec9a0;
+}
+
+.globe-tooltip--boundary {
+  border-color: rgba(255, 209, 102, 0.35);
+}
+
+.globe-tooltip--boundary strong {
+  color: #ffd166;
+}
+
+.globe-tooltip__kind {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: #ff7744;
+  margin-left: 0.25rem;
+}
+
+.globe-tooltip__detail {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.64rem;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.globe-tooltip__detail--muted {
+  color: var(--text-muted);
+}
+
+.globe-tooltip__note {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.6rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -285,6 +360,43 @@ body,
 
 .inspect-link:hover {
   text-decoration: underline;
+}
+
+.inspect-note {
+  margin-top: 0.45rem;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.inspect-about {
+  margin-top: 0.5rem;
+  font-size: 0.65rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.inspect-glossary {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+  font-size: 0.65rem;
+  line-height: 1.4;
+}
+
+.inspect-glossary div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.inspect-glossary dt {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--accent);
+}
+
+.inspect-glossary dd {
+  color: var(--text-muted);
 }
 
 #geo-canvas.scene-canvas--pickable {
@@ -394,6 +506,27 @@ body,
   color: var(--text-muted);
   margin-bottom: 0.5rem;
   line-height: 1.4;
+}
+
+.panel__hint {
+  font-size: 0.62rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin-bottom: 0.45rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(255, 140, 66, 0.08);
+  border: 1px solid rgba(255, 140, 66, 0.16);
+}
+
+.panel__hint em {
+  font-style: normal;
+  color: #ff9a55;
+}
+
+.event-list .event-range {
+  color: var(--text-muted);
+  font-size: 0.66rem;
 }
 
 .panel canvas {

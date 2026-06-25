@@ -101,9 +101,20 @@ export function buildMotionGroup(motionData, radius = EARTH_RADIUS * 1.018) {
       length * 0.35,
       length * 0.22,
     );
-    arrow.userData = plate;
+    const payload = { ...plate, pickType: 'plate' };
+    arrow.userData = payload;
+
+    const pick = new THREE.Mesh(
+      new THREE.SphereGeometry(0.03, 8, 8),
+      new THREE.MeshBasicMaterial({ visible: false }),
+    );
+    pick.position.set(origin.x, origin.y, origin.z);
+    pick.userData = payload;
+
     group.add(arrow);
+    group.add(pick);
   }
 
+  group.userData.about = motionData.about ?? null;
   return group;
 }

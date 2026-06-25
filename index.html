@@ -72,13 +72,14 @@
 
           <div class="panel panel--inspect">
             <h2>Inspect</h2>
-            <p class="panel__desc">Click a marker on the globe</p>
+            <p class="panel__desc">Hover or click quakes, volcanoes, hotspots, plates &amp; boundaries</p>
             <div id="event-inspect"></div>
           </div>
 
           <div class="panel panel--events">
             <h2 id="events-panel-title">Events at Date</h2>
             <p class="panel__desc" id="events-panel-desc">±7 day windows (API default)</p>
+            <p class="panel__hint" id="events-volc-hint">▲ cones = Smithsonian GVP eruption <em>episodes</em> active on the selected date — not every holocene volcano.</p>
             <ul id="event-list" class="event-list"></ul>
           </div>
 
@@ -121,7 +122,7 @@
         </div>
         <div class="controls__toggles">
           <label><input type="checkbox" id="show-quakes" checked /> Earthquakes</label>
-          <label><input type="checkbox" id="show-volcanoes" checked /> Volcanoes</label>
+          <label title="GVP eruption episodes whose start–end dates overlap the selected timeline window"><input type="checkbox" id="show-volcanoes" checked /> Active eruptions (GVP)</label>
           <label><input type="checkbox" id="show-trail" checked /> Pole trail</label>
           <label><input type="checkbox" id="show-plates" checked /> Plate boundaries</label>
           <label><input type="checkbox" id="show-plate-motion" checked /> Plate motion</label>

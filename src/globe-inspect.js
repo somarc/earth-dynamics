@@ -1,0 +1,173 @@
+export const GLOBE_ABOUT = {
+  earthquake:
+    'Earthquakes are sudden fault ruptures that release stored tectonic stress. Marker size and color reflect magnitude; depth hints whether the rupture was shallow crust or a deep subducting slab.',
+  volcano:
+    'Each orange cone is one Smithsonian GVP eruption episode whose activity dates overlap the date you selected — not the full holocene volcano list, and not every eruption since 1960 at once. Cone size reflects VEI; brighter orange means GVP still lists the episode as continuing.',
+  hotspot:
+    'Mantle hotspots are long-lived upwellings of unusually hot rock from the deep mantle. Tectonic plates drift over them, leaving chains of volcanoes and seamounts while the source stays relatively fixed.',
+  plate:
+    'Plate motion arrows show how fast each tectonic plate moves over the mantle, derived from PB2002 Euler poles. Longer arrows mean faster motion toward the arrowhead.',
+  plateBoundary:
+    'Plate boundaries are where lithospheric plates meet. Subduction zones (red tubes) are especially important for deep earthquakes, arc volcanoes, and tsunami hazard.',
+};
+
+function esc(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function depthLabel(depthKm) {
+  if (depthKm == null || Number.isNaN(depthKm)) return null;
+  if (depthKm < 70) return 'Shallow focus (< 70 km)';
+  if (depthKm < 300) return 'Intermediate depth (70–300 km)';
+  return 'Deep focus (≥ 300 km)';
+}
+
+function magLabel(mag) {
+  if (mag == null) return null;
+  if (mag >= 8) return 'Great earthquake — widespread damage / tsunami potential';
+  if (mag >= 7) return 'Major earthquake — regional destruction possible';
+  if (mag >= 6) return 'Strong earthquake — significant local shaking';
+  if (mag >= 5) return 'Moderate earthquake — felt over a wide area';
+  return 'Smaller earthquake in catalog window';
+}
+
+export function earthquakeNote(q) {
+  const parts = [magLabel(q.mag), depthLabel(q.depth)].filter(Boolean);
+  if (q.tsunami) parts.push('Tsunami flag in USGS catalog');
+  return parts.join('. ');
+}
+
+export function volcanoNote(v) {
+  const vei = v.vei;
+  const parts = [];
+  if (vei == null) parts.push('VEI not reported');
+  else if (vei >= 5) parts.push(`VEI ${vei} — very large eruption`);
+  else if (vei >= 4) parts.push(`VEI ${vei} — large eruption`);
+  else if (vei >= 3) parts.push(`VEI ${vei} — moderate eruption`);
+  else parts.push(`VEI ${vei} — relatively small eruption`);
+  if (v.continuing) parts.push('Listed as ongoing in GVP');
+  else if (v.endDate) parts.push(`Ended ${v.endDate}`);
+  return parts.join('. ');
+}
+
+export function plateNote(p) {
+  const speed = p.speedMmYr;
+  let speedText = 'Motion speed unavailable';
+  if (speed != null) {
+    if (speed >= 80) speedText = `${speed.toFixed(1)} mm/yr — very fast plate`;
+    else if (speed >= 50) speedText = `${speed.toFixed(1)} mm/yr — fast plate`;
+    else if (speed >= 20) speedText = `${speed.toFixed(1)} mm/yr — moderate motion`;
+    else speedText = `${speed.toFixed(1)} mm/yr — relatively slow plate`;
+  }
+  return `${speedText}. Rotation about Euler pole at ${p.poleLat?.toFixed(1) ?? '—'}°N, ${p.poleLon?.toFixed(1) ?? '—'}°E.`;
+}
+
+export function plateBoundaryNote(props) {
+  const type = (props?.Type || '').toLowerCase();
+  if (type.includes('subduction')) {
+    return 'Subduction zone — oceanic plate dives beneath another plate, fueling arcs, volcanoes, and deep quakes.';
+  }
+  if (type.includes('ridge')) {
+    return 'Spreading ridge — new oceanic crust forms as plates move apart.';
+  }
+  if (type.includes('transform')) {
+    return 'Transform fault — plates slide past each other horizontally.';
+  }
+  if (type.includes('collision')) {
+    return 'Collision zone — continents or arcs collide, building mountains.';
+  }
+  return 'Plate interaction boundary from the PB2002 global model.';
+}
+
+export function gvpVolcanoUrl(volcanoNumber) {
+  if (!volcanoNumber) return 'https://volcano.si.edu/';
+  return `https://volcano.si.edu/volcano/${volcanoNumber}`;
+}
+
+export function getGlobeInspectContext(scene) {
+  return {
+    ...GLOBE_ABOUT,
+    hotspotAbout: scene?.getHotspotAbout?.() ?? GLOBE_ABOUT.hotspot,
+    plateAbout: scene?.getPlateMotionAbout?.() ?? GLOBE_ABOUT.plate,
+  };
+}
+
+export function renderGlobeTooltip(selection) {
+  if (!selection) return null;
+
+  const { type, data } = selection;
+
+  if (type === 'earthquake') {
+    const note = earthquakeNote(data);
+    return {
+      className: 'globe-tooltip--quake',
+      html: `
+        <strong>M${data.mag?.toFixed(1) ?? '—'}</strong>
+        <span class="globe-tooltip__kind">earthquake</span><br />
+        <span class="globe-tooltip__detail">${esc(data.place || 'Unknown location')}</span><br />
+        <span class="globe-tooltip__detail globe-tooltip__detail--muted">
+          ${data.depth != null ? `${data.depth.toFixed(1)} km depth` : 'Depth —'} · ${data.date || '—'}
+          ${data.tsunami ? ' · tsunami' : ''}
+        </span>
+        ${note ? `<span class="globe-tooltip__note">${esc(note)}</span>` : ''}
+      `,
+    };
+  }
+
+  if (type === 'volcano') {
+    const status = data.continuing ? 'ongoing' : `ended ${data.endDate || '—'}`;
+    return {
+      className: 'globe-tooltip--volcano',
+      html: `
+        <strong>${esc(data.name || 'Volcano')}</strong>
+        <span class="globe-tooltip__kind">GVP episode</span><br />
+        <span class="globe-tooltip__detail">VEI ${data.vei ?? '—'} · ${status}</span><br />
+        <span class="globe-tooltip__detail globe-tooltip__detail--muted">${data.startDate || '—'}${data.endDate && !data.continuing ? ` → ${data.endDate}` : ''}</span>
+        <span class="globe-tooltip__note">${esc(volcanoNote(data))}</span>
+      `,
+    };
+  }
+
+  if (type === 'hotspot') {
+    return {
+      className: 'globe-tooltip--hotspot',
+      html: `
+        <strong>${esc(data.name)}</strong>
+        <span class="globe-tooltip__kind">mantle hotspot</span><br />
+        <span class="globe-tooltip__detail">${esc(data.volcano || '—')}</span><br />
+        <span class="globe-tooltip__detail globe-tooltip__detail--muted">${esc(data.chain || data.region || '')}</span>
+      `,
+    };
+  }
+
+  if (type === 'plate') {
+    return {
+      className: 'globe-tooltip--motion',
+      html: `
+        <strong>${esc(data.name)}</strong>
+        <span class="globe-tooltip__kind">plate motion</span><br />
+        <span class="globe-tooltip__detail">${data.speedMmYr?.toFixed(1) ?? '—'} mm/yr toward arrow</span><br />
+        <span class="globe-tooltip__detail globe-tooltip__detail--muted">Code ${esc(data.code)} · ω ${data.degPerMa?.toFixed(2) ?? '—'} °/Ma</span>
+      `,
+    };
+  }
+
+  if (type === 'plate-boundary') {
+    return {
+      className: 'globe-tooltip--boundary',
+      html: `
+        <strong>${esc(data.name)}</strong>
+        <span class="globe-tooltip__kind">plate boundary</span><br />
+        <span class="globe-tooltip__detail">${esc(data.plates)}</span><br />
+        <span class="globe-tooltip__detail globe-tooltip__detail--muted">${esc(data.type)}</span>
+        <span class="globe-tooltip__note">${esc(plateBoundaryNote({ Type: data.type }))}</span>
+      `,
+    };
+  }
+
+  return null;
+}
