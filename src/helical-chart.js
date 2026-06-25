@@ -7,8 +7,21 @@ const AU_PER_DAY = (SUN_LSR_VELOCITY_KMS * 86400) / AU_KM;
 
 const TRAIL_BODIES = ['earth', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
 
+export function normalizeEphemerisCatalog(ephemeris) {
+  if (!ephemeris) return null;
+  if (ephemeris.byDate && ephemeris.dates) return ephemeris;
+  if (Array.isArray(ephemeris) && ephemeris.length) {
+    const dates = ephemeris.map((row) => row.date).filter(Boolean);
+    const byDate = Object.fromEntries(ephemeris.map((row) => [row.date, row]));
+    return { dates, byDate };
+  }
+  return null;
+}
+
 export function sliceEphemerisWindow(ephemeris, date, historyDays = 365) {
-  if (!ephemeris?.byDate || !date) return null;
+  const catalog = normalizeEphemerisCatalog(ephemeris);
+  if (!catalog?.byDate || !date) return null;
+  ephemeris = catalog;
   const resolved = resolveEphemerisDate(ephemeris, date);
   if (!resolved) return null;
   const dates = ephemeris.dates;
@@ -49,9 +62,10 @@ export function drawHelicalChart(canvas, ephemeris, date, historyDays = 365) {
   const h = canvas.height;
   ctx.clearRect(0, 0, w, h);
 
-  const window = sliceEphemerisWindow(ephemeris, date, historyDays);
-  const resolvedDate = resolveEphemerisDate(ephemeris, date);
-  const day = resolvedDate ? ephemeris?.byDate?.[resolvedDate] : null;
+  const catalog = normalizeEphemerisCatalog(ephemeris);
+  const window = sliceEphemerisWindow(catalog, date, historyDays);
+  const resolvedDate = resolveEphemerisDate(catalog, date);
+  const day = resolvedDate ? catalog?.byDate?.[resolvedDate] : null;
 
   if (!window?.dates?.length || !day?.earthHelio) {
     ctx.fillStyle = 'rgba(138,155,181,0.7)';

@@ -81,7 +81,7 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
       eopWindow,
       ephemerisDay: day.ephemeris,
       ephemerisForChart: ephWindowToChart(ephWindow, date, day.ephemeris),
-      ephemerisOrbit: ephOrbit,
+      ephemerisOrbit: ephWindowToChart(ephOrbit, date, day.ephemeris),
       earthquakes: day.earthquakes,
       eruptions: day.eruptions,
       storms: day.storms || [],
