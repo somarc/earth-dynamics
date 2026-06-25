@@ -1,0 +1,29 @@
+{
+  "source": "Wilson (1963) mantle hotspot framework; positions from GVP / plate tectonic references",
+  "hotspots": [
+    { "id": "hawaii", "name": "Hawaii", "lat": 19.42, "lon": -155.29, "region": "Pacific" },
+    { "id": "yellowstone", "name": "Yellowstone", "lat": 44.46, "lon": -110.84, "region": "North America" },
+    { "id": "iceland", "name": "Iceland", "lat": 64.96, "lon": -19.02, "region": "North Atlantic" },
+    { "id": "galapagos", "name": "Galápagos", "lat": -0.37, "lon": -91.55, "region": "Pacific" },
+    { "id": "easter", "name": "Easter", "lat": -27.12, "lon": -109.37, "region": "Pacific" },
+    { "id": "society", "name": "Society", "lat": -17.68, "lon": -149.43, "region": "Pacific" },
+    { "id": "samoa", "name": "Samoa", "lat": -14.23, "lon": -169.51, "region": "Pacific" },
+    { "id": "macdonald", "name": "Macdonald", "lat": -28.98, "lon": -140.25, "region": "Pacific" },
+    { "id": "cobb", "name": "Cobb", "lat": 46.7, "lon": -130.8, "region": "Pacific" },
+    { "id": "tristan", "name": "Tristan", "lat": -37.1, "lon": -12.28, "region": "South Atlantic" },
+    { "id": "bouvet", "name": "Bouvet", "lat": -54.42, "lon": 3.38, "region": "South Atlantic" },
+    { "id": "reunion", "name": "Réunion", "lat": -21.11, "lon": 55.54, "region": "Indian Ocean" },
+    { "id": "kerguelen", "name": "Kerguelen", "lat": -49.35, "lon": 69.5, "region": "Indian Ocean" },
+    { "id": "afar", "name": "Afar", "lat": 11.55, "lon": 41.0, "region": "East Africa" },
+    { "id": "canary", "name": "Canary", "lat": 28.54, "lon": -16.25, "region": "North Atlantic" },
+    { "id": "azores", "name": "Azores", "lat": 38.5, "lon": -28.0, "region": "North Atlantic" },
+    { "id": "ascension", "name": "Ascension", "lat": -7.95, "lon": -14.37, "region": "South Atlantic" },
+    { "id": "cape-verde", "name": "Cape Verde", "lat": 15.0, "lon": -24.0, "region": "North Atlantic" },
+    { "id": "eifel", "name": "Eifel", "lat": 50.2, "lon": 7.0, "region": "Europe" },
+    { "id": "pitcairn", "name": "Pitcairn", "lat": -25.07, "lon": -130.1, "region": "Pacific" },
+    { "id": "marquesas", "name": "Marquesas", "lat": -9.0, "lon": -140.0, "region": "Pacific" },
+    { "id": "amsterdam", "name": "Amsterdam", "lat": -37.83, "lon": 77.55, "region": "Indian Ocean" },
+    { "id": "fernando", "name": "Fernando de Noronha", "lat": -3.85, "lon": -32.42, "region": "South Atlantic" },
+    { "id": "new-england", "name": "New England", "lat": 41.0, "lon": -69.0, "region": "North Atlantic" }
+  ]
+}

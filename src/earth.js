@@ -10,6 +10,7 @@ import {
 } from './utils.js';
 import { updateAuroraRings, updateFieldLines } from './space-weather.js';
 import { loadPlateBoundaries, buildPlateGroup, loadPlateMotion, buildMotionGroup } from './plates.js';
+import { loadHotspots, buildHotspotGroup } from './hotspots.js';
 import { classifyPick } from './event-inspect.js';
 
 export class EarthScene {
@@ -23,6 +24,7 @@ export class EarthScene {
     this.showFieldLines = true;
     this.showPlates = true;
     this.showPlateMotion = true;
+    this.showHotspots = true;
     this.ready = this.init(canvas);
   }
 
@@ -114,6 +116,8 @@ export class EarthScene {
     this.surfaceGroup.add(this.plateGroup);
     this.plateMotionGroup = new THREE.Group();
     this.surfaceGroup.add(this.plateMotionGroup);
+    this.hotspotGroup = new THREE.Group();
+    this.surfaceGroup.add(this.hotspotGroup);
     this.fieldLinesGroup = new THREE.Group();
     this.axisGroup.add(this.fieldLinesGroup);
 
@@ -130,6 +134,14 @@ export class EarthScene {
       }
     } catch (err) {
       console.warn('Plate boundaries unavailable:', err);
+    }
+
+    try {
+      const hotspotData = await loadHotspots();
+      this.hotspotGroup.add(buildHotspotGroup(hotspotData));
+      this.hotspotGroup.visible = this.showHotspots;
+    } catch (err) {
+      console.warn('Hotspots unavailable:', err);
     }
 
     this.bodiesGroup = new THREE.Group();
@@ -332,6 +344,11 @@ export class EarthScene {
     this.updatePlateMotionVisible();
   }
 
+  setHotspotsVisible(visible) {
+    this.showHotspots = visible;
+    if (this.hotspotGroup) this.hotspotGroup.visible = visible;
+  }
+
   setPlateMotionVisible(visible) {
     this.showPlateMotion = visible;
     this.updatePlateMotionVisible();
@@ -378,7 +395,9 @@ export class EarthScene {
     this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.camera);
 
-    const groups = [this.quakeGroup, this.volcanoGroup, this.plateMotionGroup].filter(Boolean);
+    const groups = [
+      this.quakeGroup, this.volcanoGroup, this.plateMotionGroup, this.hotspotGroup,
+    ].filter(Boolean);
     const hits = this.raycaster.intersectObjects(groups, true);
     for (const hit of hits) {
       const picked = classifyPick(hit);

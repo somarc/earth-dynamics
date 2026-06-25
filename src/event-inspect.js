@@ -1,6 +1,6 @@
 export function renderEventInspect(container, selection) {
   if (!selection) {
-    container.innerHTML = '<p class="inspect-empty">Click a quake, volcano, or plate motion arrow on the globe.</p>';
+    container.innerHTML = '<p class="inspect-empty">Click a quake, volcano, hotspot, or plate motion arrow on the globe.</p>';
     return;
   }
 
@@ -35,6 +35,19 @@ export function renderEventInspect(container, selection) {
     return;
   }
 
+  if (type === 'hotspot') {
+    container.innerHTML = `
+      <dl class="inspect-card">
+        <div><dt>Type</dt><dd>Mantle hotspot</dd></div>
+        <div><dt>Name</dt><dd>${data.name}</dd></div>
+        <div><dt>Region</dt><dd>${data.region || '—'}</dd></div>
+        <div><dt>Position</dt><dd>${data.lat?.toFixed(1)}°, ${data.lon?.toFixed(1)}°</dd></div>
+      </dl>
+      <a class="inspect-link" href="https://volcano.si.edu/glossary/Hotspot/" target="_blank" rel="noopener">GVP hotspot reference →</a>
+    `;
+    return;
+  }
+
   if (type === 'plate') {
     container.innerHTML = `
       <dl class="inspect-card">
@@ -55,6 +68,7 @@ export function classifyPick(hit) {
     const d = obj.userData;
     if (d?.id && d.mag != null) return { type: 'earthquake', data: d };
     if (d?.volcanoNumber != null || (d?.name && d?.vei != null)) return { type: 'volcano', data: d };
+    if (d?.id && d.name && d.region) return { type: 'hotspot', data: d };
     if (d?.code && d.speedMmYr != null) return { type: 'plate', data: d };
     obj = obj.parent;
   }

@@ -115,6 +115,12 @@ export const SOURCES = {
     citation: 'Global tectonic plate boundary model PB2002',
     link: 'https://www.ngdc.noaa.gov/mgg/ocean/plate_boundary/',
   },
+  mantleHotspots: {
+    name: 'Wilson Mantle Hotspots',
+    org: 'Smithsonian GVP / plate tectonic synthesis',
+    citation: 'Reference hotspot surface positions',
+    link: 'https://volcano.si.edu/glossary/Hotspot/',
+  },
   plateMotion: {
     name: 'PB2002 Plate Motion (Euler poles)',
     org: 'Peter Bird / DeMets et al.',

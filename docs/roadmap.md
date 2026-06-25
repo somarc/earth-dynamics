@@ -69,7 +69,7 @@ These connect existing layers, improve daily usability, or unlock patterns for e
 |----|------|--------|--------|
 | R1 | Plate boundaries (PB2002) | Bird 2003 / NOAA | `done` |
 | R2 | Plate motion vectors | PB2002 Euler poles | `done` |
-| R3 | Mantle hotspots | GVP / Wilson hotspot list | `planned` |
+| R3 | Mantle hotspots | GVP / Wilson hotspot list | `done` |
 | R4 | Boundary labels on hover | PB2002 `Name` + `Type` | `planned` |
 | R5 | IGRF field lines (proper) | NOAA WMM/IGRF coefficients | `planned` |
 | R6 | Trench / ridge emphasis | Subduction polylines (thicker) | `planned` |

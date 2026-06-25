@@ -179,6 +179,7 @@ body,
 .legend__item--storm { color: #7eb8da; }
 .legend__item--plates { color: #ffd166; }
 .legend__item--motion { color: #6ec9a0; }
+.legend__item--hotspot { color: #ff7744; }
 .legend__item--aurora { color: #5cff8a; }
 .legend__item--field { color: #7eb8ff; }
 

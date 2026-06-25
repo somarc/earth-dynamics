@@ -30,6 +30,7 @@ const LAYER_PRESETS = {
     trail: true,
     plates: true,
     plateMotion: true,
+    hotspots: true,
     aurora: false,
     fieldLines: false,
     bodies: true,
@@ -42,6 +43,7 @@ const LAYER_PRESETS = {
     trail: true,
     plates: false,
     plateMotion: false,
+    hotspots: false,
     aurora: true,
     fieldLines: true,
     bodies: false,
@@ -54,6 +56,7 @@ const LAYER_PRESETS = {
     trail: true,
     plates: false,
     plateMotion: false,
+    hotspots: false,
     aurora: false,
     fieldLines: false,
     bodies: true,
@@ -66,6 +69,7 @@ const LAYER_PRESETS = {
     trail: true,
     plates: true,
     plateMotion: true,
+    hotspots: true,
     aurora: true,
     fieldLines: true,
     bodies: true,
@@ -116,6 +120,7 @@ function updateLegend() {
       <span class="legend__item legend__item--sun">☀ Sun direction</span>
       <span class="legend__item legend__item--plates">— Plate boundaries</span>
       <span class="legend__item legend__item--motion">→ Plate motion (mm/yr)</span>
+      <span class="legend__item legend__item--hotspot">◎ Mantle hotspot</span>
       <span class="legend__item legend__item--aurora">◌ Aurora oval (Kp)</span>
       <span class="legend__item legend__item--field">⌇ Magnetic field (model)</span>
     `;
@@ -276,6 +281,7 @@ function applyLayerPreset(presetId) {
   set('show-trail', preset.trail);
   set('show-plates', preset.plates);
   set('show-plate-motion', preset.plateMotion);
+  set('show-hotspots', preset.hotspots);
   set('show-aurora', preset.aurora);
   set('show-field-lines', preset.fieldLines);
   set('show-bodies', preset.bodies);
@@ -286,6 +292,7 @@ function applyLayerPreset(presetId) {
   geocentricScene.showTrail = preset.trail;
   geocentricScene.setPlatesVisible(preset.plates);
   geocentricScene.setPlateMotionVisible(preset.plateMotion);
+  geocentricScene.setHotspotsVisible(preset.hotspots);
   geocentricScene.showAurora = preset.aurora;
   geocentricScene.showFieldLines = preset.fieldLines;
   geocentricScene.showBodies = preset.bodies;
@@ -349,6 +356,9 @@ function setupControls() {
 
   document.getElementById('show-plates').addEventListener('change', (e) => {
     geocentricScene.setPlatesVisible(e.target.checked);
+  });
+  document.getElementById('show-hotspots').addEventListener('change', (e) => {
+    geocentricScene.setHotspotsVisible(e.target.checked);
   });
   document.getElementById('show-plate-motion').addEventListener('change', (e) => {
     geocentricScene.setPlateMotionVisible(e.target.checked);
