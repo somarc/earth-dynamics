@@ -63,6 +63,7 @@ function updateLegend() {
       <span class="legend__item legend__item--moon">◯ Moon (scaled)</span>
       <span class="legend__item legend__item--sun">☀ Sun direction</span>
       <span class="legend__item legend__item--plates">— Plate boundaries</span>
+      <span class="legend__item legend__item--motion">→ Plate motion (mm/yr)</span>
       <span class="legend__item legend__item--aurora">◌ Aurora oval (Kp)</span>
       <span class="legend__item legend__item--field">⌇ Magnetic field (model)</span>
     `;
@@ -251,6 +252,9 @@ function setupControls() {
 
   document.getElementById('show-plates').addEventListener('change', (e) => {
     geocentricScene.setPlatesVisible(e.target.checked);
+  });
+  document.getElementById('show-plate-motion').addEventListener('change', (e) => {
+    geocentricScene.setPlateMotionVisible(e.target.checked);
   });
 
   document.getElementById('show-aurora').addEventListener('change', (e) => {

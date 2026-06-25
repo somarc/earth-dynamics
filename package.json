@@ -11,6 +11,7 @@
     "fetch-data": "node scripts/fetch-data.mjs",
     "fetch-heliocentric": "node scripts/fetch-heliocentric.mjs",
     "fetch-space-weather": "node scripts/fetch-space-weather.mjs",
+    "build-plate-motion": "node scripts/build-plate-motion.mjs",
     "ingest": "node ingest/run.mjs",
     "ingest:force": "node ingest/run.mjs --force",
     "api": "node api/server.mjs",

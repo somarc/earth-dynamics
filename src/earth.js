@@ -9,7 +9,7 @@ import {
   veiToSize,
 } from './utils.js';
 import { updateAuroraRings, updateFieldLines } from './space-weather.js';
-import { loadPlateBoundaries, buildPlateGroup } from './plates.js';
+import { loadPlateBoundaries, buildPlateGroup, loadPlateMotion, buildMotionGroup } from './plates.js';
 
 export class EarthScene {
   constructor(canvas) {
@@ -21,6 +21,7 @@ export class EarthScene {
     this.showAurora = true;
     this.showFieldLines = true;
     this.showPlates = true;
+    this.showPlateMotion = true;
     this.ready = this.init(canvas);
   }
 
@@ -110,13 +111,22 @@ export class EarthScene {
     this.surfaceGroup.add(this.auroraGroup);
     this.plateGroup = new THREE.Group();
     this.surfaceGroup.add(this.plateGroup);
+    this.plateMotionGroup = new THREE.Group();
+    this.surfaceGroup.add(this.plateMotionGroup);
     this.fieldLinesGroup = new THREE.Group();
     this.axisGroup.add(this.fieldLinesGroup);
 
     try {
-      const plateGeo = await loadPlateBoundaries();
+      const [plateGeo, motionData] = await Promise.all([
+        loadPlateBoundaries(),
+        loadPlateMotion().catch(() => null),
+      ]);
       this.plateGroup.add(buildPlateGroup(plateGeo));
       this.plateGroup.visible = this.showPlates;
+      if (motionData) {
+        this.plateMotionGroup.add(buildMotionGroup(motionData));
+        this.plateMotionGroup.visible = this.showPlates && this.showPlateMotion;
+      }
     } catch (err) {
       console.warn('Plate boundaries unavailable:', err);
     }
@@ -315,6 +325,18 @@ export class EarthScene {
   setPlatesVisible(visible) {
     this.showPlates = visible;
     if (this.plateGroup) this.plateGroup.visible = visible;
+    this.updatePlateMotionVisible();
+  }
+
+  setPlateMotionVisible(visible) {
+    this.showPlateMotion = visible;
+    this.updatePlateMotionVisible();
+  }
+
+  updatePlateMotionVisible() {
+    if (this.plateMotionGroup) {
+      this.plateMotionGroup.visible = this.showPlates && this.showPlateMotion;
+    }
   }
 
   setSpaceWeather(geomagnetic) {

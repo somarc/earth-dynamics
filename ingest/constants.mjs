@@ -115,6 +115,12 @@ export const SOURCES = {
     citation: 'Global tectonic plate boundary model PB2002',
     link: 'https://www.ngdc.noaa.gov/mgg/ocean/plate_boundary/',
   },
+  plateMotion: {
+    name: 'PB2002 Plate Motion (Euler poles)',
+    org: 'Peter Bird / DeMets et al.',
+    citation: 'PB2002 angular velocities in deg/Ma',
+    link: 'http://peterbird.name/oldFTP/PB2002/PB2002_poles.dat.txt',
+  },
   noaaSwpc: {
     name: 'NOAA Space Weather Prediction Center',
     org: 'NOAA SWPC',

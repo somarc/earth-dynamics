@@ -6,4 +6,5 @@ data/*.db-*
 public/data/*.json
 !public/data/.gitkeep
 !public/data/plate-boundaries.json
+!public/data/plate-motion.json
 !public/data/space-weather-donki.json
