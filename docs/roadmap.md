@@ -162,4 +162,4 @@ NASA_API_KEY=xxx npm run fetch-space-weather
 
 ---
 
-*Last updated: 2026-06-25 — update status as items ship.*
+*Last updated: 2026-06-25 — Phases A–C shipped; parked before Phase D. See [`session-handoff.md`](session-handoff.md).*
