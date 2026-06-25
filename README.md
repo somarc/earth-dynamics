@@ -31,6 +31,10 @@ npm run start
 | Weather | Open-Meteo ERA5 (16 grid points) | `weather_daily` |
 | US storms | NOAA NCEI Storm Events | `storm_events` |
 | Sunspot / Kp | NASA MSFC + NOAA SWPC | `solar_daily` |
+| Space weather | NASA DONKI + NOAA SWPC | `space_weather_events`, `geomagnetic_daily` |
+| Plate boundaries | PB2002 (static GeoJSON) | `public/data/plate-boundaries.json` |
+
+**Roadmap:** [docs/roadmap.md](docs/roadmap.md)
 
 ## Commands
 
