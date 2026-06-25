@@ -115,6 +115,12 @@ export const SOURCES = {
     citation: 'Global tectonic plate boundary model PB2002',
     link: 'https://www.ngdc.noaa.gov/mgg/ocean/plate_boundary/',
   },
+  igrfWmm: {
+    name: 'IGRF / WMM Magnetic Field',
+    org: 'NOAA NCEI',
+    citation: 'WMM2020 dipole field line model',
+    link: 'https://www.ncei.noaa.gov/products/world-magnetic-model',
+  },
   mantleHotspots: {
     name: 'Wilson Mantle Hotspots',
     org: 'Smithsonian GVP / plate tectonic synthesis',
