@@ -145,7 +145,6 @@ function updateEventsPanelMeta(date, counts = null) {
   const eventsDesc = document.getElementById('events-panel-desc');
   const recentEl = document.getElementById('recent-only');
   const recentLabel = document.getElementById('recent-only-label');
-  const filterBadge = document.getElementById('filter-badge');
   const filterLabel = document.querySelector('.filter-label');
 
   if (recentEl) recentEl.checked = state.recentOnly;
@@ -160,15 +159,6 @@ function updateEventsPanelMeta(date, counts = null) {
   if (footerTally) {
     footerTally.textContent = tally || '';
     footerTally.title = tally || 'Globe event counts';
-  }
-
-  if (filterBadge) {
-    if (state.recentOnly && date) {
-      filterBadge.textContent = tally ? `7d · ${tally}` : '7d filter';
-      filterBadge.classList.remove('filter-badge--hidden');
-    } else {
-      filterBadge.classList.add('filter-badge--hidden');
-    }
   }
 
   if (!eventsTitle || !eventsDesc) return;
@@ -235,30 +225,30 @@ function updateLegend() {
   const legend = document.getElementById('legend');
   if (state.view === 'heliocentric') {
     legend.innerHTML = `
-      <span class="legend__item legend__item--sun">☀ Sun (center)</span>
-      <span class="legend__item legend__item--axis">— Spin axis (23.44° obliquity)</span>
-      <span class="legend__item legend__item--ecliptic">— Ecliptic north</span>
-      <span class="legend__item legend__item--pole">● Instantaneous pole</span>
-      <span class="legend__item legend__item--moon">◯ Moon</span>
-      <span class="legend__item legend__item--cme">▷ CME toward Earth</span>
-      <span class="legend__item legend__item--quake">◉ Earthquake (M≥${state.quakeMinMag})</span>
+      <span class="legend__item legend__item--sun" title="Sun at center">☀ Sun</span>
+      <span class="legend__item legend__item--axis" title="Spin axis, 23.44° obliquity">— Axis</span>
+      <span class="legend__item legend__item--ecliptic" title="Ecliptic north">— Ecliptic</span>
+      <span class="legend__item legend__item--pole" title="Instantaneous pole">● Pole</span>
+      <span class="legend__item legend__item--moon" title="Moon position">◯ Moon</span>
+      <span class="legend__item legend__item--cme" title="CME toward Earth">▷ CME</span>
+      <span class="legend__item legend__item--quake" title="USGS catalog">◉ M≥${state.quakeMinMag}</span>
     `;
   } else {
     legend.innerHTML = `
-      <span class="legend__item legend__item--pole">● Instantaneous pole</span>
-      <span class="legend__item legend__item--axis">— Rotation axis</span>
-      <span class="legend__item legend__item--quake">◉ Earthquake (M≥${state.quakeMinMag})</span>
-      <span class="legend__item legend__item--volcano">▲ Active GVP eruption (size ∝ VEI)</span>
-      <span class="legend__item legend__item--storm">◈ Storm event</span>
-      <span class="legend__item legend__item--moon">◯ Moon (scaled)</span>
-      <span class="legend__item legend__item--sun">☀ Sun direction</span>
-      <span class="legend__item legend__item--plates">— Plate boundaries</span>
-      <span class="legend__item legend__item--motion">→ Plate motion (mm/yr)</span>
-      <span class="legend__item legend__item--hotspot">◎ Mantle hotspot</span>
-      <span class="legend__item legend__item--aurora">◌ Aurora (OVATION / Kp)</span>
-      <span class="legend__item legend__item--field">⌇ Magnetic field (model)</span>
-      <span class="legend__item legend__item--cyclone">〰 IBTrACS cyclone track</span>
-      <span class="legend__item legend__item--weather">◌ ERA5 weather grid</span>
+      <span class="legend__item legend__item--pole" title="Instantaneous pole">● Pole</span>
+      <span class="legend__item legend__item--axis" title="Rotation axis">— Axis</span>
+      <span class="legend__item legend__item--quake" title="USGS earthquakes">◉ M≥${state.quakeMinMag}</span>
+      <span class="legend__item legend__item--volcano" title="GVP active eruption episodes">▲ GVP</span>
+      <span class="legend__item legend__item--storm" title="NOAA storm events">◈ Storm</span>
+      <span class="legend__item legend__item--moon" title="Scaled Moon position">◯ Moon</span>
+      <span class="legend__item legend__item--sun" title="Sun direction">☀ Sun</span>
+      <span class="legend__item legend__item--plates" title="PB2002 boundaries">— Plates</span>
+      <span class="legend__item legend__item--motion" title="Plate motion mm/yr">→ Motion</span>
+      <span class="legend__item legend__item--hotspot" title="Mantle hotspots">◎ Hotspot</span>
+      <span class="legend__item legend__item--aurora" title="OVATION / Kp aurora">◌ Aurora</span>
+      <span class="legend__item legend__item--field" title="WMM field lines">⌇ Field</span>
+      <span class="legend__item legend__item--cyclone" title="IBTrACS tracks">〰 Cyclone</span>
+      <span class="legend__item legend__item--weather" title="ERA5 grid glyphs">◌ Weather</span>
     `;
   }
 }
@@ -705,10 +695,12 @@ async function main() {
   geocentricScene = await new EarthScene(document.getElementById('geo-canvas')).ready;
   heliocentricScene = await new HeliocentricScene(document.getElementById('helio-canvas')).ready;
 
-  const modeBadge = document.createElement('span');
-  modeBadge.className = 'mode-badge';
-  modeBadge.textContent = state.catalog.mode === 'api' ? 'SQLite API' : 'JSON fallback';
-  document.querySelector('.header__right').prepend(modeBadge);
+  const modeBadge = document.getElementById('mode-badge');
+  if (modeBadge) {
+    modeBadge.textContent = state.catalog.mode === 'api' ? 'API' : 'JSON';
+    modeBadge.title = state.catalog.mode === 'api' ? 'SQLite API backend' : 'Static JSON fallback';
+    modeBadge.hidden = false;
+  }
 
   renderEventInspect(
     document.getElementById('event-inspect'),

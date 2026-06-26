@@ -42,68 +42,98 @@ body,
 
 .header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding: 1rem 1.25rem 0.75rem;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.38rem 0.75rem 0.4rem;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(8, 14, 28, 0.98), rgba(6, 10, 18, 0.85));
+  background: rgba(8, 12, 22, 0.95);
 }
 
-.header h1 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.subtitle {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-top: 0.2rem;
-}
-
-.header__right {
+.header__row {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
 }
 
-.header__meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
+.header__row--legend {
+  padding-bottom: 0.05rem;
+}
+
+.header__title {
   font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
 }
 
-.view-switcher {
+.header__cluster {
   display: flex;
-  gap: 0.25rem;
-  background: rgba(20, 30, 50, 0.6);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.2rem;
+  align-items: center;
+  gap: 0.28rem;
+  flex-shrink: 0;
 }
 
-.view-btn {
-  font-family: var(--font-sans);
-  font-size: 0.72rem;
-  padding: 0.3rem 0.65rem;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
+.header__cluster--meta {
+  margin-left: auto;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.header__cluster--views {
+  padding-left: 0.35rem;
+  border-left: 1px solid var(--border);
+}
+
+.header-date {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.status-chip {
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  color: var(--accent-earth);
+  border: 1px solid rgba(62, 207, 142, 0.3);
+  border-radius: 3px;
+  padding: 0.1rem 0.32rem;
+  background: rgba(62, 207, 142, 0.08);
+}
+
+.header-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.22rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  max-width: min(22rem, 42vw);
+}
+
+.header-chips.staleness-chips--hidden {
+  display: none;
+}
+
+.view-chip {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  padding: 0.14rem 0.38rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: rgba(20, 30, 50, 0.45);
   color: var(--text-muted);
   cursor: pointer;
 }
 
-.view-btn--active {
-  background: rgba(77, 163, 255, 0.2);
+.view-btn--active.view-chip {
   color: var(--accent);
+  border-color: rgba(77, 163, 255, 0.42);
+  background: rgba(77, 163, 255, 0.12);
 }
 
-.view-btn:hover:not(.view-btn--active) {
+.view-chip:hover:not(.view-btn--active) {
   color: var(--text);
 }
 
@@ -165,12 +195,6 @@ body,
   position: absolute;
   inset: 0;
   pointer-events: none;
-}
-
-.viewport__overlay .legend {
-  position: absolute;
-  top: 0.75rem;
-  left: 0.75rem;
 }
 
 .plate-tooltip {
@@ -280,14 +304,25 @@ body,
 
 .legend {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  font-size: 0.72rem;
+  flex-wrap: nowrap;
+  gap: 0.28rem;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
   color: var(--text-muted);
-  background: var(--bg-panel);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  width: 100%;
+  min-width: 0;
+  padding-bottom: 1px;
+}
+
+.legend__item {
+  flex-shrink: 0;
+  padding: 0.12rem 0.34rem;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
+  border-radius: 3px;
+  background: rgba(20, 30, 50, 0.35);
+  white-space: nowrap;
 }
 
 .legend__item--pole { color: #ffd166; }
@@ -326,23 +361,6 @@ body,
 .event-list .cyclone {
   color: #ffaa44;
   font-weight: 600;
-}
-
-.mode-badge {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  color: var(--accent-earth);
-  border: 1px solid rgba(62, 207, 142, 0.3);
-  border-radius: 4px;
-  padding: 0.15rem 0.4rem;
-}
-
-.staleness-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  justify-content: flex-end;
-  max-width: 280px;
 }
 
 .staleness-chips--hidden {
@@ -1091,6 +1109,20 @@ select {
   }
 
   .footer-tally {
+    max-width: 100%;
+  }
+
+  .header__row--primary {
+    flex-wrap: wrap;
+  }
+
+  .header__cluster--meta {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+
+  .header-chips {
     max-width: 100%;
   }
 }

@@ -12,20 +12,25 @@
   <body>
     <div id="app">
       <header class="header">
-        <div class="header__brand">
-          <h1>Wobblescope</h1>
-          <p class="subtitle">Spin, shake, storm &amp; syzygy — Earth's layers on one scrubbable timeline</p>
+        <div class="header__row header__row--primary">
+          <h1
+            class="header__title"
+            title="Spin, shake, storm &amp; syzygy — Earth's layers on one scrubbable timeline"
+          >
+            Wobblescope
+          </h1>
+          <div class="header__cluster header__cluster--views" role="group" aria-label="View mode">
+            <button type="button" class="view-chip view-btn view-btn--active" data-view="geocentric" title="Earth-centered globe">Geo</button>
+            <button type="button" class="view-chip view-btn" data-view="heliocentric" title="Sun-centered system">Helio</button>
+          </div>
+          <div class="header__cluster header__cluster--meta">
+            <span id="date-display" class="header-date">—</span>
+            <span id="mode-badge" class="status-chip" hidden></span>
+            <div id="staleness-chips" class="header-chips staleness-chips--hidden" aria-live="polite"></div>
+          </div>
         </div>
-        <div class="header__right">
-          <div class="view-switcher">
-            <button class="view-btn view-btn--active" data-view="geocentric">Geocentric</button>
-            <button class="view-btn" data-view="heliocentric">Heliocentric</button>
-          </div>
-          <div class="header__meta">
-            <div id="staleness-chips" class="staleness-chips staleness-chips--hidden" aria-live="polite"></div>
-            <span id="date-display">—</span>
-            <span id="filter-badge" class="filter-badge filter-badge--hidden" aria-live="polite"></span>
-          </div>
+        <div class="header__row header__row--legend">
+          <div class="legend" id="legend" aria-label="Globe legend"></div>
         </div>
       </header>
 
@@ -34,7 +39,6 @@
           <canvas id="geo-canvas" class="scene-canvas"></canvas>
           <canvas id="helio-canvas" class="scene-canvas scene-canvas--hidden"></canvas>
           <div class="viewport__overlay">
-            <div class="legend" id="legend"></div>
             <div id="plate-tooltip" class="plate-tooltip plate-tooltip--hidden" aria-hidden="true"></div>
           </div>
         </section>

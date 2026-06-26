@@ -209,7 +209,7 @@ export function renderStalenessChips(meta) {
     el.classList.add('staleness-chips--hidden');
     return;
   }
-  el.classList.remove('staleness-chips--hidden');
+  el.classList.remove('staleness-chips--hidden', 'header-chips--empty');
   el.innerHTML = chips
     .map(
       (c) =>
