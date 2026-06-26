@@ -123,6 +123,15 @@
             <span id="recent-only-label">Past week only</span>
           </label>
         </div>
+        <div class="controls__quake-mag" title="M≥5 ~several/day · M≥6 ~every few days · M≥7 ~15/yr · M≥8 ~1/yr (global averages)">
+          <label for="quake-min-mag">Quake floor</label>
+          <select id="quake-min-mag" aria-label="Minimum earthquake magnitude">
+            <option value="5" selected>M≥5</option>
+            <option value="6">M≥6</option>
+            <option value="7">M≥7</option>
+            <option value="8">M≥8</option>
+          </select>
+        </div>
         <div class="controls__presets">
           <span class="presets-label">Presets</span>
           <button type="button" class="preset-btn" data-preset="solid">Solid Earth</button>

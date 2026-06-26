@@ -11,7 +11,7 @@ import {
 import { fetchOvation, isOvationCurrent, ovationEquatorwardEdge } from './ovation.js';
 import { renderEventInspect } from './event-inspect.js';
 import { getGlobeInspectContext, renderGlobeTooltip } from './globe-inspect.js';
-import { formatDate, addDays } from './utils.js';
+import { formatDate, addDays, filterQuakesByMinMag } from './utils.js';
 import { loadCatalog, loadFrame } from './data-client.js';
 import {
   EPISTEMIC,
@@ -34,6 +34,7 @@ const state = {
   eopSeries: [],
   ovationData: null,
   recentOnly: true,
+  quakeMinMag: 5,
 };
 
 let geocentricScene = null;
@@ -188,13 +189,18 @@ function updateEventsPanelMeta(date, counts = null) {
   }
 }
 
+function visibleEarthquakes(quakes) {
+  return filterQuakesByMinMag(quakes, state.quakeMinMag);
+}
+
 function applyEventLayers(frame, date) {
+  const quakes = visibleEarthquakes(frame.earthquakes);
   geocentricScene.viewDate = date;
-  geocentricScene.setEarthquakes(frame.earthquakes);
+  geocentricScene.setEarthquakes(quakes);
   geocentricScene.setVolcanoes(frame.eruptions);
   geocentricScene.setCyclones(frame.cyclones, date);
   geocentricScene.setWeatherGlyphs(frame.weather);
-  heliocentricScene.setEarthquakes(frame.earthquakes);
+  heliocentricScene.setEarthquakes(quakes);
   heliocentricScene.setVolcanoes(frame.eruptions);
   heliocentricScene.setCmeEvents(frame.spaceWeather, date);
 }
@@ -237,13 +243,13 @@ function updateLegend() {
       <span class="legend__item legend__item--pole">● Instantaneous pole</span>
       <span class="legend__item legend__item--moon">◯ Moon</span>
       <span class="legend__item legend__item--cme">▷ CME toward Earth</span>
-      <span class="legend__item legend__item--quake">◉ Earthquake</span>
+      <span class="legend__item legend__item--quake">◉ Earthquake (M≥${state.quakeMinMag})</span>
     `;
   } else {
     legend.innerHTML = `
       <span class="legend__item legend__item--pole">● Instantaneous pole</span>
       <span class="legend__item legend__item--axis">— Rotation axis</span>
-      <span class="legend__item legend__item--quake">◉ Earthquake (M≥5)</span>
+      <span class="legend__item legend__item--quake">◉ Earthquake (M≥${state.quakeMinMag})</span>
       <span class="legend__item legend__item--volcano">▲ Active GVP eruption (size ∝ VEI)</span>
       <span class="legend__item legend__item--storm">◈ Storm event</span>
       <span class="legend__item legend__item--moon">◯ Moon (scaled)</span>
@@ -330,8 +336,10 @@ async function updateUI() {
   });
   const { record, eopWindow, ephemerisDay, ephemerisForChart } = frame;
 
+  const quakes = visibleEarthquakes(frame.earthquakes);
+
   updateEventsPanelMeta(date, {
-    quakes: frame.earthquakes?.length ?? 0,
+    quakes: quakes.length,
     eruptions: frame.eruptions?.length ?? 0,
     cyclones: frame.cyclones?.length ?? 0,
     weather: frame.weather?.length ?? 0,
@@ -481,7 +489,7 @@ async function updateUI() {
     );
   }
 
-  for (const q of frame.earthquakes.slice(0, 6)) {
+  for (const q of quakes.slice(0, 6)) {
     items.push(
       `<li><span class="mag">M${q.mag?.toFixed(1)}</span> ${q.place} — <a href="${q.url}" target="_blank" rel="noopener">USGS</a></li>`
     );
@@ -495,9 +503,10 @@ async function updateUI() {
     );
   }
 
+  const magNote = state.quakeMinMag > 5 ? ` at M≥${state.quakeMinMag}` : '';
   list.innerHTML = items.length
     ? items.join('')
-    : `<li class="empty">No events in ${state.recentOnly ? 'past 7 days' : 'window'}</li>`;
+    : `<li class="empty">No events in ${state.recentOnly ? 'past 7 days' : 'window'}${magNote}</li>`;
 }
 
 function applyLayerPreset(presetId) {
@@ -586,6 +595,16 @@ function setupControls() {
     recentOnlyEl.addEventListener('change', (e) => {
       state.recentOnly = e.target.checked;
       updateEventsPanelMeta(state.dates[state.currentIndex]);
+      updateUI();
+    });
+  }
+
+  const quakeMagEl = document.getElementById('quake-min-mag');
+  if (quakeMagEl) {
+    quakeMagEl.value = String(state.quakeMinMag);
+    quakeMagEl.addEventListener('change', (e) => {
+      state.quakeMinMag = parseInt(e.target.value, 10) || 5;
+      updateLegend();
       updateUI();
     });
   }

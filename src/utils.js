@@ -101,6 +101,15 @@ export function eventsOnDate(dateStr, earthquakes, eruptions, windowDays = 3, pa
   return { quakes, volcs };
 }
 
+export const QUAKE_MAG_FLOORS = [5, 6, 7, 8];
+
+/** Global catalog ingests M≥5; UI floor filters display only. */
+export function filterQuakesByMinMag(quakes, minMag = 5) {
+  if (!quakes?.length) return [];
+  const floor = Number(minMag) || 5;
+  return quakes.filter((q) => (q.mag ?? 0) >= floor);
+}
+
 export function magToSize(mag) {
   return 0.008 + Math.max(0, mag - 4) * 0.006;
 }

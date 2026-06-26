@@ -965,6 +965,7 @@ body,
 }
 
 .controls__speed,
+.controls__quake-mag,
 .controls__toggles {
   display: flex;
   align-items: center;
@@ -1018,6 +1019,7 @@ select {
   .controls__filter,
   .controls__presets,
   .controls__speed,
+  .controls__quake-mag,
   .controls__toggles {
     grid-column: 1 / -1;
     flex-wrap: wrap;
