@@ -28,6 +28,7 @@ function parseFeature(f) {
 export async function ingestEarthquakes({ force = false } = {}) {
   const db = getDb();
   const today = new Date().toISOString().slice(0, 10);
+  const endDate = addDays(today, 1);
   const count = db.prepare('SELECT COUNT(*) AS c FROM earthquakes').get().c;
 
   if (force) {
@@ -46,12 +47,12 @@ export async function ingestEarthquakes({ force = false } = {}) {
   const url = new URL('https://earthquake.usgs.gov/fdsnws/event/1/query');
   url.searchParams.set('format', 'geojson');
   url.searchParams.set('starttime', startDate);
-  url.searchParams.set('endtime', today);
+  url.searchParams.set('endtime', endDate);
   url.searchParams.set('minmagnitude', String(MIN_MAG));
   url.searchParams.set('orderby', 'time-asc');
   url.searchParams.set('limit', '20000');
 
-  console.log(`  earthquakes: incremental ${startDate} → ${today}…`);
+  console.log(`  earthquakes: incremental ${startDate} → ${today} (through end of day)…`);
   const res = await fetch(url);
   if (!res.ok) throw new Error(`USGS ${res.status}`);
 
@@ -67,6 +68,6 @@ export async function ingestEarthquakes({ force = false } = {}) {
   tx();
 
   const total = db.prepare('SELECT COUNT(*) AS c FROM earthquakes').get().c;
-  logIngest('earthquakes-incremental', rows.length, `${startDate}–${today}, total ${total}`);
+  logIngest('earthquakes-incremental', rows.length, `${startDate}–${endDate}, total ${total}`);
   console.log(`  earthquakes: +${rows.length} rows (${total} total)`);
 }
