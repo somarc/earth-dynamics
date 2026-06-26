@@ -52,6 +52,41 @@ let heliocentricScene = null;
 let viewTransition = null;
 let timelineSlider = null;
 
+function formatPlaybackRate(dayLengthMs, speed) {
+  const ms = dayLengthMs / speed;
+  if (ms >= 86_400_000) {
+    const days = ms / 86_400_000;
+    return days >= 10 ? `${Math.round(days)}d/sim day` : `${days.toFixed(1)}d/sim day`;
+  }
+  if (ms >= 3_600_000) {
+    const hours = ms / 3_600_000;
+    return hours >= 10 ? `${Math.round(hours)}h/sim day` : `${hours.toFixed(1)}h/sim day`;
+  }
+  if (ms >= 60_000) {
+    const minutes = ms / 60_000;
+    return minutes >= 10 ? `${Math.round(minutes)}m/sim day` : `${minutes.toFixed(1)}m/sim day`;
+  }
+  if (ms >= 1000) return `${Math.round(ms / 1000)}s/sim day`;
+  return `${Math.round(ms)}ms/sim day`;
+}
+
+function playbackMetaSuffix() {
+  if (!state.playing) return '';
+  let suffix = ` · ${formatPlaybackRate(state.dayLengthMs, state.speed)}`;
+  if (state.dayAccumulator > 0.001) {
+    suffix += ` · +${Math.round(state.dayAccumulator * 100)}% day`;
+  }
+  return suffix;
+}
+
+function setDiurnalMode(mode) {
+  state.diurnalMode = mode === 'free' ? 'free' : 'sync';
+  document.querySelectorAll('[data-diurnal]').forEach((btn) => {
+    btn.classList.toggle('segmented__btn--active', btn.dataset.diurnal === state.diurnalMode);
+  });
+  geocentricScene?.setDiurnalMode(state.diurnalMode);
+}
+
 const LAYER_PRESETS = {
   solid: {
     label: 'Solid Earth',
@@ -340,10 +375,8 @@ function setView(view) {
   document.querySelectorAll('.view-btn').forEach((btn) => {
     btn.classList.toggle('view-btn--active', btn.dataset.view === view);
   });
-  document.getElementById('show-bodies').closest('label').style.display =
-    view === 'geocentric' ? '' : 'none';
-  const diurnalEl = document.getElementById('diurnal-mode');
-  if (diurnalEl) diurnalEl.closest('label').style.display = view === 'geocentric' ? '' : 'none';
+  const geoMotionGroup = document.getElementById('geo-motion-group');
+  if (geoMotionGroup) geoMotionGroup.style.display = view === 'geocentric' ? '' : 'none';
   document.getElementById('show-moon-label').style.display =
     view === 'heliocentric' ? '' : 'none';
   document.getElementById('show-cme-label').style.display =
@@ -631,6 +664,7 @@ function setupControls() {
     dateEl: document.getElementById('scrub-date'),
     metaEl: document.getElementById('scrub-meta'),
   });
+  timelineSlider.setMetaSuffix(playbackMetaSuffix);
   timelineSlider.update(state.currentIndex);
 
   slider.addEventListener('input', () => {
@@ -644,16 +678,19 @@ function setupControls() {
   playBtn.addEventListener('click', () => {
     state.playing = !state.playing;
     playBtn.textContent = state.playing ? '⏸' : '▶';
+    timelineSlider?.refreshMeta();
   });
 
   speedSelect.addEventListener('change', () => {
     state.speed = parseFloat(speedSelect.value);
+    timelineSlider?.refreshMeta();
   });
 
   if (dayLengthSelect) {
     dayLengthSelect.value = String(state.dayLengthMs);
     dayLengthSelect.addEventListener('change', () => {
       state.dayLengthMs = parseInt(dayLengthSelect.value, 10) || 60_000;
+      timelineSlider?.refreshMeta();
     });
   }
 
@@ -744,15 +781,13 @@ function setupControls() {
     updateUI();
   });
 
-  const diurnalModeEl = document.getElementById('diurnal-mode');
-  if (diurnalModeEl) {
-    diurnalModeEl.value = state.diurnalMode;
-    diurnalModeEl.addEventListener('change', (e) => {
-      state.diurnalMode = e.target.value;
-      geocentricScene.setDiurnalMode(state.diurnalMode);
+  document.querySelectorAll('[data-diurnal]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      setDiurnalMode(btn.dataset.diurnal);
       updateUI();
     });
-  }
+  });
+  setDiurnalMode(state.diurnalMode);
   document.getElementById('show-moon').addEventListener('change', (e) => {
     heliocentricScene.showMoon = e.target.checked;
     updateUI();
@@ -797,6 +832,10 @@ function animate(timestamp) {
 
   if (state.view === 'geocentric' && geocentricScene) {
     geocentricScene.setDiurnalPhase(state.playing ? state.dayAccumulator : 0);
+  }
+
+  if (state.playing) {
+    timelineSlider?.refreshMeta();
   }
 
   if (viewTransition) {

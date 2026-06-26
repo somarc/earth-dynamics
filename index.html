@@ -137,30 +137,42 @@
               <span id="end-label">2026</span>
             </div>
           </div>
-          <select id="day-length-select" class="controls__speed-select" title="Real time per simulated day at 1× speed" aria-label="Day length">
-            <option value="10000">10s/day</option>
-            <option value="60000" selected>1m/day</option>
-            <option value="3600000">1h/day</option>
-            <option value="86400000">24h/day</option>
-          </select>
-          <select id="speed-select" class="controls__speed-select" title="Playback multiplier on day length" aria-label="Playback speed">
-            <option value="0.25">0.25×</option>
-            <option value="1" selected>1×</option>
-            <option value="4">4×</option>
-            <option value="16">16×</option>
-            <option value="24">24×</option>
-            <option value="64">64×</option>
-          </select>
+          <div class="controls__group controls__group--playback" role="group" aria-label="Playback rate">
+            <div class="controls__field" title="How long one simulated day takes at 1× fast-forward">
+              <span class="controls__field-label">Day</span>
+              <select id="day-length-select" class="footer-select footer-select--day" aria-label="Simulated day length at 1×">
+                <option value="10000">10s</option>
+                <option value="60000" selected>1m</option>
+                <option value="3600000">1h</option>
+                <option value="86400000">24h</option>
+              </select>
+            </div>
+            <div
+              class="controls__field"
+              title="Fast-forward multiplier — speeds earth spin and steps the timeline through calendar dates"
+            >
+              <span class="controls__field-label">×</span>
+              <select id="speed-select" class="footer-select footer-select--speed" aria-label="Playback fast-forward">
+                <option value="0.25">¼×</option>
+                <option value="1" selected>1×</option>
+                <option value="4">4×</option>
+                <option value="16">16×</option>
+                <option value="24">24×</option>
+                <option value="64">64×</option>
+              </select>
+            </div>
+          </div>
         </div>
         <div class="controls__row controls__row--tools">
-          <div class="controls__cluster controls__cluster--filters">
+          <div class="controls__cluster controls__cluster--filters" role="group" aria-label="Event filters">
+            <span class="controls__cluster-label">Filter</span>
             <label class="filter-chip filter-label" title="Limit events to the 7 days before the selected date">
               <input type="checkbox" id="recent-only" checked />
               <span id="recent-only-label">7d</span>
             </label>
             <select
               id="quake-min-mag"
-              class="controls__mag-select"
+              class="footer-select footer-select--mag"
               title="M≥5 ~several/day · M≥6 ~every few days · M≥7 ~15/yr · M≥8 ~1/yr"
               aria-label="Minimum earthquake magnitude"
             >
@@ -172,34 +184,49 @@
             <span id="footer-tally" class="footer-tally" aria-live="polite"></span>
           </div>
           <div class="controls__cluster controls__cluster--presets" role="group" aria-label="Layer presets">
+            <span class="controls__cluster-label">Preset</span>
             <button type="button" class="preset-btn" data-preset="solid" title="Solid Earth layers">Solid</button>
             <button type="button" class="preset-btn" data-preset="space" title="Space weather layers">Space</button>
             <button type="button" class="preset-btn" data-preset="orbital" title="Orbital geometry">Orbit</button>
             <button type="button" class="preset-btn" data-preset="atmosphere" title="Cyclones and weather">Atmos</button>
             <button type="button" class="preset-btn" data-preset="full" title="All layers">Full</button>
           </div>
-          <div class="controls__cluster controls__cluster--layers" role="group" aria-label="Globe layers">
-            <label class="layer-chip" title="USGS earthquakes"><input type="checkbox" id="show-quakes" checked /><span>Quakes</span></label>
-            <label class="layer-chip" title="GVP eruption episodes in window"><input type="checkbox" id="show-volcanoes" checked /><span>GVP</span></label>
-            <label class="layer-chip" id="chip-spin-pole" title="IERS spin pole marker (exaggerated on globe)"><input type="checkbox" id="show-spin-pole" checked /><span>Spin</span></label>
-            <label class="layer-chip" id="chip-pole-trail" title="IERS polar wander path — recent trail near spin pole"><input type="checkbox" id="show-trail" checked /><span>Trail</span></label>
-            <label class="layer-chip" title="PB2002 steps — red=subduction, green=ridge/rift, yellow dashed=transform, orange=convergent (kinematic class, not quake intensity)"><input type="checkbox" id="show-plates" checked /><span>Plates</span></label>
-            <label class="layer-chip" title="Plate motion vectors"><input type="checkbox" id="show-plate-motion" checked /><span>Motion</span></label>
-            <label class="layer-chip" title="Mantle hotspots"><input type="checkbox" id="show-hotspots" checked /><span>Hotspots</span></label>
-            <label class="layer-chip" id="chip-cyclones" title="IBTrACS cyclone tracks in date window"><input type="checkbox" id="show-cyclones" checked /><span>Cyclones</span></label>
-            <label class="layer-chip" id="chip-weather" title="ERA5 weather glyphs at 16 grid cities"><input type="checkbox" id="show-weather-glyphs" checked /><span>Weather</span></label>
-            <label class="layer-chip" title="OVATION / Kp aurora"><input type="checkbox" id="show-aurora" checked /><span>Aurora</span></label>
-            <label class="layer-chip" id="chip-geomag" title="WMM field lines, IGRF magnetic poles, INTERMAGNET when space-weather data exists"><input type="checkbox" id="show-field-lines" checked /><span>Geomag</span></label>
-            <label class="layer-chip" title="Moon and Sun markers"><input type="checkbox" id="show-bodies" checked /><span>Bodies</span></label>
-            <label class="layer-chip layer-chip--select" title="Sync: earth rotation and moon track simulated days while timeline plays. Free: decorative spin, bodies fixed to scrub date.">
-              <select id="diurnal-mode" aria-label="Diurnal motion mode">
-                <option value="sync" selected>Sync</option>
-                <option value="free">Free spin</option>
-              </select>
-              <span>Day</span>
-            </label>
-            <label class="layer-chip" id="show-moon-label" style="display:none" title="Moon in heliocentric view"><input type="checkbox" id="show-moon" checked /><span>Moon</span></label>
-            <label class="layer-chip" id="show-cme-label" style="display:none" title="CME markers"><input type="checkbox" id="show-cme" checked /><span>CME</span></label>
+          <div class="controls__cluster controls__cluster--layers">
+            <div class="layer-group" role="group" aria-label="Solid Earth layers">
+              <span class="layer-group__label">Solid</span>
+              <label class="layer-chip" title="USGS earthquakes"><input type="checkbox" id="show-quakes" checked /><span>Quakes</span></label>
+              <label class="layer-chip" title="GVP eruption episodes in window"><input type="checkbox" id="show-volcanoes" checked /><span>GVP</span></label>
+              <label class="layer-chip" id="chip-spin-pole" title="IERS spin pole marker (exaggerated on globe)"><input type="checkbox" id="show-spin-pole" checked /><span>Spin</span></label>
+              <label class="layer-chip" id="chip-pole-trail" title="IERS polar wander path — recent trail near spin pole"><input type="checkbox" id="show-trail" checked /><span>Trail</span></label>
+              <label class="layer-chip" title="PB2002 steps — red=subduction, green=ridge/rift, yellow dashed=transform, orange=convergent (kinematic class, not quake intensity)"><input type="checkbox" id="show-plates" checked /><span>Plates</span></label>
+              <label class="layer-chip" title="Plate motion vectors"><input type="checkbox" id="show-plate-motion" checked /><span>Motion</span></label>
+              <label class="layer-chip" title="Mantle hotspots"><input type="checkbox" id="show-hotspots" checked /><span>Hotspots</span></label>
+            </div>
+            <div class="layer-group" role="group" aria-label="Atmosphere layers">
+              <span class="layer-group__label">Atmos</span>
+              <label class="layer-chip" id="chip-cyclones" title="IBTrACS cyclone tracks in date window"><input type="checkbox" id="show-cyclones" checked /><span>Cyclones</span></label>
+              <label class="layer-chip" id="chip-weather" title="ERA5 weather glyphs at 16 grid cities"><input type="checkbox" id="show-weather-glyphs" checked /><span>Weather</span></label>
+            </div>
+            <div class="layer-group" role="group" aria-label="Space weather layers">
+              <span class="layer-group__label">Space</span>
+              <label class="layer-chip" title="OVATION / Kp aurora"><input type="checkbox" id="show-aurora" checked /><span>Aurora</span></label>
+              <label class="layer-chip" id="chip-geomag" title="WMM field lines, IGRF magnetic poles, INTERMAGNET when space-weather data exists"><input type="checkbox" id="show-field-lines" checked /><span>Geomag</span></label>
+              <label class="layer-chip" id="show-moon-label" style="display:none" title="Moon in heliocentric view"><input type="checkbox" id="show-moon" checked /><span>Moon</span></label>
+              <label class="layer-chip" id="show-cme-label" style="display:none" title="CME markers"><input type="checkbox" id="show-cme" checked /><span>CME</span></label>
+            </div>
+            <div class="layer-group layer-group--sky" id="geo-motion-group" role="group" aria-label="Sky and diurnal motion">
+              <span class="layer-group__label">Sky</span>
+              <label class="layer-chip" title="Moon and Sun markers"><input type="checkbox" id="show-bodies" checked /><span>Bodies</span></label>
+              <div
+                class="segmented segmented--diurnal"
+                role="group"
+                aria-label="Earth rotation mode"
+                title="Sync: earth spins and moon tracks simulated days while playing. Free: decorative spin; bodies stay on the scrubbed date."
+              >
+                <button type="button" class="segmented__btn segmented__btn--active" data-diurnal="sync">Sync</button>
+                <button type="button" class="segmented__btn" data-diurnal="free">Free</button>
+              </div>
+            </div>
           </div>
         </div>
       </footer>

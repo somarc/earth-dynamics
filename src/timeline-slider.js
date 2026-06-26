@@ -81,9 +81,22 @@ function renderTicks(ticksEl, ticks) {
     .join('');
 }
 
+function formatMetaLine(dates, meta, suffix = '') {
+  const originYear = yearOf(dates[0]);
+  return `${meta.year} · ${meta.pct}% · +${meta.yearsElapsed}y from ${originYear}${suffix}`;
+}
+
 export function createTimelineSlider({ dates, slider, ticksEl, fillEl, dateEl, metaEl }) {
   const ticks = buildDecadeTicks(dates);
   renderTicks(ticksEl, ticks);
+  let metaSuffix = () => '';
+
+  const writeMeta = (index) => {
+    if (!metaEl) return timelineMeta(dates, index);
+    const meta = timelineMeta(dates, index);
+    metaEl.textContent = formatMetaLine(dates, meta, metaSuffix());
+    return meta;
+  };
 
   const update = (index) => {
     const meta = timelineMeta(dates, index);
@@ -96,9 +109,7 @@ export function createTimelineSlider({ dates, slider, ticksEl, fillEl, dateEl, m
 
     if (fillEl) fillEl.style.width = `${pct}%`;
     if (dateEl) dateEl.textContent = meta.formatted;
-    if (metaEl) {
-      metaEl.textContent = `${meta.year} · ${meta.pct}% · +${meta.yearsElapsed}y from ${yearOf(dates[0])}`;
-    }
+    writeMeta(index);
 
     ticksEl.querySelectorAll('.timeline-tick').forEach((el) => {
       const tickYear = Number.parseInt(el.title, 10);
@@ -108,5 +119,11 @@ export function createTimelineSlider({ dates, slider, ticksEl, fillEl, dateEl, m
     return meta;
   };
 
-  return { ticks, update };
+  const refreshMeta = () => writeMeta(parseInt(slider.value, 10) || 0);
+
+  const setMetaSuffix = (fn) => {
+    metaSuffix = typeof fn === 'function' ? fn : () => '';
+  };
+
+  return { ticks, update, refreshMeta, setMetaSuffix };
 }
