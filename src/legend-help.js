@@ -17,7 +17,7 @@ export const LEGEND_GEO = [
     label: '● Spin',
     title: 'Rotation (spin) pole',
     help:
-      'IERS instantaneous pole — where Earth’s spin axis pierces the surface on this date (~meters of polar wander; see Polhode panel). Not the same as the magnetic pole.',
+      'IERS instantaneous pole — where Earth’s spin axis pierces the surface on this date (~meters of polar wander; see Polhode panel). Globe marker is exaggerated for visibility. Not the same as the magnetic pole (◆ Mag, Geomag layer).',
   },
   {
     id: 'magpole',
@@ -62,7 +62,8 @@ export const LEGEND_GEO = [
     class: 'moon',
     label: '◯ Moon',
     title: 'Moon',
-    help: 'JPL DE441 geocentric Moon position, scaled on the globe for orientation with tides and syzygy in the orbital panels.',
+    help:
+      'JPL DE441 geocentric Moon and Sun direction. With Day=Sync, earth rotation and moon motion advance together while the timeline plays (tidal geometry). Free spin keeps decorative earth rotation with bodies fixed to the scrub date.',
   },
   {
     id: 'sun',
@@ -73,11 +74,36 @@ export const LEGEND_GEO = [
       'Direction toward the Sun from ephemeris — drives lighting, terminator, and the space-weather coupling story (not a sized disc at true distance).',
   },
   {
-    id: 'plates',
-    class: 'plates',
-    label: '— Plates',
-    title: 'Plate boundaries',
-    help: GLOBE_ABOUT.plateBoundary,
+    id: 'subduction',
+    class: 'subduction',
+    label: '▬ Subduct',
+    title: 'Subduction (SUB)',
+    help:
+      'Red tubes — PB2002 steps classed as subduction (convergent + trench/Benioff criteria). Kinematic type from Euler poles, not recent earthquake count.',
+  },
+  {
+    id: 'divergent',
+    class: 'divergent',
+    label: '━ Ridge',
+    title: 'Spreading / rift (OSR, CRB)',
+    help:
+      'Green solid lines — oceanic spreading ridges and continental rifts where plates diverge in the PB2002 step model.',
+  },
+  {
+    id: 'transform',
+    class: 'transform',
+    label: '┄ Transform',
+    title: 'Transform faults (OTF, CTF)',
+    help:
+      'Yellow dashed lines — oceanic and continental transform steps where relative motion is strike-slip dominated.',
+  },
+  {
+    id: 'convergent',
+    class: 'convergent',
+    label: '━ Converge',
+    title: 'Convergent (OCB, CCB)',
+    help:
+      'Orange solid lines — convergent steps not classed as subduction (e.g. continent–continent). Distinct from red subduction tubes.',
   },
   {
     id: 'motion',

@@ -32,7 +32,7 @@ npm run start
 | US storms | NOAA NCEI Storm Events | `storm_events` |
 | Sunspot / Kp | NASA MSFC + NOAA SWPC | `solar_daily` |
 | Space weather | NASA DONKI + NOAA SWPC | `space_weather_events`, `geomagnetic_daily` |
-| Plate boundaries | PB2002 (static GeoJSON) | `public/data/plate-boundaries.json` |
+| Plate boundaries | PB2002 steps (kinematic class) | `public/data/plate-boundary-steps.json` |
 
 **Roadmap:** [docs/roadmap.md](docs/roadmap.md)
 

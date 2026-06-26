@@ -8,7 +8,7 @@ export const GLOBE_ABOUT = {
   plate:
     'Plate motion arrows show how fast each tectonic plate moves over the mantle, derived from PB2002 Euler poles. Longer arrows mean faster motion toward the arrowhead.',
   plateBoundary:
-    'Plate boundaries are where lithospheric plates meet. Subduction zones (red tubes) are especially important for deep earthquakes, arc volcanoes, and tsunami hazard.',
+    'PB2002 digitization steps (Bird 2003) — kinematic class from Euler poles, not earthquake activity. Red tubes = subduction; green = spreading ridge or rift; yellow dashed = transform; orange = convergent (non-subduction). Use the Quakes layer for seismicity.',
   cyclone:
     'Tropical cyclone tracks from NOAA IBTrACS. Line color reflects intensity; the head marker is the storm position on or before the selected date.',
   weather:
@@ -77,6 +77,34 @@ export function plateNote(p) {
 }
 
 export function plateBoundaryNote(props) {
+  const stepClass = props?.stepClass || props?.STEPCLASS;
+  if (stepClass === 'SUB') {
+    return 'Subduction (red) — convergent with Benioff-zone criteria in PB2002. Arc volcanoes and deep quakes are common here; color is kinematic class, not recent seismicity.';
+  }
+  if (stepClass === 'OSR' || stepClass === 'CRB') {
+    return 'Divergent (green) — plates moving apart (spreading ridge or continental rift). New crust or extension; not ranked by quake count.';
+  }
+  if (stepClass === 'OTF' || stepClass === 'CTF') {
+    return 'Transform (yellow dashed) — strike-slip motion along the boundary step. San Andreas–style margins; dashed style marks shear, not activity level.';
+  }
+  if (stepClass === 'OCB' || stepClass === 'CCB') {
+    return 'Convergent (orange) — plates colliding without PB2002 subduction classification (e.g. continent–continent). Distinct from red subduction tubes.';
+  }
+
+  const kind = props?.boundaryKind;
+  if (kind === 'subduction') {
+    return 'Subduction zone (red tube) — oceanic plate dives beneath another. Important for arc volcanoes and deep quakes, but line weight is not a seismicity scale.';
+  }
+  if (kind === 'divergent') {
+    return 'Spreading or rift boundary (green) — divergent motion in PB2002.';
+  }
+  if (kind === 'transform') {
+    return 'Transform boundary (yellow dashed) — strike-slip motion in PB2002.';
+  }
+  if (kind === 'convergent') {
+    return 'Convergent boundary (orange) — collision without subduction class in PB2002.';
+  }
+
   const type = (props?.Type || '').toLowerCase();
   if (type.includes('subduction')) {
     return 'Subduction zone — oceanic plate dives beneath another plate, fueling arcs, volcanoes, and deep quakes.';
@@ -90,7 +118,7 @@ export function plateBoundaryNote(props) {
   if (type.includes('collision')) {
     return 'Collision zone — continents or arcs collide, building mountains.';
   }
-  return 'Plate interaction boundary from the PB2002 global model.';
+  return 'Plate interaction boundary from the PB2002 global model — style shows type, not quake rate.';
 }
 
 export function gvpVolcanoUrl(volcanoNumber) {
@@ -229,14 +257,24 @@ export function renderGlobeTooltip(selection) {
   }
 
   if (type === 'plate-boundary') {
+    const kindLabel = data.boundaryLabel || data.type || 'Plate boundary';
+    const velocity =
+      data.velocityMmYr != null ? `${data.velocityMmYr.toFixed(1)} mm/yr` : null;
+    const meta = [
+      velocity,
+      data.stepLengthKm != null ? `${data.stepLengthKm.toFixed(0)} km step` : null,
+      data.oceanic != null ? (data.oceanic ? 'oceanic' : 'continental') : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
     return {
       className: 'globe-tooltip--boundary',
       html: `
         <strong>${esc(data.name)}</strong>
-        <span class="globe-tooltip__kind">plate boundary</span><br />
+        <span class="globe-tooltip__kind">${esc(kindLabel)}</span><br />
         <span class="globe-tooltip__detail">${esc(data.plates)}</span><br />
-        <span class="globe-tooltip__detail globe-tooltip__detail--muted">${esc(data.type)}</span>
-        <span class="globe-tooltip__note">${esc(plateBoundaryNote({ Type: data.type }))}</span>
+        ${meta ? `<span class="globe-tooltip__detail globe-tooltip__detail--muted">${esc(meta)}</span><br />` : ''}
+        <span class="globe-tooltip__note">${esc(plateBoundaryNote(data))}</span>
       `,
     };
   }

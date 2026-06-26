@@ -1,5 +1,19 @@
 export const EARTH_RADIUS = 1;
 export const POLE_EXAGGERATION = 8000;
+/** Globe pole marker/trail exaggeration — true polar wander is ~m; this keeps it visible on the 3D globe. */
+export const POLE_GLOBE_EXAGGERATION = 6000;
+
+export function iersPoleGlobePosition(xArcsec, yArcsec, exaggeration = POLE_GLOBE_EXAGGERATION) {
+  const m1 = (xArcsec / 3600) * exaggeration;
+  const m2 = (-yArcsec / 3600) * exaggeration;
+  const poleDist = Math.sqrt(m1 * m1 + m2 * m2);
+  return {
+    lat: 90 - poleDist,
+    lon: (Math.atan2(m1, m2) * 180) / Math.PI,
+    m1,
+    m2,
+  };
+}
 
 export function latLonToVector3(lat, lon, radius = EARTH_RADIUS) {
   const phi = (90 - lat) * (Math.PI / 180);

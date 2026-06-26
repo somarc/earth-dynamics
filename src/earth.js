@@ -5,6 +5,7 @@ import {
   EARTH_RADIUS,
   latLonToVector3,
   poleOffsetToTilt,
+  iersPoleGlobePosition,
   magToSize,
   veiToSize,
 } from './utils.js';
@@ -13,7 +14,14 @@ import { updateOvationAurora } from './ovation.js';
 import { hasGeomagContext, updateGeomagLayer } from './geomag-globe.js';
 import { updateMagneticPoleMarkers } from './magnetic-poles.js';
 import { loadIgrfFieldLines } from './igrf.js';
-import { loadPlateBoundaries, buildPlateGroup, loadPlateMotion, buildMotionGroup } from './plates.js';
+import {
+  loadPlateBoundaries,
+  loadPlateSteps,
+  buildPlateGroup,
+  buildPlateStepsGroup,
+  loadPlateMotion,
+  buildMotionGroup,
+} from './plates.js';
 import { loadHotspots, buildHotspotGroup } from './hotspots.js';
 import { classifyPick } from './event-inspect.js';
 import { createAtmosphereShell, updateAtmosphereSun } from './atmosphere.js';
@@ -32,6 +40,7 @@ export class EarthScene {
     this.showQuakes = true;
     this.showVolcanoes = true;
     this.showTrail = true;
+    this.showSpinPole = true;
     this.showBodies = true;
     this.showAurora = true;
     this.showFieldLines = true;
@@ -120,11 +129,12 @@ export class EarthScene {
     trailGeo.setDrawRange(0, 0);
     this.trailLine = new THREE.Line(
       trailGeo,
-      new THREE.LineBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.5 })
+      new THREE.LineBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.72 })
     );
     this.surfaceGroup.add(this.trailLine);
     this.trailPositions = trailPositions;
     this.trailCount = 0;
+    this.lastTrailHistory = [];
 
     this.quakeGroup = new THREE.Group();
     this.surfaceGroup.add(this.quakeGroup);
@@ -156,11 +166,16 @@ export class EarthScene {
     }
 
     try {
-      const [plateGeo, motionData] = await Promise.all([
-        loadPlateBoundaries(),
+      const [stepsGeo, plateGeo, motionData] = await Promise.all([
+        loadPlateSteps().catch(() => null),
+        loadPlateBoundaries().catch(() => null),
         loadPlateMotion().catch(() => null),
       ]);
-      this.plateGroup.add(buildPlateGroup(plateGeo));
+      if (stepsGeo?.features?.length) {
+        this.plateGroup.add(buildPlateStepsGroup(stepsGeo));
+      } else if (plateGeo?.features?.length) {
+        this.plateGroup.add(buildPlateGroup(plateGeo));
+      }
       this.plateGroup.visible = this.showPlates;
       if (motionData) {
         this.plateMotionGroup.add(buildMotionGroup(motionData));
@@ -239,6 +254,12 @@ export class EarthScene {
     this.autoRotate = 0.002;
     this.baseSpin = 0;
     this.lodFactor = 1;
+    /** 'sync' = earth spin + moon/sun track simulated day; 'free' = decorative spin, bodies fixed to scrub date */
+    this.diurnalMode = 'sync';
+    this.diurnalPhase = 0;
+    this.diurnalDay = null;
+    this.diurnalNextDay = null;
+    this.surfaceSpinY = 0;
 
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
@@ -281,18 +302,41 @@ export class EarthScene {
     this.camera.updateProjectionMatrix();
   }
 
+  updateTrailGeometry(trailHistory = this.lastTrailHistory) {
+    this.lastTrailHistory = trailHistory || [];
+    if (!this.showTrail || !this.lastTrailHistory.length) {
+      this.trailLine.visible = false;
+      this.trailCount = 0;
+      return;
+    }
+
+    const count = Math.min(this.lastTrailHistory.length, this.trailPositions.length / 3);
+    for (let i = 0; i < count; i++) {
+      const r = this.lastTrailHistory[this.lastTrailHistory.length - count + i];
+      const { lat, lon } = iersPoleGlobePosition(r.xArcsec, r.yArcsec);
+      const v = latLonToVector3(lat, lon, EARTH_RADIUS * 1.008);
+      this.trailPositions[i * 3] = v.x;
+      this.trailPositions[i * 3 + 1] = v.y;
+      this.trailPositions[i * 3 + 2] = v.z;
+    }
+    this.trailLine.geometry.attributes.position.needsUpdate = true;
+    this.trailLine.geometry.setDrawRange(0, count);
+    this.trailLine.visible = true;
+    this.trailCount = count;
+  }
+
   updatePoleMotion(eopRecord, trailHistory) {
     const { tiltX, tiltZ } = poleOffsetToTilt(eopRecord.xRad, eopRecord.yRad);
     this.axisGroup.rotation.x = tiltX;
     this.axisGroup.rotation.z = tiltZ;
 
-    const m1 = eopRecord.xArcsec / 3600;
-    const m2 = -eopRecord.yArcsec / 3600;
-    const poleDist = Math.sqrt(m1 * m1 + m2 * m2);
-    const poleLat = 90 - poleDist;
-    const poleLon = (Math.atan2(m1, m2) * 180) / Math.PI;
+    const { lat: poleLat, lon: poleLon } = iersPoleGlobePosition(
+      eopRecord.xArcsec,
+      eopRecord.yArcsec,
+    );
     const pos = latLonToVector3(poleLat, poleLon, EARTH_RADIUS * 1.01);
     this.poleMarker.position.set(pos.x, pos.y, pos.z);
+    this.poleMarker.visible = this.showSpinPole;
     this.spinPoleLatLon = { lat: poleLat, lon: poleLon };
     const spinPoleData = {
       pickType: 'spin-pole',
@@ -306,27 +350,7 @@ export class EarthScene {
       this.poleMarker.children[0].userData = spinPoleData;
     }
 
-    if (this.showTrail && trailHistory.length) {
-      const count = Math.min(trailHistory.length, this.trailPositions.length / 3);
-      for (let i = 0; i < count; i++) {
-        const r = trailHistory[trailHistory.length - count + i];
-        const tm1 = r.xArcsec / 3600;
-        const tm2 = -r.yArcsec / 3600;
-        const dist = Math.sqrt(tm1 * tm1 + tm2 * tm2);
-        const lat = 90 - dist;
-        const lon = (Math.atan2(tm1, tm2) * 180) / Math.PI;
-        const v = latLonToVector3(lat, lon, EARTH_RADIUS * 1.008);
-        this.trailPositions[i * 3] = v.x;
-        this.trailPositions[i * 3 + 1] = v.y;
-        this.trailPositions[i * 3 + 2] = v.z;
-      }
-      this.trailLine.geometry.attributes.position.needsUpdate = true;
-      this.trailLine.geometry.setDrawRange(0, count);
-      this.trailLine.visible = true;
-    } else {
-      this.trailLine.visible = false;
-    }
-
+    this.updateTrailGeometry(trailHistory);
     this.lodFactor = 1 + eopRecord.lodSec / 86400;
   }
 
@@ -370,19 +394,105 @@ export class EarthScene {
     }
   }
 
+  setDiurnalMode(mode) {
+    this.diurnalMode = mode === 'free' ? 'free' : 'sync';
+    if (this.diurnalMode === 'sync') {
+      this.applyDiurnalFrame(this.diurnalPhase);
+    }
+  }
+
+  setDiurnalTargets(day, nextDay = null) {
+    this.diurnalDay = day;
+    this.diurnalNextDay = nextDay;
+    if (this.diurnalMode === 'sync') {
+      this.applyDiurnalFrame(this.diurnalPhase);
+    } else {
+      this.updateBodies(day);
+    }
+  }
+
+  setDiurnalPhase(phase) {
+    this.diurnalPhase = Math.max(0, Math.min(1, phase));
+    if (this.diurnalMode === 'sync' && this.showBodies && this.diurnalDay) {
+      this.applyDiurnalFrame(this.diurnalPhase);
+    }
+  }
+
+  lerpBodyDirection(start, end, phase) {
+    if (!start) return null;
+    const a = new THREE.Vector3(start.x, start.y, start.z).normalize();
+    if (!end || phase <= 0) return a;
+    const b = new THREE.Vector3(end.x, end.y, end.z).normalize();
+    if (phase >= 1) return b;
+    return a.clone().lerp(b, phase).normalize();
+  }
+
+  updateSunLightingFromDir(sunDir, ephemerisDay = null) {
+    const dir = sunDir?.lengthSq() ? sunDir.clone().normalize() : this.defaultSunDirection;
+    const sunDistance = 9;
+    this.sunLight.position.copy(dir).multiplyScalar(sunDistance);
+    this.sunLight.intensity = ephemerisDay?.sun ? 2.0 : 1.5;
+    this.fillLight.position.copy(dir).multiplyScalar(-sunDistance * 0.7);
+    this.fillLight.intensity = 0.1 + (ephemerisDay?.lunar?.illumination ?? 0.25) * 0.08;
+    updateAtmosphereSun(this.atmosphere, dir);
+  }
+
   updateSunLighting(ephemerisDay) {
     const sunDir = ephemerisDay?.sun
       ? new THREE.Vector3(ephemerisDay.sun.x, ephemerisDay.sun.y, ephemerisDay.sun.z).normalize()
       : this.defaultSunDirection;
-    const sunDistance = 9;
-    this.sunLight.position.copy(sunDir).multiplyScalar(sunDistance);
-    this.sunLight.intensity = ephemerisDay?.sun ? 2.0 : 1.5;
-    this.fillLight.position.copy(sunDir).multiplyScalar(-sunDistance * 0.7);
-    this.fillLight.intensity = 0.1 + (ephemerisDay?.lunar?.illumination ?? 0.25) * 0.08;
-    updateAtmosphereSun(this.atmosphere, sunDir);
+    this.updateSunLightingFromDir(sunDir, ephemerisDay);
+  }
+
+  applyDiurnalFrame(phase) {
+    const day = this.diurnalDay;
+    const next = this.diurnalNextDay || day;
+
+    if (!day || !this.showBodies) {
+      this.bodiesGroup.visible = false;
+      return;
+    }
+
+    this.bodiesGroup.visible = true;
+    const moonDist = 2.8;
+    const sunDist = 7.5;
+
+    const moonDir = this.lerpBodyDirection(day.moon, next?.moon, phase);
+    const sunDir = this.lerpBodyDirection(day.sun, next?.sun, phase);
+
+    if (moonDir) {
+      this.moonMesh.position.copy(moonDir.clone().multiplyScalar(moonDist));
+      const illumStart = day.lunar?.illumination ?? 0.5;
+      const illumEnd = next?.lunar?.illumination ?? illumStart;
+      const illum = illumStart + (illumEnd - illumStart) * phase;
+      this.moonMesh.material.color.setRGB(
+        0.55 + illum * 0.45,
+        0.55 + illum * 0.45,
+        0.58 + illum * 0.4
+      );
+    }
+
+    if (sunDir) {
+      this.sunMarker.position.copy(sunDir.clone().multiplyScalar(sunDist));
+      const pts = [new THREE.Vector3(0, 0, 0), sunDir.clone().multiplyScalar(sunDist * 0.95)];
+      this.sunLine.geometry.dispose();
+      this.sunLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+      this.updateSunLightingFromDir(sunDir, phase < 0.5 ? day : next);
+    }
+
+    this.surfaceSpinY = phase * Math.PI * 2;
+    this.surfaceGroup.rotation.y = this.surfaceSpinY;
+    if (this.fieldLinesGroup?.visible) {
+      this.fieldLinesGroup.rotation.y = this.surfaceSpinY;
+    }
   }
 
   updateBodies(ephemerisDay) {
+    if (this.diurnalMode === 'sync') {
+      this.setDiurnalTargets(ephemerisDay, this.diurnalNextDay);
+      return;
+    }
+
     this.updateSunLighting(ephemerisDay);
 
     if (!ephemerisDay || !this.showBodies) {
@@ -433,6 +543,16 @@ export class EarthScene {
     if (this.hotspotGroup) this.hotspotGroup.visible = visible;
   }
 
+  setSpinPoleVisible(visible) {
+    this.showSpinPole = visible;
+    if (this.poleMarker) this.poleMarker.visible = visible;
+  }
+
+  setTrailVisible(visible) {
+    this.showTrail = visible;
+    this.updateTrailGeometry();
+  }
+
   setCyclonesVisible(visible) {
     this.showCyclones = visible;
     if (this.cycloneGroup) this.cycloneGroup.visible = visible;
@@ -471,6 +591,7 @@ export class EarthScene {
   setMagnetometers(magnetometers, geomagnetic = null, { spaceWeather = [], magneticPoles = null } = {}) {
     this.magnetometers = magnetometers || [];
     this.magneticPoles = magneticPoles;
+    this.lastGeomagnetic = geomagnetic;
     this.showGeomagObservatories = hasGeomagContext(geomagnetic, spaceWeather);
     this.refreshGeomagLayer(geomagnetic);
   }
@@ -582,7 +703,7 @@ export class EarthScene {
     this.raycaster.setFromCamera(this.pointer, this.camera);
 
     const meshLayers = [
-      { visible: true, group: this.poleMarker },
+      { visible: this.showSpinPole, group: this.poleMarker },
       { visible: this.showFieldLines, group: this.magneticPoleGroup },
       { visible: this.showFieldLines, group: this.geomagGroup },
       { visible: this.showWeather, group: this.weatherGroup },
@@ -609,17 +730,23 @@ export class EarthScene {
     }
 
     if (this.showPlates && this.plateGroup?.visible) {
-      this.raycaster.params.Line.threshold = 0.018;
+      this.raycaster.params.Line.threshold = 0.02;
       const hits = this.raycaster.intersectObjects(this.plateGroup.children, false);
       if (hits.length) {
         const p = hits[0].object.userData;
-        if (p?.Name) {
+        if (p?.PLATEBOUND || p?.Name) {
           return {
             type: 'plate-boundary',
             data: {
-              name: p.Name,
-              plates: `${p.PlateA || '?'}–${p.PlateB || '?'}`,
-              type: p.Type || 'transform / ridge',
+              name: p.PLATEBOUND || p.Name,
+              plates: p.plates || `${p.PlateA || '?'}–${p.PlateB || '?'}`,
+              type: p.Type || '',
+              stepClass: p.STEPCLASS || p.stepClass,
+              boundaryKind: p.boundaryKind,
+              boundaryLabel: p.boundaryLabel,
+              velocityMmYr: p.velocityMmYr ?? p.VELOCITYRI ?? null,
+              stepLengthKm: p.STEPLENGTH ?? null,
+              oceanic: p.STEPCONTIN === 'FALSE',
             },
             x: clientX - rect.left,
             y: clientY - rect.top,
@@ -646,10 +773,12 @@ export class EarthScene {
 
   render(delta) {
     const now = performance.now();
-    const spin = this.baseSpin + this.autoRotate * this.lodFactor;
-    this.surfaceGroup.rotation.y += spin;
-    if (this.fieldLinesGroup?.visible) {
-      this.fieldLinesGroup.rotation.y += spin;
+    if (this.diurnalMode === 'free' || !this.showBodies) {
+      const spin = this.baseSpin + this.autoRotate * this.lodFactor;
+      this.surfaceGroup.rotation.y += spin;
+      if (this.fieldLinesGroup?.visible) {
+        this.fieldLinesGroup.rotation.y += spin;
+      }
     }
     this.updateCameraEntry(now);
     this.eventPulses.update(now);

@@ -163,14 +163,22 @@ export function renderEventInspect(container, selection, context = {}) {
   }
 
   if (type === 'plate-boundary') {
-    const note = plateBoundaryNote({ Type: data.type });
+    const note = plateBoundaryNote(data);
+    const styleHints = {
+      subduction: 'Red tube — subduction (SUB)',
+      divergent: 'Green solid — spreading ridge or rift (OSR/CRB)',
+      transform: 'Yellow dashed — transform fault (OTF/CTF)',
+      convergent: 'Orange solid — convergent non-subduction (OCB/CCB)',
+    };
+    const styleHint = styleHints[data.boundaryKind] || 'PB2002 boundary step';
     container.innerHTML = `
       <div class="inspect-epi">${inspectEpistemic(type)}</div>
       <dl class="inspect-card">
-        <div><dt>Type</dt><dd>Plate boundary</dd></div>
+        <div><dt>Class</dt><dd>${esc(data.boundaryLabel || 'Plate boundary')}${data.stepClass ? ` (${esc(data.stepClass)})` : ''}</dd></div>
+        <div><dt>Globe style</dt><dd>${esc(styleHint)}</dd></div>
         <div><dt>Segment</dt><dd>${esc(data.name)}</dd></div>
         <div><dt>Plates</dt><dd>${esc(data.plates)}</dd></div>
-        <div><dt>Boundary class</dt><dd>${esc(data.type)}</dd></div>
+        ${data.velocityMmYr != null ? `<div><dt>Slip rate</dt><dd>${esc(data.velocityMmYr.toFixed(1))} mm/yr (PB2002)</dd></div>` : ''}
       </dl>
       ${note ? `<p class="inspect-note">${esc(note)}</p>` : ''}
       <p class="inspect-about">${esc(context.plateBoundary ?? GLOBE_ABOUT.plateBoundary)}</p>

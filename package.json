@@ -12,6 +12,7 @@
     "fetch-heliocentric": "node scripts/fetch-heliocentric.mjs",
     "fetch-space-weather": "node scripts/fetch-space-weather.mjs",
     "build-plate-motion": "node scripts/build-plate-motion.mjs",
+    "fetch-plate-steps": "node scripts/fetch-plate-steps.mjs",
     "build-igrf-fieldlines": "node scripts/build-igrf-fieldlines.mjs",
     "ingest": "node ingest/run.mjs",
     "ingest:force": "node ingest/run.mjs --force",

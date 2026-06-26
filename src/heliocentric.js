@@ -6,6 +6,7 @@ import {
   EARTH_RADIUS,
   latLonToVector3,
   poleOffsetToTilt,
+  iersPoleGlobePosition,
   magToSize,
   veiToSize,
 } from './utils.js';
@@ -32,6 +33,7 @@ export class HeliocentricScene {
     this.showQuakes = true;
     this.showVolcanoes = true;
     this.showTrail = true;
+    this.showSpinPole = true;
     this.showMoon = true;
     this.showCme = true;
     this.ready = this.init(canvas);
@@ -226,14 +228,24 @@ export class HeliocentricScene {
     this.axisGroup.rotation.x = tiltX;
     this.axisGroup.rotation.z = tiltZ;
 
-    const m1 = eopRecord.xArcsec / 3600;
-    const m2 = -eopRecord.yArcsec / 3600;
-    const poleDist = Math.sqrt(m1 * m1 + m2 * m2);
-    const poleLat = 90 - poleDist;
-    const poleLon = (Math.atan2(m1, m2) * 180) / Math.PI;
+    const { lat: poleLat, lon: poleLon } = iersPoleGlobePosition(
+      eopRecord.xArcsec,
+      eopRecord.yArcsec,
+    );
     const pos = latLonToVector3(poleLat, poleLon, HELIO_EARTH_RADIUS * 1.02);
     this.poleMarker.position.set(pos.x, pos.y, pos.z);
+    this.poleMarker.visible = this.showSpinPole;
     this.lodFactor = 1 + eopRecord.lodSec / 86400;
+  }
+
+  setSpinPoleVisible(visible) {
+    this.showSpinPole = visible;
+    if (this.poleMarker) this.poleMarker.visible = visible;
+  }
+
+  setTrailVisible(visible) {
+    this.showTrail = visible;
+    if (this.orbitTrail) this.orbitTrail.visible = visible && this.orbitTrail.geometry?.attributes?.position?.count > 1;
   }
 
   setCmeEvents(events, viewDate) {

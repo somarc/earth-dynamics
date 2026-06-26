@@ -128,11 +128,11 @@ export const SOURCES = {
     ingestKeys: ['space-weather', 'donki'],
   },
   plateBoundaries: {
-    name: 'PB2002 Plate Boundaries',
-    org: 'Bird (2003) / NOAA NGDC',
-    citation: 'Global tectonic plate boundary model PB2002',
-    link: 'https://www.ngdc.noaa.gov/mgg/ocean/plate_boundary/',
-    epistemic: 'pedagogical',
+    name: 'PB2002 Plate Boundary Steps',
+    org: 'Bird (2003) / fraxen tectonicplates',
+    citation: 'PB2002 digitization steps with kinematic class (SUB, OSR, OTF, OCB, CRB, CTF, CCB)',
+    link: 'https://doi.org/10.1029/2001GC000252',
+    epistemic: 'derived',
     ingestKeys: [],
   },
   intermagnet: {
