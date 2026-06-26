@@ -20,6 +20,7 @@ import {
   renderPanelEpistemics,
   renderStalenessChips,
 } from './epistemics.js';
+import { bindLegendHelp, renderLegendHtml } from './legend-help.js';
 import { createViewTransition, updateViewTransition } from './view-transition.js';
 
 const state = {
@@ -223,34 +224,8 @@ function applyLayerEpistemicTitles() {
 
 function updateLegend() {
   const legend = document.getElementById('legend');
-  if (state.view === 'heliocentric') {
-    legend.innerHTML = `
-      <span class="legend__item legend__item--sun" title="Sun at center">☀ Sun</span>
-      <span class="legend__item legend__item--axis" title="Spin axis, 23.44° obliquity">— Axis</span>
-      <span class="legend__item legend__item--ecliptic" title="Ecliptic north">— Ecliptic</span>
-      <span class="legend__item legend__item--pole" title="Instantaneous pole">● Pole</span>
-      <span class="legend__item legend__item--moon" title="Moon position">◯ Moon</span>
-      <span class="legend__item legend__item--cme" title="CME toward Earth">▷ CME</span>
-      <span class="legend__item legend__item--quake" title="USGS catalog">◉ M≥${state.quakeMinMag}</span>
-    `;
-  } else {
-    legend.innerHTML = `
-      <span class="legend__item legend__item--pole" title="Instantaneous pole">● Pole</span>
-      <span class="legend__item legend__item--axis" title="Rotation axis">— Axis</span>
-      <span class="legend__item legend__item--quake" title="USGS earthquakes">◉ M≥${state.quakeMinMag}</span>
-      <span class="legend__item legend__item--volcano" title="GVP active eruption episodes">▲ GVP</span>
-      <span class="legend__item legend__item--storm" title="NOAA storm events">◈ Storm</span>
-      <span class="legend__item legend__item--moon" title="Scaled Moon position">◯ Moon</span>
-      <span class="legend__item legend__item--sun" title="Sun direction">☀ Sun</span>
-      <span class="legend__item legend__item--plates" title="PB2002 boundaries">— Plates</span>
-      <span class="legend__item legend__item--motion" title="Plate motion mm/yr">→ Motion</span>
-      <span class="legend__item legend__item--hotspot" title="Mantle hotspots">◎ Hotspot</span>
-      <span class="legend__item legend__item--aurora" title="OVATION / Kp aurora">◌ Aurora</span>
-      <span class="legend__item legend__item--field" title="WMM field lines">⌇ Field</span>
-      <span class="legend__item legend__item--cyclone" title="IBTrACS tracks">〰 Cyclone</span>
-      <span class="legend__item legend__item--weather" title="ERA5 grid glyphs">◌ Weather</span>
-    `;
-  }
+  if (!legend) return;
+  legend.innerHTML = renderLegendHtml(state.view, state.quakeMinMag);
 }
 
 function applyViewCanvasVisibility(now = performance.now()) {
@@ -712,6 +687,10 @@ async function main() {
   renderPanelEpistemics();
   renderStalenessChips(state.catalog?.manifest);
   applyLayerEpistemicTitles();
+  bindLegendHelp(
+    document.getElementById('legend'),
+    document.getElementById('legend-help'),
+  );
   setupControls();
   setupGlobePick();
   applyLayerPreset('full');
