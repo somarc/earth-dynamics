@@ -59,11 +59,26 @@ function rowToEphemeris(r) {
 export function createHandlers(db) {
   const getMeta = () => {
     const eop = db.prepare('SELECT MIN(date) AS start, MAX(date) AS end, COUNT(*) AS count FROM eop_daily').get();
-    const ingested = db.prepare('SELECT source, completed_at, row_count FROM ingest_log').all();
+    const ingested = db.prepare(
+      'SELECT source, completed_at, row_count, notes FROM ingest_log ORDER BY completed_at DESC'
+    ).all();
+    const ephEnd = db.prepare('SELECT MAX(date) AS end FROM ephemeris_daily').get()?.end ?? null;
+    const quakeEnd = db.prepare('SELECT MAX(date) AS end FROM earthquakes').get()?.end ?? null;
+    const timelineEnd = eop?.end ?? null;
+    const ephemerisLagDays = ephEnd && timelineEnd
+      ? Math.round((Date.parse(`${timelineEnd}T12:00:00Z`) - Date.parse(`${ephEnd}T12:00:00Z`)) / 86_400_000)
+      : null;
+
     return {
       sources: SOURCES,
-      eop: eop,
+      eop,
       ingested,
+      freshness: {
+        timelineEnd,
+        ephemerisEnd: ephEnd,
+        ephemerisLagDays: ephemerisLagDays > 0 ? ephemerisLagDays : 0,
+        earthquakesThrough: quakeEnd,
+      },
       generated: new Date().toISOString(),
     };
   };

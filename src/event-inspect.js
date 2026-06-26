@@ -6,6 +6,12 @@ import {
   plateNote,
   volcanoNote,
 } from './globe-inspect.js';
+import { PICK_EPISTEMICS, epistemicBadge } from './epistemics.js';
+
+function inspectEpistemic(type) {
+  const id = PICK_EPISTEMICS[type];
+  return id ? epistemicBadge(id, { compact: true }) : '';
+}
 
 function esc(value) {
   return String(value ?? '')
@@ -48,6 +54,7 @@ export function renderEventInspect(container, selection, context = {}) {
   if (type === 'earthquake') {
     const note = earthquakeNote(data);
     container.innerHTML = `
+      <div class="inspect-epi">${inspectEpistemic(type)}</div>
       <dl class="inspect-card">
         <div><dt>Type</dt><dd>Earthquake</dd></div>
         <div><dt>Magnitude</dt><dd>M${data.mag?.toFixed(1) ?? '—'}</dd></div>
@@ -68,6 +75,7 @@ export function renderEventInspect(container, selection, context = {}) {
     const status = data.continuing ? 'Ongoing eruption' : `Ended ${data.endDate || '—'}`;
     const note = volcanoNote(data);
     container.innerHTML = `
+      <div class="inspect-epi">${inspectEpistemic(type)}</div>
       <dl class="inspect-card">
         <div><dt>Type</dt><dd>Active GVP eruption episode</dd></div>
         <div><dt>Volcano</dt><dd>${esc(data.name || '—')}</dd></div>
@@ -85,6 +93,7 @@ export function renderEventInspect(container, selection, context = {}) {
 
   if (type === 'hotspot') {
     container.innerHTML = `
+      <div class="inspect-epi">${inspectEpistemic(type)}</div>
       <dl class="inspect-card">
         <div><dt>Type</dt><dd>Mantle hotspot</dd></div>
         <div><dt>Name</dt><dd>${esc(data.name)}</dd></div>
@@ -103,6 +112,7 @@ export function renderEventInspect(container, selection, context = {}) {
   if (type === 'plate') {
     const note = plateNote(data);
     container.innerHTML = `
+      <div class="inspect-epi">${inspectEpistemic(type)}</div>
       <dl class="inspect-card">
         <div><dt>Type</dt><dd>Plate motion</dd></div>
         <div><dt>Plate</dt><dd>${esc(data.name)} (${esc(data.code)})</dd></div>
@@ -120,6 +130,7 @@ export function renderEventInspect(container, selection, context = {}) {
 
   if (type === 'cyclone') {
     container.innerHTML = `
+      <div class="inspect-epi">${inspectEpistemic(type)}</div>
       <dl class="inspect-card">
         <div><dt>Type</dt><dd>Tropical cyclone (IBTrACS)</dd></div>
         <div><dt>Name</dt><dd>${esc(data.name)} (${data.season || '—'})</dd></div>
@@ -135,6 +146,7 @@ export function renderEventInspect(container, selection, context = {}) {
 
   if (type === 'weather') {
     container.innerHTML = `
+      <div class="inspect-epi">${inspectEpistemic(type)}</div>
       <dl class="inspect-card">
         <div><dt>Type</dt><dd>ERA5 grid point</dd></div>
         <div><dt>Location</dt><dd>${esc(data.label || data.gridId)}</dd></div>
@@ -150,6 +162,7 @@ export function renderEventInspect(container, selection, context = {}) {
   if (type === 'plate-boundary') {
     const note = plateBoundaryNote({ Type: data.type });
     container.innerHTML = `
+      <div class="inspect-epi">${inspectEpistemic(type)}</div>
       <dl class="inspect-card">
         <div><dt>Type</dt><dd>Plate boundary</dd></div>
         <div><dt>Segment</dt><dd>${esc(data.name)}</dd></div>

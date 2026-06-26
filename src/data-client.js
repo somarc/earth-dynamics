@@ -87,6 +87,7 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
       aamWindow,
       earthquakes: day.earthquakes,
       eruptions: day.eruptions,
+      cyclones: day.cyclones || [],
       storms: day.storms || [],
       weather: day.weather || [],
       solar: day.solar,

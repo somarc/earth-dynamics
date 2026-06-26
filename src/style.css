@@ -337,6 +337,115 @@ body,
   padding: 0.15rem 0.4rem;
 }
 
+.staleness-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: flex-end;
+  max-width: 280px;
+}
+
+.staleness-chips--hidden {
+  display: none;
+}
+
+.stale-chip {
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.1rem 0.35rem;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.stale-chip--warn {
+  color: #ffb347;
+  border-color: rgba(255, 179, 71, 0.45);
+  background: rgba(255, 140, 66, 0.1);
+}
+
+.epi-badge-row {
+  display: inline-flex;
+  gap: 0.2rem;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+
+.epi-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  font-weight: 500;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+  border-radius: 3px;
+  padding: 0.08rem 0.32rem;
+  border: 1px solid transparent;
+  vertical-align: middle;
+}
+
+.epi-badge--compact {
+  font-size: 0.52rem;
+  padding: 0.05rem 0.28rem;
+}
+
+.epi-badge--measured {
+  color: #7fd4a8;
+  border-color: rgba(62, 207, 142, 0.35);
+  background: rgba(62, 207, 142, 0.1);
+}
+
+.epi-badge--modeled {
+  color: #8ec8ff;
+  border-color: rgba(100, 180, 255, 0.35);
+  background: rgba(100, 180, 255, 0.1);
+}
+
+.epi-badge--derived {
+  color: #c9b0ff;
+  border-color: rgba(180, 150, 255, 0.35);
+  background: rgba(180, 150, 255, 0.1);
+}
+
+.epi-badge--pedagogical {
+  color: #ffd166;
+  border-color: rgba(255, 209, 102, 0.35);
+  background: rgba(255, 209, 102, 0.08);
+}
+
+.epi-badge--exploratory {
+  color: #ff9f7a;
+  border-color: rgba(255, 140, 100, 0.35);
+  background: rgba(255, 140, 100, 0.08);
+}
+
+.helical-epi-note {
+  margin-top: 0.35rem;
+  margin-bottom: 0;
+}
+
+.citation-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.citation-stale {
+  display: block;
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.citation-stale--warn {
+  color: #ffb347;
+}
+
+.inspect-epi {
+  margin-bottom: 0.35rem;
+}
+
 .event-list .storm { color: #7eb8da; font-weight: 600; }
 .event-list .weather { color: #6ec9a0; font-weight: 600; }
 .event-list .solar { color: #ffd54a; font-weight: 600; }

@@ -1,66 +1,62 @@
 # Session handoff — Wobblescope
 
-**Updated:** 2026-06-25  
-**Repo:** `/Users/mhess/marc_projects/ecdo` · GitHub `somarc/earth-dynamics`  
-**Latest:** Phase E complete (`7d91d89` → `8ffa7c9`)
+**Updated:** 2026-06-26  
+**Repo:** `/Users/mhess/marc_projects/ecdo` · GitHub `somarc/earth-dynamics`
 
 ---
 
 ## Where we are
 
-**Phase E (globe equity)** shipped:
+**Phase F (trust layer)** shipped:
 
 | Item | What |
 |------|------|
-| E1 | IBTrACS ingest — 4,775 storms since 1980; tracks on globe |
-| E2 | Weather grid — **12/16** cities; 4 pending (Sydney, São Paulo, equator pts). Chunked resume + `--weather-grid=`; re-run when Open-Meteo 429 clears |
-| E3 | ERA5 weather glyphs (temp color, wind size) at grid cities |
-| E4 | **Atmosphere** preset — cyclones + weather, hides solid/space layers |
+| F1 | Epistemic badges on sidebar panels + globe inspect picks |
+| F2 | Header staleness chips (USGS lag, ephemeris gap, weather 12/16, OMNI age) |
+| F3 | Helical pedagogical callout; lunar exploratory disclaimer retained |
+| F4 | Data Sources rows show epistemic class + ingest age |
 
-**Next: Phase F (trust layer)** — epistemic badges, staleness chips, disclaimer governance.
+**Also:** USGS incremental ingest fixed (`endtime` = next day) — today's events included.
+
+**Next: Phase G** — deep links, compare two dates, change summary.
 
 ---
 
 ## Run / verify
 
 ```bash
-npm run start                              # restart API for cyclones field
-npm run ingest -- --only=ibtracs           # skip if already ingested
-npm run ingest -- --only=weather           # resume until 16/16 (chunked; wait if 429)
-npm run ingest -- --only=weather --weather-grid=sydney,saopaulo,equator_pacific,equator_africa
+npm run start
+npm run ingest -- --only=earthquakes   # refresh catalog (includes today)
 ```
 
-**Demo dates**
+**Demo**
 
 | Date | Why |
 |------|-----|
-| 2005-08-29 | Hurricane Katrina track (IBTrACS) |
-| 2024-09-26 | Recent Atlantic cyclone season |
-| Today | Weather glyphs at ingested grid cities |
+| **2026-06-26** | M6.5 Sarangani, Philippines (USGS `us6000t8ec`) |
+| 2005-08-29 | Hurricane Katrina track |
+| 2024-05-11 | G5 space-weather chain |
 
-**Try**
-
-1. Click **Atmosphere** preset in footer
-2. Scrub to **2005-08-29** — Katrina track grows to landfall
-3. Hover cyclone head or weather glyph for inspect/tooltip
+Check header staleness chips, panel badges, Data Sources epistemic labels.
 
 ---
 
-## Phase F kickoff
+## Key files (Phase F)
 
-See [`roadmap.md`](roadmap.md) Phase F: lane epistemic badges, per-source staleness, helical/pedagogical callouts.
+```
+src/epistemics.js           # badge + staleness UI
+ingest/constants.mjs        # epistemic + ingestKeys per source
+api/handlers.mjs            # /api/meta freshness block
+ingest/sources/earthquakes.mjs  # end-of-day ingest fix
+```
 
 ---
 
-## Key files (Phase E)
+## Backlog
 
-```
-ingest/sources/ibtracs.mjs
-src/cyclones.js
-src/weather-globe.js
-src/earth.js                  # setCyclones, setWeatherGlyphs
-api/handlers.mjs              # day.cyclones
-```
+- Burkhard MAXWELL / Zenodo Southern CA stress (regional modeled layer)
+- Weather grid 12/16 (Open-Meteo 429)
+- Phase G share & compare
 
 ---
 

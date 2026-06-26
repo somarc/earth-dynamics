@@ -40,7 +40,7 @@ Close the gap between **co-display** (many lanes, one timeline) and **co-analysi
 ```
 Phase D  Physics loop      T16 → LOD coupling → ephemeris refresh     ✓
 Phase E  Globe equity      T15 → T6 complete → weather glyphs → preset  ✓
-Phase F  Trust layer       I7 → staleness badges → lane epistemics
+Phase F  Trust layer       I7 → staleness badges → lane epistemics  ✓
 Phase G  Share & compare   U7 → U6 → change summary
 Phase H  Ship              I3 → I4 → I5 → I6
 Phase I  Graphics harden   G4 → visual contracts → helio parity
@@ -99,10 +99,10 @@ npm run ingest -- --only=ibtracs
 
 | ID | Item | Status |
 |----|------|--------|
-| **F1** | Lane epistemic badges (I7) | `measured` · `modeled` · `derived` · `pedagogical` · `exploratory` | `planned` |
-| **F2** | Per-source staleness in UI | Header or panel chips from `ingest_log` + `/api/meta` | `planned` |
-| **F3** | Helical + exploratory callouts | Pedagogical label on helical chart; align with orbital disclaimer | `planned` |
-| **F4** | Data Sources panel enrichment | Epistemic class per citation row | `planned` |
+| **F1** | Lane epistemic badges (I7) | `measured` · `modeled` · `derived` · `pedagogical` · `exploratory` | `done` |
+| **F2** | Per-source staleness in UI | Header chips from `ingest_log` + `/api/meta` freshness | `done` |
+| **F3** | Helical + exploratory callouts | Pedagogical label on helical chart; align with orbital disclaimer | `done` |
+| **F4** | Data Sources panel enrichment | Epistemic class per citation row | `done` |
 
 **Done when:** Every sidebar panel and globe layer type shows epistemic class; stale ephemeris/OMNI clearly flagged.
 
@@ -241,4 +241,4 @@ NASA_API_KEY=xxx npm run fetch-space-weather
 
 ---
 
-*Last updated: 2026-06-25 — Phases A–E and D shipped; **Phase F (trust layer)** is next. See [`wishlist.md`](wishlist.md) and [`session-handoff.md`](session-handoff.md).*
+*Last updated: 2026-06-26 — Phases A–F shipped; **Phase G (share & compare)** is next. See [`wishlist.md`](wishlist.md) and [`session-handoff.md`](session-handoff.md).*

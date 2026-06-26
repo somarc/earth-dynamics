@@ -13,6 +13,13 @@ import { renderEventInspect } from './event-inspect.js';
 import { getGlobeInspectContext, renderGlobeTooltip } from './globe-inspect.js';
 import { formatDate, addDays } from './utils.js';
 import { loadCatalog, loadFrame } from './data-client.js';
+import {
+  EPISTEMIC,
+  LAYER_EPISTEMICS,
+  renderCitationsList,
+  renderPanelEpistemics,
+  renderStalenessChips,
+} from './epistemics.js';
 import { createViewTransition, updateViewTransition } from './view-transition.js';
 
 const state = {
@@ -193,20 +200,31 @@ function applyEventLayers(frame, date) {
 }
 
 function renderCitations() {
-  const el = document.getElementById('citations');
-  const sources = state.catalog?.manifest?.sources || {};
-  const list = Object.values(sources);
-  el.innerHTML = list
-    .filter((s) => s?.name)
-    .map(
-      (s) => `
-      <li>
-        <strong>${s.name}</strong><br />
-        <span class="org">${s.org}</span><br />
-        <a href="${s.link}" target="_blank" rel="noopener">${s.citation}</a>
-      </li>`
-    )
-    .join('');
+  renderCitationsList(state.catalog?.manifest);
+}
+
+const LAYER_TOGGLE_MAP = {
+  'show-quakes': 'quakes',
+  'show-volcanoes': 'volcanoes',
+  'show-plates': 'plates',
+  'show-plate-motion': 'plateMotion',
+  'show-hotspots': 'hotspots',
+  'show-cyclones': 'cyclones',
+  'show-weather-glyphs': 'weather',
+  'show-aurora': 'aurora',
+  'show-field-lines': 'fieldLines',
+  'show-bodies': 'bodies',
+};
+
+function applyLayerEpistemicTitles() {
+  for (const [id, key] of Object.entries(LAYER_TOGGLE_MAP)) {
+    const input = document.getElementById(id);
+    const epi = LAYER_EPISTEMICS[key];
+    if (!input || !epi) continue;
+    const label = input.closest('label');
+    const meta = EPISTEMIC[epi];
+    if (label && meta) label.title = `${meta.title} (${meta.label})`;
+  }
 }
 
 function updateLegend() {
@@ -682,6 +700,9 @@ async function main() {
   );
 
   renderCitations();
+  renderPanelEpistemics();
+  renderStalenessChips(state.catalog?.manifest);
+  applyLayerEpistemicTitles();
   setupControls();
   setupGlobePick();
   applyLayerPreset('full');
