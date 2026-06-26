@@ -94,6 +94,8 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
       geomagnetic: day.geomagnetic,
       spaceWeather: day.spaceWeather || [],
       geomagneticWindow: geoWindow,
+      magnetometers: day.magnetometers || [],
+      magneticPoles: day.magneticPoles || null,
     };
     return frame;
   }

@@ -30,6 +30,9 @@ function renderGlossary(context) {
     ['Boundaries', context.plateBoundary ?? GLOBE_ABOUT.plateBoundary],
     ['Cyclones (IBTrACS)', context.cyclone ?? GLOBE_ABOUT.cyclone],
     ['Weather grid', context.weather ?? GLOBE_ABOUT.weather],
+    ['Geomagnetic field', context.geomag ?? GLOBE_ABOUT.geomag],
+    ['Spin pole (IERS)', context.spinPole ?? GLOBE_ABOUT.spinPole],
+    ['Magnetic poles (IGRF)', context.magneticPole ?? GLOBE_ABOUT.magneticPole],
   ];
   return `
     <dl class="inspect-glossary">
@@ -173,6 +176,62 @@ export function renderEventInspect(container, selection, context = {}) {
       <p class="inspect-about">${esc(context.plateBoundary ?? GLOBE_ABOUT.plateBoundary)}</p>
       <a class="inspect-link" href="https://www.ngdc.noaa.gov/mgg/ocean/plate_boundary/" target="_blank" rel="noopener">PB2002 reference →</a>
     `;
+    return;
+  }
+
+  if (type === 'spin-pole') {
+    container.innerHTML = `
+      <div class="inspect-epi">${inspectEpistemic(type)}</div>
+      <dl class="inspect-card">
+        <div><dt>Type</dt><dd>Instantaneous rotation pole</dd></div>
+        <div><dt>Source</dt><dd>IERS Earth orientation (EOP)</dd></div>
+        <div><dt>Position</dt><dd>${data.lat?.toFixed(3)}°, ${data.lon?.toFixed(3)}°</dd></div>
+        <div><dt>Pole offset</dt><dd>x ${data.xArcsec?.toFixed(2) ?? '—'}″, y ${data.yArcsec?.toFixed(2) ?? '—'}″</dd></div>
+      </dl>
+      <p class="inspect-about">${esc(context.spinPole ?? GLOBE_ABOUT.spinPole)}</p>
+      <a class="inspect-link" href="https://hpiers.obspm.fr/eop-pc/index.php?index=C04&lang=en" target="_blank" rel="noopener">IERS EOP C04 →</a>
+    `;
+    return;
+  }
+
+  if (type === 'magnetic-pole') {
+    const hemi = data.hemisphere === 'south' ? 'South' : 'North';
+    container.innerHTML = `
+      <div class="inspect-epi">${inspectEpistemic(type)}</div>
+      <dl class="inspect-card">
+        <div><dt>Type</dt><dd>${hemi} geomagnetic dip pole</dd></div>
+        <div><dt>Model</dt><dd>IGRF-14 at scrub date</dd></div>
+        <div><dt>Position</dt><dd>${data.lat?.toFixed(2)}°, ${data.lon?.toFixed(1)}°</dd></div>
+        <div><dt>Inclination</dt><dd>${data.inclinationDeg?.toFixed(2) ?? '—'}°</dd></div>
+      </dl>
+      <p class="inspect-note">Not the spin pole (yellow sphere). Magnetic north wanders on the order of km/yr; polar wander in the Polhode panel is meters-scale.</p>
+      <p class="inspect-about">${esc(context.magneticPole ?? GLOBE_ABOUT.magneticPole)}</p>
+      <a class="inspect-link" href="https://www.ncei.noaa.gov/products/international-geomagnetic-reference-field" target="_blank" rel="noopener">IGRF-14 reference →</a>
+    `;
+    return;
+  }
+
+  if (type === 'magnetometer') {
+    const f = data.field || {};
+    container.innerHTML = `
+      <div class="inspect-epi">${inspectEpistemic(type)} <span class="epi-badge epi-badge--compact epi-badge--measured" title="Observatory site in the INTERMAGNET network">measured site</span></div>
+      <dl class="inspect-card">
+        <div><dt>Type</dt><dd>INTERMAGNET observatory</dd></div>
+        <div><dt>Code</dt><dd>${esc(data.iagaCode)}</dd></div>
+        <div><dt>Name</dt><dd>${esc(data.name)}</dd></div>
+        <div><dt>Institute</dt><dd>${esc(data.institute || '—')}</dd></div>
+        <div><dt>Position</dt><dd>${data.lat?.toFixed(2)}°, ${data.lon?.toFixed(2)}°</dd></div>
+        <div><dt>Field model</dt><dd>IGRF-14 at scrub date</dd></div>
+        <div><dt>Total F</dt><dd>${f.totalNt != null ? `${Math.round(f.totalNt)} nT` : '—'}</dd></div>
+        <div><dt>Declination D</dt><dd>${f.declDeg != null ? `${f.declDeg.toFixed(2)}°` : '—'}</dd></div>
+        <div><dt>Inclination I</dt><dd>${f.inclDeg != null ? `${f.inclDeg.toFixed(2)}°` : '—'}</dd></div>
+        <div><dt>Horizontal H</dt><dd>${f.horizontalNt != null ? `${Math.round(f.horizontalNt)} nT` : '—'}</dd></div>
+      </dl>
+      <p class="inspect-note">Station location is from the INTERMAGNET catalog. Vector components are modeled main-field values for this date — not a live magnetogram.</p>
+      <p class="inspect-about">${esc(context.geomag ?? GLOBE_ABOUT.geomag)}</p>
+      ${data.url ? `<a class="inspect-link" href="${esc(data.url)}" target="_blank" rel="noopener">Observatory page →</a>` : ''}
+      <a class="inspect-link" href="https://www.ncei.noaa.gov/products/international-geomagnetic-reference-field" target="_blank" rel="noopener">IGRF-14 reference →</a>
+    `;
   }
 }
 
@@ -185,6 +244,9 @@ export function classifyPick(hit) {
     if (d?.pickType === 'hotspot') return { type: 'hotspot', data: d };
     if (d?.pickType === 'cyclone') return { type: 'cyclone', data: d };
     if (d?.pickType === 'weather') return { type: 'weather', data: d };
+    if (d?.pickType === 'magnetometer') return { type: 'magnetometer', data: d };
+    if (d?.pickType === 'magnetic-pole') return { type: 'magnetic-pole', data: d };
+    if (d?.pickType === 'spin-pole') return { type: 'spin-pole', data: d };
     if (d?.pickType === 'plate') return { type: 'plate', data: d };
     if (d?.id && d.mag != null) return { type: 'earthquake', data: d };
     if (d?.volcanoNumber != null || (d?.name && d?.vei != null)) return { type: 'volcano', data: d };

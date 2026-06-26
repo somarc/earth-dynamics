@@ -1,4 +1,5 @@
 import { SOURCES } from '../ingest/constants.mjs';
+import { igrfDipPoles, igrfFieldAt } from './igrf.mjs';
 
 function rowToEop(r) {
   if (!r) return null;
@@ -243,9 +244,13 @@ export function createHandlers(db) {
       };
     }).filter((c) => c.track.length >= 2);
 
+    const magnetometers = getMagnetometers(date);
+    const magneticPoles = igrfDipPoles(date);
+
     return {
       date, eop, ephemeris: eph, aam, earthquakes: quakeRows, eruptions: volcRows,
       cyclones, storms, weather, solar, geomagnetic: geomagnetic || null, spaceWeather: spaceEvents,
+      magnetometers, magneticPoles,
     };
   };
 
@@ -259,6 +264,23 @@ export function createHandlers(db) {
       ORDER BY date DESC
       LIMIT ?
     `).all(endDate, days).reverse();
+
+  const getMagnetometers = (date) => {
+    const rows = db.prepare(`
+      SELECT iaga_code AS iagaCode, name, lat, lon, elevation_m AS elevationM,
+             institute, url, opened, closed
+      FROM mag_observatories
+      WHERE closed IS NULL
+      ORDER BY iaga_code
+    `).all();
+
+    return rows.map((obs) => ({
+      ...obs,
+      field: igrfFieldAt(obs.lat, obs.lon, date, obs.elevationM ?? 0),
+      fieldEpistemic: 'modeled',
+      siteEpistemic: 'measured',
+    }));
+  };
 
   const getAamForDate = (date) => {
     let row = db.prepare('SELECT * FROM aam_daily WHERE date = ?').get(date);

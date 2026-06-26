@@ -14,10 +14,18 @@ export const LEGEND_GEO = [
   {
     id: 'pole',
     class: 'pole',
-    label: '● Pole',
-    title: 'Instantaneous pole',
+    label: '● Spin',
+    title: 'Rotation (spin) pole',
     help:
-      'IERS Earth orientation: where the rotation axis pierces the surface on this date. The pole trail shows the recent wandering path in the Earth-fixed frame.',
+      'IERS instantaneous pole — where Earth’s spin axis pierces the surface on this date (~meters of polar wander; see Polhode panel). Not the same as the magnetic pole.',
+  },
+  {
+    id: 'magpole',
+    class: 'magpole',
+    label: '◆ Mag',
+    title: 'Magnetic dip poles',
+    help:
+      'IGRF-14 modeled north (bright) and south (dim) dip poles where the main field is vertical. Hundreds of km from the spin pole and drifting on the order of km per year — contrast with the yellow spin marker.',
   },
   {
     id: 'axis',
@@ -96,10 +104,10 @@ export const LEGEND_GEO = [
   {
     id: 'field',
     class: 'field',
-    label: '⌇ Field',
-    title: 'Magnetic field',
+    label: '⌇ Geomag',
+    title: 'Geomagnetic field',
     help:
-      'Modeled WMM dipole field lines for orientation with space-weather panels — pedagogical sketch, not a live magnetometer map.',
+      'Default WMM dipole field-line arcs for orientation (pedagogical). When the scrub date has space-weather context (Kp, Dst, solar wind, or DONKI events), INTERMAGNET observatory dots and IGRF-14 declination ticks appear — modeled vectors at measured station sites, not live magnetograms.',
   },
   {
     id: 'cyclone',

@@ -21,6 +21,7 @@ import {
   renderStalenessChips,
 } from './epistemics.js';
 import { bindLegendHelp, renderLegendHtml } from './legend-help.js';
+import { createTimelineSlider } from './timeline-slider.js';
 import { createViewTransition, updateViewTransition } from './view-transition.js';
 
 const state = {
@@ -41,6 +42,7 @@ const state = {
 let geocentricScene = null;
 let heliocentricScene = null;
 let viewTransition = null;
+let timelineSlider = null;
 
 const LAYER_PRESETS = {
   solid: {
@@ -310,7 +312,7 @@ async function updateUI() {
   });
 
   document.getElementById('date-display').textContent = formatDate(date);
-  document.getElementById('time-slider').value = state.currentIndex;
+  timelineSlider?.update(state.currentIndex);
 
   applyEventLayers(frame, date);
 
@@ -329,6 +331,10 @@ async function updateUI() {
   }
 
   if (state.view === 'geocentric') {
+    geocentricScene.setMagnetometers(frame.magnetometers || [], frame.geomagnetic, {
+      spaceWeather: frame.spaceWeather,
+      magneticPoles: frame.magneticPoles,
+    });
     geocentricScene.setSpaceWeather(frame.geomagnetic, { ovationData: state.ovationData });
     geocentricScene.updateBodies(ephemerisDay);
   } else {
@@ -526,12 +532,23 @@ function setupControls() {
 
   slider.min = 0;
   slider.max = state.dates.length - 1;
-  slider.value = state.currentIndex;
+  slider.setAttribute('aria-valuemax', String(state.dates.length - 1));
   document.getElementById('start-label').textContent = state.dates[0]?.slice(0, 4) || '1962';
   document.getElementById('end-label').textContent = state.dates.at(-1)?.slice(0, 4) || '2026';
 
+  timelineSlider = createTimelineSlider({
+    dates: state.dates,
+    slider,
+    ticksEl: document.getElementById('timeline-ticks'),
+    fillEl: document.getElementById('timeline-fill'),
+    dateEl: document.getElementById('scrub-date'),
+    metaEl: document.getElementById('scrub-meta'),
+  });
+  timelineSlider.update(state.currentIndex);
+
   slider.addEventListener('input', () => {
     state.currentIndex = parseInt(slider.value, 10);
+    timelineSlider.update(state.currentIndex);
     updateUI();
   });
 

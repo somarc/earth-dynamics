@@ -49,7 +49,7 @@
         <aside class="panels">
           <div class="panel">
             <h2>Polhode</h2>
-            <p class="panel__desc">Pole path in the Earth-fixed frame (IERS x, −y)</p>
+            <p class="panel__desc">Spin-pole wander in the Earth-fixed frame (IERS x, −y) — not magnetic north (◆ on globe)</p>
             <canvas id="polhode-chart" width="388" height="240"></canvas>
           </div>
 
@@ -111,7 +111,27 @@
         <div class="controls__row controls__row--timeline">
           <button id="play-btn" class="btn btn--play" aria-label="Play/pause">▶</button>
           <div class="controls__scrub">
-            <input type="range" id="time-slider" class="slider" min="0" max="100" value="0" />
+            <div class="timeline-readout" aria-live="polite">
+              <span id="scrub-date" class="timeline-readout__date">—</span>
+              <span id="scrub-meta" class="timeline-readout__meta">—</span>
+            </div>
+            <div class="timeline-track">
+              <div id="timeline-ticks" class="timeline-ticks" aria-hidden="true"></div>
+              <div id="timeline-fill" class="timeline-fill" aria-hidden="true"></div>
+              <input
+                type="range"
+                id="time-slider"
+                class="slider timeline-slider"
+                min="0"
+                max="100"
+                value="0"
+                aria-label="Timeline scrubber"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+                aria-valuetext="—"
+              />
+            </div>
             <div class="controls__years">
               <span id="start-label">1962</span>
               <span id="end-label">2026</span>
@@ -161,7 +181,7 @@
             <label class="layer-chip" title="IBTrACS cyclone tracks"><input type="checkbox" id="show-cyclones" checked /><span>Cyclones</span></label>
             <label class="layer-chip" title="ERA5 weather grid"><input type="checkbox" id="show-weather-glyphs" checked /><span>Weather</span></label>
             <label class="layer-chip" title="OVATION / Kp aurora"><input type="checkbox" id="show-aurora" checked /><span>Aurora</span></label>
-            <label class="layer-chip" title="WMM magnetic field lines"><input type="checkbox" id="show-field-lines" checked /><span>Field</span></label>
+            <label class="layer-chip" title="INTERMAGNET sites + IGRF-14 vectors"><input type="checkbox" id="show-field-lines" checked /><span>Geomag</span></label>
             <label class="layer-chip" title="Moon and Sun markers"><input type="checkbox" id="show-bodies" checked /><span>Bodies</span></label>
             <label class="layer-chip" id="show-moon-label" style="display:none" title="Moon in heliocentric view"><input type="checkbox" id="show-moon" checked /><span>Moon</span></label>
             <label class="layer-chip" id="show-cme-label" style="display:none" title="CME markers"><input type="checkbox" id="show-cme" checked /><span>CME</span></label>

@@ -50,6 +50,8 @@ export const LAYER_EPISTEMICS = {
   weather: 'modeled',
   aurora: 'derived',
   fieldLines: 'modeled',
+  geomag: 'modeled',
+  magpole: 'modeled',
   bodies: 'measured',
 };
 
@@ -62,6 +64,9 @@ export const PICK_EPISTEMICS = {
   'plate-boundary': 'pedagogical',
   cyclone: 'measured',
   weather: 'modeled',
+  magnetometer: 'modeled',
+  'magnetic-pole': 'modeled',
+  'spin-pole': 'measured',
 };
 
 const DAY_MS = 86_400_000;

@@ -10,7 +10,9 @@ import {
 } from './utils.js';
 import { updateAuroraRings } from './space-weather.js';
 import { updateOvationAurora } from './ovation.js';
-import { loadIgrfFieldLines, updateIgrfFieldLines } from './igrf.js';
+import { hasGeomagContext, updateGeomagLayer } from './geomag-globe.js';
+import { updateMagneticPoleMarkers } from './magnetic-poles.js';
+import { loadIgrfFieldLines } from './igrf.js';
 import { loadPlateBoundaries, buildPlateGroup, loadPlateMotion, buildMotionGroup } from './plates.js';
 import { loadHotspots, buildHotspotGroup } from './hotspots.js';
 import { classifyPick } from './event-inspect.js';
@@ -98,7 +100,18 @@ export class EarthScene {
     const poleGeo = new THREE.SphereGeometry(0.025, 16, 16);
     const poleMat = new THREE.MeshBasicMaterial({ color: 0xffd166 });
     this.poleMarker = new THREE.Mesh(poleGeo, poleMat);
+    this.poleMarker.userData = { pickType: 'spin-pole' };
     this.surfaceGroup.add(this.poleMarker);
+    const polePick = new THREE.Mesh(
+      new THREE.SphereGeometry(0.04, 8, 8),
+      new THREE.MeshBasicMaterial({ visible: false }),
+    );
+    polePick.userData = this.poleMarker.userData;
+    this.poleMarker.add(polePick);
+    this.spinPoleLatLon = null;
+
+    this.magneticPoleGroup = new THREE.Group();
+    this.surfaceGroup.add(this.magneticPoleGroup);
 
     const trailMax = 2000;
     const trailPositions = new Float32Array(trailMax * 3);
@@ -129,13 +142,17 @@ export class EarthScene {
     this.surfaceGroup.add(this.cycloneGroup);
     this.weatherGroup = new THREE.Group();
     this.surfaceGroup.add(this.weatherGroup);
+    this.geomagGroup = new THREE.Group();
+    this.surfaceGroup.add(this.geomagGroup);
     this.fieldLinesGroup = new THREE.Group();
     this.axisGroup.add(this.fieldLinesGroup);
-    this.igrfFieldData = null;
+    this.magnetometers = [];
+    this.showGeomagObservatories = false;
+    this.igrfFieldFallback = null;
     try {
-      this.igrfFieldData = await loadIgrfFieldLines();
+      this.igrfFieldFallback = await loadIgrfFieldLines();
     } catch (err) {
-      console.warn('IGRF field lines unavailable:', err);
+      console.warn('IGRF field line fallback unavailable:', err);
     }
 
     try {
@@ -276,6 +293,18 @@ export class EarthScene {
     const poleLon = (Math.atan2(m1, m2) * 180) / Math.PI;
     const pos = latLonToVector3(poleLat, poleLon, EARTH_RADIUS * 1.01);
     this.poleMarker.position.set(pos.x, pos.y, pos.z);
+    this.spinPoleLatLon = { lat: poleLat, lon: poleLon };
+    const spinPoleData = {
+      pickType: 'spin-pole',
+      lat: poleLat,
+      lon: poleLon,
+      xArcsec: eopRecord.xArcsec,
+      yArcsec: eopRecord.yArcsec,
+    };
+    this.poleMarker.userData = spinPoleData;
+    if (this.poleMarker.children[0]) {
+      this.poleMarker.children[0].userData = spinPoleData;
+    }
 
     if (this.showTrail && trailHistory.length) {
       const count = Math.min(trailHistory.length, this.trailPositions.length / 3);
@@ -439,6 +468,26 @@ export class EarthScene {
     }
   }
 
+  setMagnetometers(magnetometers, geomagnetic = null, { spaceWeather = [], magneticPoles = null } = {}) {
+    this.magnetometers = magnetometers || [];
+    this.magneticPoles = magneticPoles;
+    this.showGeomagObservatories = hasGeomagContext(geomagnetic, spaceWeather);
+    this.refreshGeomagLayer(geomagnetic);
+  }
+
+  refreshGeomagLayer(geomagnetic = null) {
+    const kp = geomagnetic?.kpMax ?? null;
+    updateGeomagLayer(
+      this.geomagGroup,
+      this.fieldLinesGroup,
+      this.magnetometers,
+      this.igrfFieldFallback,
+      this.showFieldLines,
+      { kp, showObservatories: this.showGeomagObservatories },
+    );
+    updateMagneticPoleMarkers(this.magneticPoleGroup, this.magneticPoles, this.showFieldLines);
+  }
+
   setSpaceWeather(geomagnetic, { ovationData = null } = {}) {
     const kp = geomagnetic?.kpMax ?? null;
     const useOvation = this.showAurora && ovationData?.coordinates?.length;
@@ -448,7 +497,7 @@ export class EarthScene {
     } else {
       updateAuroraRings(this.auroraGroup, kp, this.showAurora);
     }
-    updateIgrfFieldLines(this.fieldLinesGroup, kp, this.showFieldLines, this.igrfFieldData);
+    this.refreshGeomagLayer(geomagnetic);
   }
 
   setVolcanoes(volcs) {
@@ -533,6 +582,9 @@ export class EarthScene {
     this.raycaster.setFromCamera(this.pointer, this.camera);
 
     const meshLayers = [
+      { visible: true, group: this.poleMarker },
+      { visible: this.showFieldLines, group: this.magneticPoleGroup },
+      { visible: this.showFieldLines, group: this.geomagGroup },
       { visible: this.showWeather, group: this.weatherGroup },
       { visible: this.showCyclones, group: this.cycloneGroup },
       { visible: this.showHotspots, group: this.hotspotGroup },
@@ -596,7 +648,6 @@ export class EarthScene {
     const now = performance.now();
     const spin = this.baseSpin + this.autoRotate * this.lodFactor;
     this.surfaceGroup.rotation.y += spin;
-    // Field lines are body-fixed to the dipole / spin axis — co-rotate with geography.
     if (this.fieldLinesGroup?.visible) {
       this.fieldLinesGroup.rotation.y += spin;
     }

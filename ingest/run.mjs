@@ -9,6 +9,7 @@ import { ingestEarthquakes } from './sources/earthquakes.mjs';
 import { ingestAam } from './sources/aam.mjs';
 import { ingestEphemeris } from './sources/ephemeris.mjs';
 import { ingestIbtracs } from './sources/ibtracs.mjs';
+import { ingestGeomag } from './sources/geomag.mjs';
 import { dbPath } from './db.mjs';
 
 const args = new Set(process.argv.slice(2));
@@ -64,6 +65,11 @@ async function main() {
   if (!only || only === 'aam') {
     console.log('7. GFZ atmospheric angular momentum…');
     await ingestAam({ force });
+  }
+
+  if (!only || only === 'geomag') {
+    console.log('8. INTERMAGNET observatory catalog…');
+    await ingestGeomag({ force });
   }
 
   if (only === 'ephemeris') {

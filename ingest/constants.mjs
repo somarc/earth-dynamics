@@ -135,12 +135,28 @@ export const SOURCES = {
     epistemic: 'pedagogical',
     ingestKeys: [],
   },
-  igrfWmm: {
-    name: 'IGRF / WMM Magnetic Field',
-    org: 'NOAA NCEI',
-    citation: 'WMM2020 dipole field line model',
-    link: 'https://www.ncei.noaa.gov/products/world-magnetic-model',
+  intermagnet: {
+    name: 'INTERMAGNET Observatory Network',
+    org: 'INTERMAGNET / BGS World Data Centre',
+    citation: 'Global magnetometer observatory metadata (EPOS GeoJSON)',
+    link: 'https://www.intermagnet.org/',
+    epistemic: 'measured',
+    ingestKeys: ['geomag'],
+  },
+  igrf14: {
+    name: 'IGRF-14 Geomagnetic Reference Field',
+    org: 'IAGA / NOAA NCEI / BGS',
+    citation: 'International Geomagnetic Reference Field, 14th generation',
+    link: 'https://www.ncei.noaa.gov/products/international-geomagnetic-reference-field',
     epistemic: 'modeled',
+    ingestKeys: [],
+  },
+  igrfWmm: {
+    name: 'World Magnetic Model (legacy field lines)',
+    org: 'NOAA NCEI',
+    citation: 'WMM2020 dipole L-shell traces (retired visualization)',
+    link: 'https://www.ncei.noaa.gov/products/world-magnetic-model',
+    epistemic: 'pedagogical',
     ingestKeys: [],
   },
   mantleHotspots: {

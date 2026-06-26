@@ -13,6 +13,12 @@ export const GLOBE_ABOUT = {
     'Tropical cyclone tracks from NOAA IBTrACS. Line color reflects intensity; the head marker is the storm position on or before the selected date.',
   weather:
     'ERA5 grid glyphs at 16 reference cities. Color encodes daily max temperature; size reflects max wind. Open-Meteo historical archive.',
+  geomag:
+    'Default WMM dipole field-line arcs for orientation. When space-weather data exists for the scrub date, INTERMAGNET observatory sites appear with IGRF-14 declination ticks — modeled vectors at measured station locations.',
+  spinPole:
+    'IERS instantaneous rotation pole — where the spin axis meets the surface. Polar wander is on the order of meters (exaggerated in the Polhode panel), not the same as magnetic north.',
+  magneticPole:
+    'IGRF-14 geomagnetic dip pole — where the modeled main field is vertical. Drifts on the order of km per year, typically hundreds of km from the spin pole.',
 };
 
 function esc(value) {
@@ -180,6 +186,44 @@ export function renderGlobeTooltip(selection) {
         <strong>${esc(data.label || data.gridId)}</strong>
         <span class="globe-tooltip__kind">ERA5 grid</span><br />
         <span class="globe-tooltip__detail">${data.tempMaxC != null ? `${data.tempMaxC.toFixed(0)}°C max` : '—'} · wind ${data.windMaxKmh != null ? `${data.windMaxKmh.toFixed(0)} km/h` : '—'}</span>
+      `,
+    };
+  }
+
+  if (type === 'spin-pole') {
+    return {
+      className: 'globe-tooltip--pole',
+      html: `
+        <strong>Spin pole</strong>
+        <span class="globe-tooltip__kind">IERS measured</span><br />
+        <span class="globe-tooltip__detail">${data.lat?.toFixed(2)}°, ${data.lon?.toFixed(2)}°</span><br />
+        <span class="globe-tooltip__detail globe-tooltip__detail--muted">x ${data.xArcsec?.toFixed(1) ?? '—'}″ · y ${data.yArcsec?.toFixed(1) ?? '—'}″</span>
+      `,
+    };
+  }
+
+  if (type === 'magnetic-pole') {
+    const hemi = data.hemisphere === 'south' ? 'South' : 'North';
+    return {
+      className: 'globe-tooltip--magpole',
+      html: `
+        <strong>${hemi} magnetic pole</strong>
+        <span class="globe-tooltip__kind">IGRF-14 modeled</span><br />
+        <span class="globe-tooltip__detail">${data.lat?.toFixed(2)}°, ${data.lon?.toFixed(1)}°</span><br />
+        <span class="globe-tooltip__detail globe-tooltip__detail--muted">I ≈ ${data.inclinationDeg?.toFixed(1) ?? '—'}°</span>
+      `,
+    };
+  }
+
+  if (type === 'magnetometer') {
+    const f = data.field;
+    return {
+      className: 'globe-tooltip--geomag',
+      html: `
+        <strong>${esc(data.name || data.iagaCode)}</strong>
+        <span class="globe-tooltip__kind">INTERMAGNET · IGRF-14</span><br />
+        <span class="globe-tooltip__detail">F ${f?.totalNt != null ? `${Math.round(f.totalNt)} nT` : '—'} · D ${f?.declDeg != null ? `${f.declDeg.toFixed(1)}°` : '—'} · I ${f?.inclDeg != null ? `${f.inclDeg.toFixed(1)}°` : '—'}</span><br />
+        <span class="globe-tooltip__detail globe-tooltip__detail--muted">${esc(data.institute || '')}</span>
       `,
     };
   }

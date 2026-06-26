@@ -184,3 +184,16 @@ CREATE TABLE IF NOT EXISTS cyclone_storms (
 );
 CREATE INDEX IF NOT EXISTS idx_cyclone_start ON cyclone_storms(start_date);
 CREATE INDEX IF NOT EXISTS idx_cyclone_end ON cyclone_storms(end_date);
+
+CREATE TABLE IF NOT EXISTS mag_observatories (
+  iaga_code TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  lat REAL NOT NULL,
+  lon REAL NOT NULL,
+  elevation_m REAL,
+  institute TEXT,
+  url TEXT,
+  opened TEXT,
+  closed TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_mag_obs_active ON mag_observatories(closed);

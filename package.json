@@ -20,6 +20,8 @@
   },
   "dependencies": {
     "better-sqlite3": "^11.9.1",
+    "geomagnetism": "^0.2.0",
+    "geopack-ts": "^0.1.0",
     "three": "^0.175.0"
   },
   "devDependencies": {
