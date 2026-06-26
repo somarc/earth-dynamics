@@ -33,6 +33,8 @@ const state = {
   currentIndex: 0,
   playing: false,
   speed: 1,
+  /** Real milliseconds per simulated day at 1× playback speed */
+  dayLengthMs: 60_000,
   lastFrame: 0,
   dayAccumulator: 0,
   diurnalMode: 'sync',
@@ -613,6 +615,7 @@ function setupControls() {
   const slider = document.getElementById('time-slider');
   const playBtn = document.getElementById('play-btn');
   const speedSelect = document.getElementById('speed-select');
+  const dayLengthSelect = document.getElementById('day-length-select');
 
   slider.min = 0;
   slider.max = state.dates.length - 1;
@@ -646,6 +649,13 @@ function setupControls() {
   speedSelect.addEventListener('change', () => {
     state.speed = parseFloat(speedSelect.value);
   });
+
+  if (dayLengthSelect) {
+    dayLengthSelect.value = String(state.dayLengthMs);
+    dayLengthSelect.addEventListener('change', () => {
+      state.dayLengthMs = parseInt(dayLengthSelect.value, 10) || 60_000;
+    });
+  }
 
   document.querySelectorAll('.view-btn').forEach((btn) => {
     btn.addEventListener('click', () => setView(btn.dataset.view));
@@ -768,7 +778,7 @@ function animate(timestamp) {
   state.lastFrame = timestamp;
 
   if (state.playing && delta > 0) {
-    state.dayAccumulator += (delta / 16) * state.speed;
+    state.dayAccumulator += (delta / state.dayLengthMs) * state.speed;
     while (state.dayAccumulator >= 1) {
       state.dayAccumulator -= 1;
       if (state.currentIndex < state.dates.length - 1) {

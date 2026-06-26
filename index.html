@@ -137,11 +137,18 @@
               <span id="end-label">2026</span>
             </div>
           </div>
-          <select id="speed-select" class="controls__speed-select" title="Playback speed" aria-label="Playback speed">
+          <select id="day-length-select" class="controls__speed-select" title="Real time per simulated day at 1× speed" aria-label="Day length">
+            <option value="10000">10s/day</option>
+            <option value="60000" selected>1m/day</option>
+            <option value="3600000">1h/day</option>
+            <option value="86400000">24h/day</option>
+          </select>
+          <select id="speed-select" class="controls__speed-select" title="Playback multiplier on day length" aria-label="Playback speed">
             <option value="0.25">0.25×</option>
             <option value="1" selected>1×</option>
             <option value="4">4×</option>
             <option value="16">16×</option>
+            <option value="24">24×</option>
             <option value="64">64×</option>
           </select>
         </div>

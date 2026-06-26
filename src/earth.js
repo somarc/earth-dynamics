@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { createEarthMaterial, loadEarthTextures } from './textures.js';
+import {
+  createTerminatorEarthMaterial,
+  loadEarthTextures,
+  updateEarthSunDirection,
+} from './textures.js';
 import {
   EARTH_RADIUS,
   latLonToVector3,
@@ -74,7 +78,8 @@ export class EarthScene {
 
     const earthTextures = await loadEarthTextures();
     const earthGeo = new THREE.SphereGeometry(EARTH_RADIUS, 64, 64);
-    const earthMat = createEarthMaterial(earthTextures);
+    const earthMat = createTerminatorEarthMaterial(earthTextures);
+    this.earthMaterial = earthMat;
     this.earth = new THREE.Mesh(earthGeo, earthMat);
     this.surfaceGroup.add(this.earth);
 
@@ -431,10 +436,13 @@ export class EarthScene {
     const dir = sunDir?.lengthSq() ? sunDir.clone().normalize() : this.defaultSunDirection;
     const sunDistance = 9;
     this.sunLight.position.copy(dir).multiplyScalar(sunDistance);
-    this.sunLight.intensity = ephemerisDay?.sun ? 2.0 : 1.5;
+    this.sunLight.intensity = ephemerisDay?.sun ? 1.35 : 1.0;
     this.fillLight.position.copy(dir).multiplyScalar(-sunDistance * 0.7);
-    this.fillLight.intensity = 0.1 + (ephemerisDay?.lunar?.illumination ?? 0.25) * 0.08;
+    this.fillLight.intensity = 0.04 + (ephemerisDay?.lunar?.illumination ?? 0.25) * 0.05;
+    this.ambientLight.intensity =
+      this.showBodies && this.diurnalMode === 'sync' ? 0.06 : 0.22;
     updateAtmosphereSun(this.atmosphere, dir);
+    updateEarthSunDirection(this.earthMaterial, dir);
   }
 
   updateSunLighting(ephemerisDay) {
@@ -448,17 +456,39 @@ export class EarthScene {
     const day = this.diurnalDay;
     const next = this.diurnalNextDay || day;
 
-    if (!day || !this.showBodies) {
+    if (!day) {
       this.bodiesGroup.visible = false;
       return;
     }
 
-    this.bodiesGroup.visible = true;
     const moonDist = 2.8;
     const sunDist = 7.5;
 
     const moonDir = this.lerpBodyDirection(day.moon, next?.moon, phase);
     const sunDir = this.lerpBodyDirection(day.sun, next?.sun, phase);
+
+    if (sunDir) {
+      this.sunMarker.position.copy(sunDir.clone().multiplyScalar(sunDist));
+      const pts = [new THREE.Vector3(0, 0, 0), sunDir.clone().multiplyScalar(sunDist * 0.95)];
+      this.sunLine.geometry.dispose();
+      this.sunLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+      this.updateSunLightingFromDir(sunDir, phase < 0.5 ? day : next);
+    }
+
+    if (this.diurnalMode === 'sync') {
+      this.surfaceSpinY = phase * Math.PI * 2;
+      this.surfaceGroup.rotation.y = this.surfaceSpinY;
+      if (this.fieldLinesGroup?.visible) {
+        this.fieldLinesGroup.rotation.y = this.surfaceSpinY;
+      }
+    }
+
+    if (!this.showBodies) {
+      this.bodiesGroup.visible = false;
+      return;
+    }
+
+    this.bodiesGroup.visible = true;
 
     if (moonDir) {
       this.moonMesh.position.copy(moonDir.clone().multiplyScalar(moonDist));
@@ -472,19 +502,6 @@ export class EarthScene {
       );
     }
 
-    if (sunDir) {
-      this.sunMarker.position.copy(sunDir.clone().multiplyScalar(sunDist));
-      const pts = [new THREE.Vector3(0, 0, 0), sunDir.clone().multiplyScalar(sunDist * 0.95)];
-      this.sunLine.geometry.dispose();
-      this.sunLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
-      this.updateSunLightingFromDir(sunDir, phase < 0.5 ? day : next);
-    }
-
-    this.surfaceSpinY = phase * Math.PI * 2;
-    this.surfaceGroup.rotation.y = this.surfaceSpinY;
-    if (this.fieldLinesGroup?.visible) {
-      this.fieldLinesGroup.rotation.y = this.surfaceSpinY;
-    }
   }
 
   updateBodies(ephemerisDay) {

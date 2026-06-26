@@ -1243,6 +1243,10 @@ select {
   width: 3.1rem;
 }
 
+#day-length-select {
+  width: 4.4rem;
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
