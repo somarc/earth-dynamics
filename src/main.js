@@ -153,15 +153,13 @@ function updateEventsPanelMeta(date, counts = null) {
 
   const tally = formatGlobeTally(counts);
   if (recentLabel) {
-    if (state.recentOnly) {
-      recentLabel.textContent = tally
-        ? `Past week only · ${tally}`
-        : 'Past week only · …';
-    } else {
-      recentLabel.textContent = tally
-        ? `Past week only (off · ${tally} ±7d)`
-        : 'Past week only (off)';
-    }
+    recentLabel.textContent = state.recentOnly ? '7d' : '±7d';
+  }
+
+  const footerTally = document.getElementById('footer-tally');
+  if (footerTally) {
+    footerTally.textContent = tally || '';
+    footerTally.title = tally || 'Globe event counts';
   }
 
   if (filterBadge) {

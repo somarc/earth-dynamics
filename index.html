@@ -101,15 +101,16 @@
       </main>
 
       <footer class="controls">
-        <button id="play-btn" class="btn" aria-label="Play/pause">▶</button>
-        <input type="range" id="time-slider" class="slider" min="0" max="100" value="0" />
-        <div class="controls__labels">
-          <span id="start-label">1962</span>
-          <span id="end-label">2026</span>
-        </div>
-        <div class="controls__speed">
-          <label for="speed-select">Speed</label>
-          <select id="speed-select">
+        <div class="controls__row controls__row--timeline">
+          <button id="play-btn" class="btn btn--play" aria-label="Play/pause">▶</button>
+          <div class="controls__scrub">
+            <input type="range" id="time-slider" class="slider" min="0" max="100" value="0" />
+            <div class="controls__years">
+              <span id="start-label">1962</span>
+              <span id="end-label">2026</span>
+            </div>
+          </div>
+          <select id="speed-select" class="controls__speed-select" title="Playback speed" aria-label="Playback speed">
             <option value="0.25">0.25×</option>
             <option value="1" selected>1×</option>
             <option value="4">4×</option>
@@ -117,43 +118,47 @@
             <option value="64">64×</option>
           </select>
         </div>
-        <div class="controls__filter">
-          <label class="filter-label" title="Limit quakes, storms, volcanoes, and space-weather events to the 7 days before the selected date">
-            <input type="checkbox" id="recent-only" checked />
-            <span id="recent-only-label">Past week only</span>
-          </label>
-        </div>
-        <div class="controls__quake-mag" title="M≥5 ~several/day · M≥6 ~every few days · M≥7 ~15/yr · M≥8 ~1/yr (global averages)">
-          <label for="quake-min-mag">Quake floor</label>
-          <select id="quake-min-mag" aria-label="Minimum earthquake magnitude">
-            <option value="5" selected>M≥5</option>
-            <option value="6">M≥6</option>
-            <option value="7">M≥7</option>
-            <option value="8">M≥8</option>
-          </select>
-        </div>
-        <div class="controls__presets">
-          <span class="presets-label">Presets</span>
-          <button type="button" class="preset-btn" data-preset="solid">Solid Earth</button>
-          <button type="button" class="preset-btn" data-preset="space">Space Weather</button>
-          <button type="button" class="preset-btn" data-preset="orbital">Orbital</button>
-          <button type="button" class="preset-btn" data-preset="atmosphere">Atmosphere</button>
-          <button type="button" class="preset-btn" data-preset="full">Full stack</button>
-        </div>
-        <div class="controls__toggles">
-          <label><input type="checkbox" id="show-quakes" checked /> Earthquakes</label>
-          <label title="GVP eruption episodes whose start–end dates overlap the selected timeline window"><input type="checkbox" id="show-volcanoes" checked /> Active eruptions (GVP)</label>
-          <label><input type="checkbox" id="show-trail" checked /> Pole trail</label>
-          <label><input type="checkbox" id="show-plates" checked /> Plate boundaries</label>
-          <label><input type="checkbox" id="show-plate-motion" checked /> Plate motion</label>
-          <label><input type="checkbox" id="show-hotspots" checked /> Hotspots</label>
-          <label><input type="checkbox" id="show-cyclones" checked /> Cyclone tracks</label>
-          <label><input type="checkbox" id="show-weather-glyphs" checked /> Weather grid</label>
-          <label><input type="checkbox" id="show-aurora" checked /> Aurora oval</label>
-          <label><input type="checkbox" id="show-field-lines" checked /> Field lines</label>
-          <label><input type="checkbox" id="show-bodies" checked /> Moon &amp; Sun</label>
-          <label id="show-moon-label" style="display:none"><input type="checkbox" id="show-moon" checked /> Moon</label>
-          <label id="show-cme-label" style="display:none"><input type="checkbox" id="show-cme" checked /> CME markers</label>
+        <div class="controls__row controls__row--tools">
+          <div class="controls__cluster controls__cluster--filters">
+            <label class="filter-chip filter-label" title="Limit events to the 7 days before the selected date">
+              <input type="checkbox" id="recent-only" checked />
+              <span id="recent-only-label">7d</span>
+            </label>
+            <select
+              id="quake-min-mag"
+              class="controls__mag-select"
+              title="M≥5 ~several/day · M≥6 ~every few days · M≥7 ~15/yr · M≥8 ~1/yr"
+              aria-label="Minimum earthquake magnitude"
+            >
+              <option value="5" selected>M≥5</option>
+              <option value="6">M≥6</option>
+              <option value="7">M≥7</option>
+              <option value="8">M≥8</option>
+            </select>
+            <span id="footer-tally" class="footer-tally" aria-live="polite"></span>
+          </div>
+          <div class="controls__cluster controls__cluster--presets" role="group" aria-label="Layer presets">
+            <button type="button" class="preset-btn" data-preset="solid" title="Solid Earth layers">Solid</button>
+            <button type="button" class="preset-btn" data-preset="space" title="Space weather layers">Space</button>
+            <button type="button" class="preset-btn" data-preset="orbital" title="Orbital geometry">Orbit</button>
+            <button type="button" class="preset-btn" data-preset="atmosphere" title="Cyclones and weather">Atmos</button>
+            <button type="button" class="preset-btn" data-preset="full" title="All layers">Full</button>
+          </div>
+          <div class="controls__cluster controls__cluster--layers" role="group" aria-label="Globe layers">
+            <label class="layer-chip" title="USGS earthquakes"><input type="checkbox" id="show-quakes" checked /><span>Quakes</span></label>
+            <label class="layer-chip" title="GVP eruption episodes in window"><input type="checkbox" id="show-volcanoes" checked /><span>GVP</span></label>
+            <label class="layer-chip" title="IERS pole path trail"><input type="checkbox" id="show-trail" checked /><span>Pole</span></label>
+            <label class="layer-chip" title="PB2002 plate boundaries"><input type="checkbox" id="show-plates" checked /><span>Plates</span></label>
+            <label class="layer-chip" title="Plate motion vectors"><input type="checkbox" id="show-plate-motion" checked /><span>Motion</span></label>
+            <label class="layer-chip" title="Mantle hotspots"><input type="checkbox" id="show-hotspots" checked /><span>Hotspots</span></label>
+            <label class="layer-chip" title="IBTrACS cyclone tracks"><input type="checkbox" id="show-cyclones" checked /><span>Cyclones</span></label>
+            <label class="layer-chip" title="ERA5 weather grid"><input type="checkbox" id="show-weather-glyphs" checked /><span>Weather</span></label>
+            <label class="layer-chip" title="OVATION / Kp aurora"><input type="checkbox" id="show-aurora" checked /><span>Aurora</span></label>
+            <label class="layer-chip" title="WMM magnetic field lines"><input type="checkbox" id="show-field-lines" checked /><span>Field</span></label>
+            <label class="layer-chip" title="Moon and Sun markers"><input type="checkbox" id="show-bodies" checked /><span>Bodies</span></label>
+            <label class="layer-chip" id="show-moon-label" style="display:none" title="Moon in heliocentric view"><input type="checkbox" id="show-moon" checked /><span>Moon</span></label>
+            <label class="layer-chip" id="show-cme-label" style="display:none" title="CME markers"><input type="checkbox" id="show-cme" checked /><span>CME</span></label>
+          </div>
         </div>
       </footer>
     </div>
