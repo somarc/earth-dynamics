@@ -10,6 +10,19 @@
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
+    <div id="bootstrap-gate" class="bootstrap-gate bootstrap-gate--hidden" role="alertdialog" aria-labelledby="bootstrap-title" aria-modal="true">
+      <div class="bootstrap-gate__card">
+        <h2 id="bootstrap-title" class="bootstrap-gate__title">Timeline data not loaded</h2>
+        <p id="bootstrap-desc" class="bootstrap-gate__desc">
+          Wobblescope needs ingested EOP dates before the globe and scrubber can start.
+        </p>
+        <p class="bootstrap-gate__hint">From the repo root (first run may take several minutes and ~100&nbsp;MB of generated data):</p>
+        <pre class="bootstrap-gate__cmd">npm run fetch-data
+npm run ingest
+npm run start</pre>
+        <button type="button" id="bootstrap-retry" class="bootstrap-gate__retry">Retry after ingest</button>
+      </div>
+    </div>
     <div id="app">
       <header class="header">
         <div class="header__row header__row--primary">
@@ -26,6 +39,7 @@
           <div class="header__cluster header__cluster--meta">
             <span id="date-display" class="header-date">—</span>
             <span id="mode-badge" class="status-chip" hidden></span>
+            <div id="asof-chips" class="header-chips asof-chips--hidden" aria-live="polite"></div>
             <div id="staleness-chips" class="header-chips staleness-chips--hidden" aria-live="polite"></div>
           </div>
         </div>

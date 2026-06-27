@@ -77,7 +77,7 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
       api(`/api/geomagnetic/window?end=${date}&days=28`).catch(() => []),
       api(`/api/aam/window?end=${date}&days=400`).catch(() => []),
     ]);
-    let frame = {
+    return {
       record: day.eop,
       eopWindow,
       ephemerisDay: day.ephemeris,
@@ -96,8 +96,10 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
       geomagneticWindow: geoWindow,
       magnetometers: day.magnetometers || [],
       magneticPoles: day.magneticPoles || null,
+      asOf: day.asOf || null,
+      coverage: day.coverage || null,
+      requestedDate: day.date || date,
     };
-    return frame;
   }
 
   const record = catalog.eop[currentIndex];

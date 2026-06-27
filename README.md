@@ -20,6 +20,10 @@ npm run start
 # → API http://localhost:3001  ·  App http://localhost:5173
 ```
 
+**First-run expectations:** `npm run fetch-data` pulls ~64 years of IERS EOP, yearly USGS slices, JPL ephemeris vectors, and related sources. Expect several minutes on a typical connection and roughly **~100 MB** of generated artifacts (`public/data/` ~64 MB, `data/` ~44 MB after ingest). Starting only `npm run api` on a fresh clone creates an empty SQLite file and an empty timeline — the app shows a bootstrap gate until ingest completes.
+
+**Trust semantics:** `/api/day/:date` returns `asOf` when EOP, ephemeris, or AAM rows fall back to the nearest prior date. The header shows per-day fallback chips; `/api/meta` freshness compares catalog ends to the visible timeline end (including earthquake-extended scrub dates).
+
 ## Data layers
 
 | Layer | Source | Store |

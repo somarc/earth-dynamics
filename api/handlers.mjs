@@ -57,6 +57,46 @@ function rowToEphemeris(r) {
   };
 }
 
+function lagDays(fromDate, toDate) {
+  if (!fromDate || !toDate || toDate <= fromDate) return 0;
+  return Math.round(
+    (Date.parse(`${toDate}T12:00:00Z`) - Date.parse(`${fromDate}T12:00:00Z`)) / 86_400_000,
+  );
+}
+
+function extensionMaxDate(db) {
+  const { maxDate } = db.prepare(`
+    SELECT MAX(d) AS maxDate FROM (
+      SELECT MAX(date) AS d FROM earthquakes
+      UNION ALL SELECT MAX(start_date) AS d FROM eruptions
+      UNION ALL SELECT MAX(date) AS d FROM ephemeris_daily
+    )
+  `).get();
+  return maxDate ?? null;
+}
+
+function visibleTimelineEnd(db) {
+  const lastEop = db.prepare('SELECT MAX(date) AS end FROM eop_daily').get()?.end ?? null;
+  if (!lastEop) return null;
+  const maxDate = extensionMaxDate(db);
+  if (!maxDate || maxDate <= lastEop) return lastEop;
+  return maxDate;
+}
+
+function resolveDailyRow(db, table, date) {
+  let row = db.prepare(`SELECT * FROM ${table} WHERE date = ?`).get(date);
+  if (row) {
+    return { row, asOf: row.date, coverage: 'exact' };
+  }
+  row = db.prepare(
+    `SELECT * FROM ${table} WHERE date <= ? ORDER BY date DESC LIMIT 1`,
+  ).get(date);
+  if (row) {
+    return { row, asOf: row.date, coverage: 'fallback' };
+  }
+  return { row: null, asOf: null, coverage: 'missing' };
+}
+
 export function createHandlers(db) {
   const getMeta = () => {
     const eop = db.prepare('SELECT MIN(date) AS start, MAX(date) AS end, COUNT(*) AS count FROM eop_daily').get();
@@ -65,10 +105,8 @@ export function createHandlers(db) {
     ).all();
     const ephEnd = db.prepare('SELECT MAX(date) AS end FROM ephemeris_daily').get()?.end ?? null;
     const quakeEnd = db.prepare('SELECT MAX(date) AS end FROM earthquakes').get()?.end ?? null;
-    const timelineEnd = eop?.end ?? null;
-    const ephemerisLagDays = ephEnd && timelineEnd
-      ? Math.round((Date.parse(`${timelineEnd}T12:00:00Z`) - Date.parse(`${ephEnd}T12:00:00Z`)) / 86_400_000)
-      : null;
+    const eopEnd = eop?.end ?? null;
+    const timelineEnd = visibleTimelineEnd(db);
 
     return {
       sources: SOURCES,
@@ -76,8 +114,10 @@ export function createHandlers(db) {
       ingested,
       freshness: {
         timelineEnd,
+        eopEnd,
         ephemerisEnd: ephEnd,
-        ephemerisLagDays: ephemerisLagDays > 0 ? ephemerisLagDays : 0,
+        eopLagDays: lagDays(eopEnd, timelineEnd),
+        ephemerisLagDays: lagDays(ephEnd, timelineEnd),
         earthquakesThrough: quakeEnd,
       },
       generated: new Date().toISOString(),
@@ -93,29 +133,17 @@ export function createHandlers(db) {
     `).all(endDate, days).reverse().map(rowToEop);
   };
 
-  const getEopForDate = (date) => {
-    let row = db.prepare('SELECT * FROM eop_daily WHERE date = ?').get(date);
-    if (!row) {
-      row = db.prepare(
-        'SELECT * FROM eop_daily WHERE date <= ? ORDER BY date DESC LIMIT 1'
-      ).get(date);
-    }
-    return rowToEop(row);
-  };
-
   const getDay = (date, { pastDays = null } = {}) => {
     const past = Number.isFinite(pastDays) && pastDays > 0
       ? Math.min(30, Math.floor(pastDays))
       : null;
 
-    const eop = getEopForDate(date);
-    let ephRow = db.prepare('SELECT * FROM ephemeris_daily WHERE date = ?').get(date);
-    if (!ephRow) {
-      ephRow = db.prepare(
-        'SELECT * FROM ephemeris_daily WHERE date <= ? ORDER BY date DESC LIMIT 1'
-      ).get(date);
-    }
-    const eph = rowToEphemeris(ephRow);
+    const eopResolved = resolveDailyRow(db, 'eop_daily', date);
+    const ephResolved = resolveDailyRow(db, 'ephemeris_daily', date);
+    const aamResolved = resolveDailyRow(db, 'aam_daily', date);
+
+    const eop = rowToEop(eopResolved.row);
+    const eph = rowToEphemeris(ephResolved.row);
 
     const quakes = past
       ? db.prepare(`
@@ -209,7 +237,15 @@ export function createHandlers(db) {
           LIMIT 40
         `).all(date, date);
 
-    const aam = getAamForDate(date);
+    const aam = aamResolved.row
+      ? {
+          date: aamResolved.row.date,
+          mjd: aamResolved.row.mjd,
+          aamX: aamResolved.row.aam_x,
+          aamY: aamResolved.row.aam_y,
+          aamZ: aamResolved.row.aam_z,
+        }
+      : null;
 
     const cycloneRows = past
       ? db.prepare(`
@@ -248,9 +284,30 @@ export function createHandlers(db) {
     const magneticPoles = igrfDipPoles(date);
 
     return {
-      date, eop, ephemeris: eph, aam, earthquakes: quakeRows, eruptions: volcRows,
-      cyclones, storms, weather, solar, geomagnetic: geomagnetic || null, spaceWeather: spaceEvents,
-      magnetometers, magneticPoles,
+      date,
+      eop,
+      ephemeris: eph,
+      aam,
+      earthquakes: quakeRows,
+      eruptions: volcRows,
+      cyclones,
+      storms,
+      weather,
+      solar,
+      geomagnetic: geomagnetic || null,
+      spaceWeather: spaceEvents,
+      magnetometers,
+      magneticPoles,
+      asOf: {
+        eop: eopResolved.asOf,
+        ephemeris: ephResolved.asOf,
+        aam: aamResolved.asOf,
+      },
+      coverage: {
+        eop: eopResolved.coverage,
+        ephemeris: ephResolved.coverage,
+        aam: aamResolved.coverage,
+      },
     };
   };
 
@@ -282,24 +339,6 @@ export function createHandlers(db) {
     }));
   };
 
-  const getAamForDate = (date) => {
-    let row = db.prepare('SELECT * FROM aam_daily WHERE date = ?').get(date);
-    if (!row) {
-      row = db.prepare(
-        'SELECT * FROM aam_daily WHERE date <= ? ORDER BY date DESC LIMIT 1'
-      ).get(date);
-    }
-    return row
-      ? {
-          date: row.date,
-          mjd: row.mjd,
-          aamX: row.aam_x,
-          aamY: row.aam_y,
-          aamZ: row.aam_z,
-        }
-      : null;
-  };
-
   const getAamWindow = (endDate, days = 400) =>
     db.prepare(`
       SELECT date, mjd, aam_x AS aamX, aam_y AS aamY, aam_z AS aamZ
@@ -314,13 +353,7 @@ export function createHandlers(db) {
     if (!dates.length) return dates;
 
     const lastEop = dates[dates.length - 1];
-    const { maxDate } = db.prepare(`
-      SELECT MAX(d) AS maxDate FROM (
-        SELECT MAX(date) AS d FROM earthquakes
-        UNION ALL SELECT MAX(start_date) AS d FROM eruptions
-        UNION ALL SELECT MAX(date) AS d FROM ephemeris_daily
-      )
-    `).get();
+    const maxDate = extensionMaxDate(db);
     if (!maxDate || maxDate <= lastEop) return dates;
 
     const extended = [...dates];

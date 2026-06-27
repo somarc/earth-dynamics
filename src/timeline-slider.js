@@ -47,7 +47,21 @@ export function buildDecadeTicks(dates) {
 }
 
 export function timelineMeta(dates, index) {
-  const total = dates.length;
+  const total = dates?.length ?? 0;
+  if (!total) {
+    return {
+      date: null,
+      formatted: '—',
+      year: null,
+      yearsElapsed: 0,
+      spanYears: 0,
+      pct: 0,
+      index: 0,
+      total: 0,
+      iso: null,
+    };
+  }
+
   const idx = Math.max(0, Math.min(index, total - 1));
   const date = dates[idx];
   const startYear = yearOf(dates[0]);

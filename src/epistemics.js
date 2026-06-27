@@ -176,13 +176,23 @@ export function buildStalenessChips(meta) {
     }
   }
 
+  const eopLag = freshness.eopLagDays;
+  if (eopLag != null && eopLag > 0) {
+    chips.push({
+      id: 'eop',
+      label: `EOP −${eopLag}d`,
+      stale: eopLag > 7,
+      title: `IERS EOP ends ${freshness.eopEnd}; visible timeline ${freshness.timelineEnd}`,
+    });
+  }
+
   const ephLag = freshness.ephemerisLagDays;
   if (ephLag != null && ephLag > 0) {
     chips.push({
       id: 'ephemeris',
       label: `Ephemeris −${ephLag}d`,
       stale: ephLag > 7,
-      title: `JPL ephemeris ends ${freshness.ephemerisEnd}; timeline ${freshness.timelineEnd}`,
+      title: `JPL ephemeris ends ${freshness.ephemerisEnd}; visible timeline ${freshness.timelineEnd}`,
     });
   }
 
@@ -203,6 +213,47 @@ export function buildStalenessChips(meta) {
   }
 
   return chips;
+}
+
+const ASOF_LABELS = {
+  eop: 'EOP',
+  ephemeris: 'Ephemeris',
+  aam: 'AAM',
+};
+
+export function buildAsOfChips(requestedDate, asOf, coverage) {
+  if (!requestedDate || !asOf) return [];
+  const chips = [];
+  for (const key of ['eop', 'ephemeris', 'aam']) {
+    const resolved = asOf[key];
+    const mode = coverage?.[key];
+    if (!resolved || mode !== 'fallback' || resolved === requestedDate) continue;
+    chips.push({
+      id: `asof-${key}`,
+      label: `${ASOF_LABELS[key]} → ${resolved}`,
+      stale: true,
+      title: `${ASOF_LABELS[key]} for ${requestedDate} uses the nearest prior row (${resolved})`,
+    });
+  }
+  return chips;
+}
+
+export function renderAsOfChips(requestedDate, asOf, coverage) {
+  const el = document.getElementById('asof-chips');
+  if (!el) return;
+  const chips = buildAsOfChips(requestedDate, asOf, coverage);
+  if (!chips.length) {
+    el.innerHTML = '';
+    el.classList.add('asof-chips--hidden');
+    return;
+  }
+  el.classList.remove('asof-chips--hidden');
+  el.innerHTML = chips
+    .map(
+      (c) =>
+        `<span class="stale-chip stale-chip--warn" title="${esc(c.title)}">${esc(c.label)}</span>`,
+    )
+    .join('');
 }
 
 export function renderStalenessChips(meta) {

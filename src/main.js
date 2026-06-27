@@ -17,6 +17,7 @@ import { loadCatalog, loadFrame } from './data-client.js';
 import {
   EPISTEMIC,
   LAYER_EPISTEMICS,
+  renderAsOfChips,
   renderCitationsList,
   renderPanelEpistemics,
   renderStalenessChips,
@@ -424,6 +425,7 @@ async function updateUI() {
   state.cachedDate = date;
 
   document.getElementById('date-display').textContent = formatDate(date);
+  renderAsOfChips(frame.requestedDate || date, frame.asOf, frame.coverage);
   timelineSlider?.update(state.currentIndex);
 
   applyEventLayers(frame, date);
@@ -846,16 +848,53 @@ function animate(timestamp) {
   }
 }
 
+function showBootstrapGate(catalog, err) {
+  const gate = document.getElementById('bootstrap-gate');
+  const desc = document.getElementById('bootstrap-desc');
+  const app = document.getElementById('app');
+  if (!gate) return;
+
+  if (catalog?.mode === 'api') {
+    const count = catalog.manifest?.eop?.count ?? 0;
+    desc.textContent = count === 0
+      ? 'The API is running but the SQLite database has no EOP rows yet. Fetch remote datasets, ingest into data/ecdo.db, then retry.'
+      : 'The API returned an empty timeline. Re-run ingest and ensure data/ecdo.db is populated.';
+  } else if (err) {
+    desc.textContent = 'Could not load catalog data from the API or static JSON fallback. Fetch and ingest local data, then start the dev stack.';
+  } else {
+    desc.textContent = 'Static JSON fallback has no EOP dates. Run fetch-data and ingest, or start the API after ingest.';
+  }
+
+  gate.classList.remove('bootstrap-gate--hidden');
+  app?.classList.add('app--gated');
+  document.getElementById('date-display').textContent = 'No data';
+}
+
+function setupBootstrapRetry() {
+  const retryBtn = document.getElementById('bootstrap-retry');
+  if (!retryBtn || retryBtn.dataset.bound) return;
+  retryBtn.dataset.bound = '1';
+  retryBtn.addEventListener('click', () => window.location.reload());
+}
+
 async function main() {
   try {
     state.catalog = await loadCatalog();
-    state.dates = state.catalog.dates;
-    state.currentIndex = Math.max(0, state.dates.length - 1);
+    state.dates = state.catalog.dates || [];
   } catch (err) {
-    document.getElementById('date-display').textContent = 'Run npm run ingest';
     console.error(err);
+    showBootstrapGate(null, err);
+    setupBootstrapRetry();
     return;
   }
+
+  if (!state.dates.length) {
+    showBootstrapGate(state.catalog);
+    setupBootstrapRetry();
+    return;
+  }
+
+  state.currentIndex = Math.max(0, state.dates.length - 1);
 
   geocentricScene = await new EarthScene(document.getElementById('geo-canvas')).ready;
   heliocentricScene = await new HeliocentricScene(document.getElementById('helio-canvas')).ready;
