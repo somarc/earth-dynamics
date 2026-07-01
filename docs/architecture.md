@@ -6,25 +6,33 @@ A **time-synchronized Earth-system correlation explorer**: verifiable signals fr
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  AEM Edge Delivery Services (static)                        │
+│  AEM Edge Delivery Services (static) — planned (H1)         │
 │  Three.js app — geocentric + heliocentric views             │
 └──────────────────────────┬──────────────────────────────────┘
                            │ fetch /api/*
-┌──────────────────────────▼──────────────────────────────────┐
-│  Cloudflare Worker (edge API)                               │
-│  routeRequest() from api/handlers.mjs                       │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│  Cloudflare D1 (SQLite at edge)                             │
-│  Same schema as db/schema.sql                               │
-└──────────────────────────▲──────────────────────────────────┘
-                           │ seed / refresh
-┌──────────────────────────┴──────────────────────────────────┐
+         ┌─────────────────┴─────────────────┐
+         │  TODAY (local dev)                │  PLANNED (H2)
+         ▼                                   ▼
+┌─────────────────────┐            ┌──────────────────────────┐
+│  Node api/server    │            │  Cloudflare Worker       │
+│  + handlers.mjs     │            │  (worker/ — 503 stub)  │
+└──────────┬──────────┘            └────────────┬─────────────┘
+           │                                    │
+           ▼                                    ▼
+┌─────────────────────┐            ┌──────────────────────────┐
+│  data/ecdo.db       │            │  Cloudflare D1           │
+│  (local SQLite)     │            │  same db/schema.sql      │
+└──────────▲──────────┘            └────────────▲─────────────┘
+           │                                    │
+           └────────────────┬───────────────────┘
+                            │ seed / refresh
+┌───────────────────────────▼─────────────────────────────────┐
 │  Ingest pipeline (local / CI)                               │
 │  ingest/run.mjs → data/ecdo.db                              │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+**Important:** `worker/index.js` is a placeholder (503 JSON). It does **not** call `routeRequest()` from `api/handlers.mjs` yet. Local development and review use `npm run api` on port 3001; Vite proxies `/api` in dev.
 
 ## Local development
 

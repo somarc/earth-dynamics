@@ -4,6 +4,17 @@
 
 **Production target:** AEM Edge Delivery Services (static app) + Cloudflare Worker API + D1. See [docs/architecture.md](docs/architecture.md).
 
+## Deployment status (today)
+
+| Surface | Implementation | Status |
+|---------|----------------|--------|
+| Frontend | Vite → static `dist/` | Local dev works; EDS deploy planned (roadmap H1) |
+| API | `api/server.mjs` + `data/ecdo.db` | **Current path** for local dev and review |
+| Edge API | `worker/index.js` | **503 stub only** — not a port of `api/handlers.mjs` yet (roadmap H2) |
+| Database | SQLite locally; D1 at edge | Schema in `db/schema.sql`; D1 seed planned (H3) |
+
+Until H2 ships, production builds must point `VITE_API_BASE` at a running Node API or stay on the static JSON fallback.
+
 ## Quick start
 
 ```bash
@@ -23,6 +34,14 @@ npm run start
 **First-run expectations:** `npm run fetch-data` pulls ~64 years of IERS EOP, yearly USGS slices, JPL ephemeris vectors, and related sources. Expect several minutes on a typical connection and roughly **~100 MB** of generated artifacts (`public/data/` ~64 MB, `data/` ~44 MB after ingest). Starting only `npm run api` on a fresh clone creates an empty SQLite file and an empty timeline — the app shows a bootstrap gate until ingest completes.
 
 **Trust semantics:** `/api/day/:date` returns `asOf` when EOP, ephemeris, or AAM rows fall back to the nearest prior date. The header shows per-day fallback chips; `/api/meta` freshness compares catalog ends to the visible timeline end (including earthquake-extended scrub dates).
+
+**Refreshing incomplete lanes:** Staleness chips (e.g. weather 12/16, ephemeris past ingest end) are intentional. Re-run targeted ingest after rate limits clear:
+
+```bash
+npm run ingest -- --only=weather      # finish ERA5 grid (Open-Meteo rate limits)
+npm run fetch-data                    # refresh JPL ephemeris JSON, then ingest
+npm run ingest -- --only=ephemeris
+```
 
 ## Data layers
 

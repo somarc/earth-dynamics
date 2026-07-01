@@ -130,7 +130,7 @@ npm run ingest -- --only=ibtracs
 | ID | Item | Status |
 |----|------|--------|
 | **H1** | EDS static deploy (I3) | `planned` |
-| **H2** | Cloudflare Worker + D1 (I4) | `planned` |
+| **H2** | Cloudflare Worker + D1 (I4) | `planned` — `worker/index.js` is 503 stub; local API is `api/server.mjs` |
 | **H3** | CI ingest → D1 seed (I5) | `planned` |
 | **H4** | `NASA_API_KEY` in CI (I6) | `planned` |
 | **H5** | API smoke test in CI | Day snapshot + meta contract | `planned` |
@@ -198,7 +198,7 @@ Promote to `planned` after Phase D + F establish trustworthy baselines.
 | U6 | Compare two dates | `planned` (Phase G) |
 | U7 | Deep links | `planned` (Phase G) |
 | U8 | Playback pulses | `done` |
-| U9 | Mobile polish | `planned` (Phase G) |
+| U9 | Mobile polish | `in progress` — legend wrap + stacked footer at ≤960px; full mobile pass remains |
 
 ---
 
