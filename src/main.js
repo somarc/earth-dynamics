@@ -1028,7 +1028,6 @@ async function main() {
     terrainChip.dataset.baseTitle = terrainChip.title;
   }
   updateLegend();
-  updateUI();
   requestAnimationFrame(animate);
 }
 
