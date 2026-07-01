@@ -1,6 +1,6 @@
 export const GLOBE_ABOUT = {
   earthquake:
-    'Earthquakes are sudden fault ruptures that release stored tectonic stress. Marker size and color reflect magnitude; depth hints whether the rupture was shallow crust or a deep subducting slab.',
+    'Earthquakes are sudden fault ruptures that release stored tectonic stress. Marker size and color reflect magnitude. Hypocenters are embedded below the surface by depth (pedagogically exaggerated so shallow vs deep subduction foci are visible inside the globe). Lower Globe opacity for hybrid x-ray mode — solid continents, transparent oceans.',
   volcano:
     'Each orange cone is one Smithsonian GVP eruption episode whose activity dates overlap the date you selected — not the full holocene volcano list, and not every eruption since 1960 at once. Cone size reflects VEI; brighter orange means GVP still lists the episode as continuing.',
   hotspot:
@@ -13,6 +13,8 @@ export const GLOBE_ABOUT = {
     'Tropical cyclone tracks from NOAA IBTrACS. Line color reflects intensity; the head marker is the storm position on or before the selected date.',
   weather:
     'ERA5 grid glyphs at 16 reference cities. Color encodes daily max temperature; size reflects max wind. Open-Meteo historical archive.',
+  radar:
+    'US NOAA NEXRAD/TDWR and Canada MSC S-band radar sites. Dashed rings show nominal low-level reflectivity reach — overlapping circles, not seamless coverage. Gaps exist between sites and in complex terrain.',
   geomag:
     'Default WMM dipole field-line arcs for orientation. When space-weather data exists for the scrub date, INTERMAGNET observatory sites appear with IGRF-14 declination ticks — modeled vectors at measured station locations.',
   spinPole:
@@ -131,6 +133,8 @@ export function getGlobeInspectContext(scene) {
     ...GLOBE_ABOUT,
     hotspotAbout: scene?.getHotspotAbout?.() ?? GLOBE_ABOUT.hotspot,
     plateAbout: scene?.getPlateMotionAbout?.() ?? GLOBE_ABOUT.plate,
+    radarAbout: scene?.getRadarAbout?.() ?? GLOBE_ABOUT.radar,
+    radarCoverageNote: scene?.getRadarCoverageNote?.() ?? null,
   };
 }
 
@@ -214,6 +218,19 @@ export function renderGlobeTooltip(selection) {
         <strong>${esc(data.label || data.gridId)}</strong>
         <span class="globe-tooltip__kind">ERA5 grid</span><br />
         <span class="globe-tooltip__detail">${data.tempMaxC != null ? `${data.tempMaxC.toFixed(0)}°C max` : '—'} · wind ${data.windMaxKmh != null ? `${data.windMaxKmh.toFixed(0)} km/h` : '—'}</span>
+      `,
+    };
+  }
+
+  if (type === 'radar') {
+    const range = data.rangeKmNominal != null ? `${data.rangeKmNominal} km nominal` : '—';
+    return {
+      className: 'globe-tooltip--radar',
+      html: `
+        <strong>${esc(data.siteId)}</strong>
+        <span class="globe-tooltip__kind">${esc(data.network)} ${esc(data.stationType || 'radar')}</span><br />
+        <span class="globe-tooltip__detail">${esc(data.name || '—')} · ${esc(data.country || '')}</span><br />
+        <span class="globe-tooltip__detail globe-tooltip__detail--muted">Coverage ring ${range}</span>
       `,
     };
   }

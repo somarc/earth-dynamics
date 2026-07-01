@@ -8,6 +8,7 @@ import {
   poleOffsetToTilt,
   iersPoleGlobePosition,
   magToSize,
+  quakeMarkerPosition,
   veiToSize,
 } from './utils.js';
 import { buildCmeMarkers } from './cme-heliocentric.js';
@@ -320,7 +321,7 @@ export class HeliocentricScene {
           opacity: 0.85,
         })
       );
-      const pos = latLonToVector3(q.lat, q.lon, HELIO_EARTH_RADIUS * 1.02);
+      const pos = quakeMarkerPosition(q.lat, q.lon, q.depth, HELIO_EARTH_RADIUS);
       mesh.position.set(pos.x, pos.y, pos.z);
       mesh.userData = { ...q, pickType: 'earthquake' };
       this.quakeGroup.add(mesh);

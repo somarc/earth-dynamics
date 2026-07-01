@@ -197,3 +197,30 @@ CREATE TABLE IF NOT EXISTS mag_observatories (
   closed TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_mag_obs_active ON mag_observatories(closed);
+
+-- Regional home patch: metadata + raster blobs (imagery, LiDAR hillshade).
+-- Fetched once via ingest scripts — the globe reads /api/home, never live WMS/STAC.
+CREATE TABLE IF NOT EXISTS home_regions (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  label TEXT,
+  bbox_json TEXT NOT NULL,
+  center_json TEXT,
+  config_json TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS home_assets (
+  region_id TEXT NOT NULL,
+  asset_key TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  width INTEGER,
+  height INTEGER,
+  byte_length INTEGER NOT NULL,
+  sha256 TEXT,
+  source_json TEXT,
+  fetched_at TEXT NOT NULL,
+  data BLOB NOT NULL,
+  PRIMARY KEY (region_id, asset_key),
+  FOREIGN KEY (region_id) REFERENCES home_regions(id)
+);

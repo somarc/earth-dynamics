@@ -1,4 +1,5 @@
 node_modules/
+scripts/.venv/
 dist/
 .DS_Store
 data/*.db
@@ -12,3 +13,4 @@ public/data/*.json
 !public/data/hotspots.json
 !public/data/field-lines-igrf.json
 !public/data/space-weather-donki.json
+!public/data/home-region.json

@@ -10,6 +10,7 @@ import { ingestAam } from './sources/aam.mjs';
 import { ingestEphemeris } from './sources/ephemeris.mjs';
 import { ingestIbtracs } from './sources/ibtracs.mjs';
 import { ingestGeomag } from './sources/geomag.mjs';
+import { ingestHome } from './sources/home.mjs';
 import { dbPath } from './db.mjs';
 
 const args = new Set(process.argv.slice(2));
@@ -80,6 +81,11 @@ async function main() {
   if (only === 'ibtracs') {
     console.log('NOAA IBTrACS tropical cyclones…');
     await ingestIbtracs({ force });
+  }
+
+  if (!only || only === 'home') {
+    console.log('9. Home region assets (imagery + terrain blobs)…');
+    await ingestHome({ force });
   }
 
   console.log('\nDone.');

@@ -197,6 +197,22 @@ npm run start</pre>
             </select>
             <span id="footer-tally" class="footer-tally" aria-live="polite"></span>
           </div>
+          <div class="controls__cluster controls__cluster--globe" role="group" aria-label="Globe appearance">
+            <button type="button" id="fly-home-btn" class="preset-btn" title="Frame Eastern Ontario home patch (~75 m/px) and dim the rest of the world">Home</button>
+            <label class="layer-chip" id="chip-home-detail" title="High-resolution regional imagery where you live — global shell stays as coarse context">
+              <input type="checkbox" id="show-home-detail" checked />
+              <span>Detail</span>
+            </label>
+            <label class="layer-chip" id="chip-home-terrain" title="Cross-border LiDAR hillshade — Canada HRDEM + US 3DEP fused at the border">
+              <input type="checkbox" id="show-home-terrain" checked />
+              <span>Terrain</span>
+            </label>
+            <label class="earth-opacity" for="earth-opacity" title="Solid continents with transparent oceans — depth-embedded quakes and geomag field lines show through water; drag to 100% for fully solid Earth">
+              <span class="controls__cluster-label">Globe</span>
+              <input type="range" id="earth-opacity" class="earth-opacity__range" min="12" max="100" value="100" aria-valuemin="12" aria-valuemax="100" aria-valuenow="100" />
+              <span id="earth-opacity-label" class="earth-opacity__label">Solid</span>
+            </label>
+          </div>
           <div class="controls__cluster controls__cluster--presets" role="group" aria-label="Layer presets">
             <span class="controls__cluster-label">Preset</span>
             <button type="button" class="preset-btn" data-preset="solid" title="Solid Earth layers">Solid</button>
@@ -220,6 +236,7 @@ npm run start</pre>
               <span class="layer-group__label">Atmos</span>
               <label class="layer-chip" id="chip-cyclones" title="IBTrACS cyclone tracks in date window"><input type="checkbox" id="show-cyclones" checked /><span>Cyclones</span></label>
               <label class="layer-chip" id="chip-weather" title="ERA5 weather glyphs at 16 grid cities"><input type="checkbox" id="show-weather-glyphs" checked /><span>Weather</span></label>
+              <label class="layer-chip" id="chip-radar" title="US NEXRAD/TDWR and Canada MSC radar sites with nominal coverage rings"><input type="checkbox" id="show-radar-sites" checked /><span>Radar</span></label>
             </div>
             <div class="layer-group" role="group" aria-label="Space weather layers">
               <span class="layer-group__label">Space</span>

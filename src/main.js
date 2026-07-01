@@ -44,9 +44,40 @@ const state = {
   ovationData: null,
   recentOnly: true,
   quakeMinMag: 5,
+  earthOpacity: 1,
   cachedFrame: null,
   cachedDate: null,
 };
+
+const EARTH_OPACITY_KEY = 'wobblescope-earth-opacity';
+
+function formatEarthOpacityLabel(opacity) {
+  const pct = Math.round(opacity * 100);
+  if (pct >= 98) return 'Solid';
+  if (pct <= 40) return 'X-ray';
+  return `Hybrid ${pct}%`;
+}
+
+function applyEarthOpacity(opacity, { persist = true } = {}) {
+  const clamped = Math.max(0.12, Math.min(1, opacity));
+  state.earthOpacity = clamped;
+  geocentricScene?.setEarthOpacity(clamped);
+
+  const slider = document.getElementById('earth-opacity');
+  const label = document.getElementById('earth-opacity-label');
+  if (slider) {
+    slider.value = String(Math.round(clamped * 100));
+    slider.setAttribute('aria-valuenow', String(Math.round(clamped * 100)));
+  }
+  if (label) label.textContent = formatEarthOpacityLabel(clamped);
+  if (persist) {
+    try {
+      localStorage.setItem(EARTH_OPACITY_KEY, String(clamped));
+    } catch {
+      /* ignore */
+    }
+  }
+}
 
 let geocentricScene = null;
 let heliocentricScene = null;
@@ -104,6 +135,7 @@ const LAYER_PRESETS = {
     moon: true,
     cyclones: false,
     weather: false,
+    radar: false,
   },
   space: {
     label: 'Space Weather',
@@ -120,6 +152,7 @@ const LAYER_PRESETS = {
     moon: false,
     cyclones: false,
     weather: false,
+    radar: false,
   },
   orbital: {
     label: 'Orbital',
@@ -136,6 +169,7 @@ const LAYER_PRESETS = {
     moon: true,
     cyclones: false,
     weather: false,
+    radar: false,
   },
   full: {
     label: 'Full stack',
@@ -152,6 +186,7 @@ const LAYER_PRESETS = {
     moon: true,
     cyclones: true,
     weather: true,
+    radar: true,
   },
   atmosphere: {
     label: 'Atmosphere',
@@ -168,6 +203,7 @@ const LAYER_PRESETS = {
     moon: false,
     cyclones: true,
     weather: true,
+    radar: true,
   },
 };
 
@@ -250,6 +286,7 @@ function updateLayerChipLabels(counts = {}, { geomagContext = false, magnetomete
 
   setChip('chip-cyclones', 'Cyclones', counts.cyclones ?? 0);
   setChip('chip-weather', 'Weather', counts.weather ?? 0);
+  setChip('chip-radar', 'Radar', counts.radar ?? 0);
 
   const geomagChip = document.getElementById('chip-geomag');
   if (geomagChip) {
@@ -313,6 +350,7 @@ const LAYER_TOGGLE_MAP = {
   'show-hotspots': 'hotspots',
   'show-cyclones': 'cyclones',
   'show-weather-glyphs': 'weather',
+  'show-radar-sites': 'radar',
   'show-aurora': 'aurora',
   'show-field-lines': 'fieldLines',
   'show-bodies': 'bodies',
@@ -413,6 +451,7 @@ async function updateUI() {
     eruptions: frame.eruptions?.length ?? 0,
     cyclones: frame.cyclones?.length ?? 0,
     weather: frame.weather?.length ?? 0,
+    radar: geocentricScene?.showRadar ? geocentricScene.getRadarSiteCount() : 0,
     storms: frame.storms?.length ?? 0,
   };
   updateEventsPanelMeta(date, layerCounts);
@@ -617,6 +656,7 @@ function applyLayerPreset(presetId) {
   set('show-moon', preset.moon);
   set('show-cyclones', preset.cyclones ?? true);
   set('show-weather-glyphs', preset.weather ?? true);
+  set('show-radar-sites', preset.radar ?? true);
 
   geocentricScene.showQuakes = preset.quakes;
   geocentricScene.showVolcanoes = preset.volcanoes;
@@ -631,6 +671,7 @@ function applyLayerPreset(presetId) {
   geocentricScene.showBodies = preset.bodies;
   geocentricScene.setCyclonesVisible(preset.cyclones ?? true);
   geocentricScene.setWeatherVisible(preset.weather ?? true);
+  geocentricScene.setRadarVisible(preset.radar ?? true);
   heliocentricScene.showQuakes = preset.quakes;
   heliocentricScene.showVolcanoes = preset.volcanoes;
   heliocentricScene.setSpinPoleVisible(preset.spinPole ?? true);
@@ -766,6 +807,7 @@ function setupControls() {
         {
           cyclones: state.cachedFrame.cyclones?.length ?? 0,
           weather: state.cachedFrame.weather?.length ?? 0,
+          radar: geocentricScene.showRadar ? geocentricScene.getRadarSiteCount() : 0,
         },
         {
           geomagContext: hasGeomagContext(
@@ -806,6 +848,51 @@ function setupControls() {
   document.getElementById('show-weather-glyphs').addEventListener('change', (e) => {
     geocentricScene.setWeatherVisible(e.target.checked);
     reapplyEventLayersFromCache();
+  });
+  const earthOpacityEl = document.getElementById('earth-opacity');
+  if (earthOpacityEl) {
+    let savedOpacity = 1;
+    try {
+      const raw = localStorage.getItem(EARTH_OPACITY_KEY);
+      if (raw != null) savedOpacity = Math.max(0.12, Math.min(1, parseFloat(raw)));
+    } catch {
+      /* ignore */
+    }
+    applyEarthOpacity(savedOpacity, { persist: false });
+    earthOpacityEl.addEventListener('input', (e) => {
+      applyEarthOpacity(parseInt(e.target.value, 10) / 100);
+    });
+  }
+
+  document.getElementById('fly-home-btn')?.addEventListener('click', () => {
+    if (state.view !== 'geocentric') return;
+    geocentricScene?.flyToHome({ animate: true });
+  });
+
+  document.getElementById('show-home-detail')?.addEventListener('change', (e) => {
+    geocentricScene?.setHomeDetailVisible(e.target.checked);
+  });
+
+  document.getElementById('show-home-terrain')?.addEventListener('change', (e) => {
+    geocentricScene?.setHomeTerrainVisible(e.target.checked);
+  });
+
+  document.getElementById('show-radar-sites').addEventListener('change', (e) => {
+    geocentricScene.setRadarVisible(e.target.checked);
+    updateLayerChipLabels(
+      {
+        cyclones: state.cachedFrame?.cyclones?.length ?? 0,
+        weather: state.cachedFrame?.weather?.length ?? 0,
+        radar: e.target.checked ? geocentricScene.getRadarSiteCount() : 0,
+      },
+      {
+        geomagContext: hasGeomagContext(
+          state.cachedFrame?.geomagnetic,
+          state.cachedFrame?.spaceWeather,
+        ),
+        magnetometers: state.cachedFrame?.magnetometers?.length ?? 0,
+      },
+    );
   });
 }
 
@@ -922,7 +1009,24 @@ async function main() {
   );
   setupControls();
   setupGlobePick();
-  applyLayerPreset('full');
+  applyLayerPreset('atmosphere');
+  geocentricScene?.setHomeDetailVisible(true);
+  geocentricScene?.setHomeTerrainVisible(true);
+  const homeCfg = geocentricScene?.getHomeRegionConfig?.();
+  const homeChip = document.getElementById('chip-home-detail');
+  if (homeChip && homeCfg) {
+    const mpp = homeCfg.metersPerPixel?.eastWest;
+    const res = mpp ? `~${mpp} m/px` : 'high-res';
+    homeChip.title = `${homeCfg.name} detail patch (${res}) — global shell dimmed as context only`;
+    homeChip.dataset.baseTitle = homeChip.title;
+  }
+  const terrainChip = document.getElementById('chip-home-terrain');
+  if (terrainChip && homeCfg?.terrain) {
+    terrainChip.title =
+      homeCfg.terrain.about ??
+      'Cross-border LiDAR hillshade fused on the home detail patch';
+    terrainChip.dataset.baseTitle = terrainChip.title;
+  }
   updateLegend();
   updateUI();
   requestAnimationFrame(animate);

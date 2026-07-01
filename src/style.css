@@ -458,6 +458,7 @@ body,
 .legend__item--field { color: #7eb8ff; }
 .legend__item--cyclone { color: #ffaa44; }
 .legend__item--weather { color: #6ec9a0; }
+.legend__item--radar { color: #5ad4a8; }
 
 .globe-tooltip--cyclone {
   border-color: rgba(255, 170, 68, 0.35);
@@ -473,6 +474,14 @@ body,
 
 .globe-tooltip--weather strong {
   color: #6ec9a0;
+}
+
+.globe-tooltip--radar {
+  border-color: rgba(90, 212, 168, 0.35);
+}
+
+.globe-tooltip--radar strong {
+  color: #5ad4a8;
 }
 
 .globe-tooltip--geomag {
@@ -1210,6 +1219,34 @@ body,
 
 .controls__cluster--filters {
   padding: 0.12rem 0.35rem 0.12rem 0.1rem;
+}
+
+.controls__cluster--globe {
+  padding: 0.12rem 0.35rem;
+  border-left: 1px solid var(--border);
+}
+
+.earth-opacity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: default;
+  user-select: none;
+}
+
+.earth-opacity__range {
+  width: 88px;
+  height: 4px;
+  margin: 0;
+  accent-color: var(--accent-earth);
+  cursor: pointer;
+}
+
+.earth-opacity__label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  min-width: 3.2rem;
 }
 
 .layer-group {

@@ -1,4 +1,28 @@
 export const EARTH_RADIUS = 1;
+export const EARTH_MEAN_RADIUS_KM = 6371;
+/** Scales hypocenter depth so foci are visible inside the globe while keeping true relative order. */
+export const QUAKE_DEPTH_EXAGGERATION = 28;
+
+export function quakeHypocenterRadius(
+  depthKm,
+  surfaceRadius = EARTH_RADIUS,
+  exaggeration = QUAKE_DEPTH_EXAGGERATION,
+) {
+  const depth = Math.max(0, Math.min(depthKm ?? 0, 700));
+  const inwardFrac = Math.min((depth * exaggeration) / EARTH_MEAN_RADIUS_KM, 0.42);
+  return surfaceRadius * (1 - inwardFrac);
+}
+
+/** Surface events sit slightly above the shell; deeper events sink toward the hypocenter. */
+export function quakeMarkerRadius(depthKm, surfaceRadius = EARTH_RADIUS) {
+  const depth = depthKm ?? 0;
+  if (depth <= 0) return surfaceRadius * 1.012;
+  return quakeHypocenterRadius(depth, surfaceRadius);
+}
+
+export function quakeMarkerPosition(lat, lon, depthKm, surfaceRadius = EARTH_RADIUS) {
+  return latLonToVector3(lat, lon, quakeMarkerRadius(depthKm, surfaceRadius));
+}
 export const POLE_EXAGGERATION = 8000;
 /** Globe pole marker/trail exaggeration — true polar wander is ~m; this keeps it visible on the 3D globe. */
 export const POLE_GLOBE_EXAGGERATION = 6000;

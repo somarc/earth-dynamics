@@ -40,7 +40,7 @@ export const LEGEND_GEO = [
     label: '◉ M≥',
     title: 'Earthquakes',
     help:
-      'USGS catalog events at or above the magnitude floor in the footer. Size and color reflect magnitude; click or hover markers on the globe for depth and place.',
+      'USGS catalog events at or above the magnitude floor in the footer. Size and color reflect magnitude; hypocenters sink below the shell by depth (exaggerated for visibility). Use the Globe opacity slider for an x-ray interior view.',
   },
   {
     id: 'volcano',
@@ -148,6 +148,13 @@ export const LEGEND_GEO = [
     label: '◌ Weather',
     title: 'Weather grid',
     help: GLOBE_ABOUT.weather,
+  },
+  {
+    id: 'radar',
+    class: 'radar',
+    label: '◎ Radar',
+    title: 'Radar coverage',
+    help: GLOBE_ABOUT.radar,
   },
 ];
 

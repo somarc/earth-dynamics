@@ -14,6 +14,12 @@
     "build-plate-motion": "node scripts/build-plate-motion.mjs",
     "fetch-plate-steps": "node scripts/fetch-plate-steps.mjs",
     "build-igrf-fieldlines": "node scripts/build-igrf-fieldlines.mjs",
+    "fetch-radar-sites": "node scripts/fetch-radar-sites.mjs",
+    "fetch-earth-textures": "node scripts/fetch-earth-textures.mjs",
+    "fetch-home-imagery": "node scripts/fetch-home-imagery.mjs",
+    "fetch-home-terrain": "scripts/.venv/bin/python scripts/fetch-home-terrain.py",
+    "fetch-home-terrain:setup": "python3 -m venv scripts/.venv && scripts/.venv/bin/pip install rasterio numpy pillow",
+    "sync-home": "node scripts/sync-home-to-db.mjs",
     "ingest": "node ingest/run.mjs",
     "ingest:force": "node ingest/run.mjs --force",
     "api": "node api/server.mjs",
@@ -27,6 +33,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
+    "geotiff": "^3.0.5",
+    "sharp": "^0.33.5",
     "vite": "^6.2.0"
   }
 }

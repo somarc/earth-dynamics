@@ -1,4 +1,5 @@
 import { SOURCES } from '../ingest/constants.mjs';
+import { getHomeAsset, getHomeRegionConfig, listHomeAssetKeys } from '../ingest/home-store.mjs';
 import { igrfDipPoles, igrfFieldAt } from './igrf.mjs';
 
 function rowToEop(r) {
@@ -108,6 +109,9 @@ export function createHandlers(db) {
     const eopEnd = eop?.end ?? null;
     const timelineEnd = visibleTimelineEnd(db);
 
+    const homeAssets = listHomeAssetKeys();
+    const homeUpdated = db.prepare('SELECT updated_at FROM home_regions WHERE id = ?').get('eastern-ontario');
+
     return {
       sources: SOURCES,
       eop,
@@ -119,8 +123,33 @@ export function createHandlers(db) {
         eopLagDays: lagDays(eopEnd, timelineEnd),
         ephemerisLagDays: lagDays(ephEnd, timelineEnd),
         earthquakesThrough: quakeEnd,
+        homeRegionUpdated: homeUpdated?.updated_at ?? null,
+        homeAssetCount: homeAssets.length,
       },
       generated: new Date().toISOString(),
+    };
+  };
+
+  const getHome = (regionId = 'eastern-ontario') => {
+    const config = getHomeRegionConfig(regionId);
+    if (!config) return null;
+    const assets = listHomeAssetKeys(regionId).map((a) => ({
+      key: a.asset_key,
+      bytes: a.byte_length,
+      mime: a.mime_type,
+      fetchedAt: a.fetched_at,
+    }));
+    return { ...config, assetInventory: assets };
+  };
+
+  const getHomeAssetBinary = (assetKey, regionId = 'eastern-ontario') => {
+    const row = getHomeAsset(regionId, assetKey);
+    if (!row) return null;
+    return {
+      mime: row.mime_type,
+      data: row.data,
+      sha256: row.sha256,
+      byteLength: row.byte_length,
     };
   };
 
@@ -378,7 +407,7 @@ export function createHandlers(db) {
 
   return {
     getMeta, getEopWindow, getDay, getDates, getEphemerisWindow, getGeomagneticWindow,
-    getAamWindow,
+    getAamWindow, getHome, getHomeAssetBinary,
   };
 }
 
@@ -422,6 +451,29 @@ export function routeRequest(db, url) {
     const end = params.get('end');
     const days = parseInt(params.get('days') || '400', 10);
     return { status: 200, body: handlers.getAamWindow(end, days) };
+  }
+
+  if (path === '/api/home') {
+    const config = handlers.getHome();
+    if (!config) return { status: 404, body: { error: 'Home region not ingested — run npm run sync-home' } };
+    return { status: 200, body: config };
+  }
+
+  const homeAssetMatch = path.match(/^\/api\/home\/assets\/([a-z0-9-]+)$/);
+  if (homeAssetMatch) {
+    const asset = handlers.getHomeAssetBinary(homeAssetMatch[1]);
+    if (!asset) return { status: 404, body: { error: 'Home asset not found' } };
+    return {
+      status: 200,
+      binary: true,
+      mime: asset.mime,
+      body: asset.data,
+      headers: {
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        ETag: `"${asset.sha256}"`,
+        'Content-Length': String(asset.byteLength),
+      },
+    };
   }
 
   return { status: 404, body: { error: 'Not found' } };

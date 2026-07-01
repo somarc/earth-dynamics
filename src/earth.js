@@ -3,14 +3,26 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {
   createTerminatorEarthMaterial,
   loadEarthTextures,
+  updateEarthContextDim,
+  updateEarthOpacity,
   updateEarthSunDirection,
 } from './textures.js';
+import {
+  buildHomePatchMesh,
+  createHomePatchMaterial,
+  frameCameraForLatLon,
+  loadHomeRegionConfig,
+  loadHomeRegionTextures,
+  setHomeTerrainVisible,
+  updateHomePatchSun,
+} from './home-region.js';
 import {
   EARTH_RADIUS,
   latLonToVector3,
   poleOffsetToTilt,
   iersPoleGlobePosition,
   magToSize,
+  quakeMarkerPosition,
   veiToSize,
 } from './utils.js';
 import { updateAuroraRings } from './space-weather.js';
@@ -31,12 +43,14 @@ import { classifyPick } from './event-inspect.js';
 import { createAtmosphereShell, updateAtmosphereSun } from './atmosphere.js';
 import { buildCycloneGroup } from './cyclones.js';
 import { buildWeatherGlyphGroup } from './weather-globe.js';
+import { loadRadarSites, buildRadarSiteGroup } from './radar-globe.js';
 import {
   createEventHalo,
   EventPulseController,
   shouldQuakeHalo,
   shouldVolcanoHalo,
 } from './event-markers.js';
+import { configureGlobeControls, updateGlobeCameraClip } from './globe-camera.js';
 
 export class EarthScene {
   constructor(canvas) {
@@ -53,12 +67,23 @@ export class EarthScene {
     this.showHotspots = true;
     this.showCyclones = true;
     this.showWeather = true;
+    this.showRadar = true;
+    this.showHomeDetail = true;
+    this.showHomeTerrain = true;
+    this.radarSiteCount = 0;
+    this.earthOpacity = 1;
+    this.homeRegionConfig = null;
     this.viewDate = null;
     this.ready = this.init(canvas);
   }
 
   async init(canvas) {
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: true,
+      logarithmicDepthBuffer: true,
+    });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setClearColor(0x060a12, 1);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -76,12 +101,28 @@ export class EarthScene {
     this.surfaceGroup = new THREE.Group();
     this.earthGroup.add(this.surfaceGroup);
 
-    const earthTextures = await loadEarthTextures();
-    const earthGeo = new THREE.SphereGeometry(EARTH_RADIUS, 64, 64);
+    const earthTextures = await loadEarthTextures(this.renderer);
+    const earthGeo = new THREE.SphereGeometry(EARTH_RADIUS, 96, 96);
     const earthMat = createTerminatorEarthMaterial(earthTextures);
     this.earthMaterial = earthMat;
     this.earth = new THREE.Mesh(earthGeo, earthMat);
     this.surfaceGroup.add(this.earth);
+
+    this.homePatchGroup = new THREE.Group();
+    this.surfaceGroup.add(this.homePatchGroup);
+    try {
+      this.homeRegionConfig = await loadHomeRegionConfig();
+      const homeTextures = await loadHomeRegionTextures(this.renderer, this.homeRegionConfig);
+      this.homePatchMaterial = createHomePatchMaterial(homeTextures);
+      this.homePatch = buildHomePatchMesh(this.homeRegionConfig, this.homePatchMaterial);
+      this.homePatchGroup.add(this.homePatch);
+      this.homePatchGroup.visible = this.showHomeDetail;
+      this.setHomeTerrainVisible(this.showHomeTerrain);
+      this.applyHomeFocusDim();
+    } catch (err) {
+      console.warn('Home region imagery unavailable:', err);
+      this.homeRegionConfig = null;
+    }
 
     // Inertial shell — does not spin with surfaceGroup so limb tracks ephemeris sun.
     this.atmosphere = createAtmosphereShell(EARTH_RADIUS);
@@ -157,6 +198,8 @@ export class EarthScene {
     this.surfaceGroup.add(this.cycloneGroup);
     this.weatherGroup = new THREE.Group();
     this.surfaceGroup.add(this.weatherGroup);
+    this.radarGroup = new THREE.Group();
+    this.surfaceGroup.add(this.radarGroup);
     this.geomagGroup = new THREE.Group();
     this.surfaceGroup.add(this.geomagGroup);
     this.fieldLinesGroup = new THREE.Group();
@@ -198,6 +241,18 @@ export class EarthScene {
       this.hotspotGroup.visible = this.showHotspots;
     } catch (err) {
       console.warn('Hotspots unavailable:', err);
+    }
+
+    try {
+      const radarData = await loadRadarSites();
+      this.radarGroup.add(buildRadarSiteGroup(radarData));
+      this.radarGroup.userData.about = radarData.about ?? null;
+      this.radarGroup.userData.coverageNote = radarData.coverageNote ?? null;
+      this.radarGroup.userData.counts = radarData.counts ?? null;
+      this.radarSiteCount = radarData.sites?.length ?? 0;
+      this.radarGroup.visible = this.showRadar;
+    } catch (err) {
+      console.warn('Radar site registry unavailable:', err);
     }
 
     this.bodiesGroup = new THREE.Group();
@@ -242,6 +297,14 @@ export class EarthScene {
     this.eventPulses = new EventPulseController();
     this.defaultCameraPosition = new THREE.Vector3(0, 0.3, 2.8);
     this.cameraEntry = null;
+    this.cameraFly = null;
+    this.pendingHomeFrame = this.homeRegionConfig?.center
+      ? frameCameraForLatLon(
+          this.homeRegionConfig.center.lat,
+          this.homeRegionConfig.center.lon,
+          { altitude: 0.085 },
+        )
+      : null;
 
     this.ambientLight = new THREE.AmbientLight(0x223344, 0.28);
     this.scene.add(this.ambientLight);
@@ -270,11 +333,14 @@ export class EarthScene {
     this.pointer = new THREE.Vector2();
 
     this.controls = new OrbitControls(this.camera, canvas);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.05;
-    this.controls.minDistance = 1.5;
-    this.controls.maxDistance = 6;
-    this.controls.enablePan = false;
+    configureGlobeControls(this.controls);
+
+    if (this.pendingHomeFrame) {
+      this.camera.position.copy(this.pendingHomeFrame.position);
+      this.controls.target.copy(this.pendingHomeFrame.target);
+      this.defaultCameraPosition.copy(this.pendingHomeFrame.position);
+      this.pendingHomeFrame = null;
+    }
 
     this.handleResize();
     window.addEventListener('resize', () => this.handleResize());
@@ -375,7 +441,7 @@ export class EarthScene {
         opacity: 0.85,
       });
       const mesh = new THREE.Mesh(geo, mat);
-      const pos = latLonToVector3(q.lat, q.lon, EARTH_RADIUS * 1.015);
+      const pos = quakeMarkerPosition(q.lat, q.lon, q.depth);
       mesh.position.set(pos.x, pos.y, pos.z);
       const payload = { ...q, pickType: 'earthquake' };
       mesh.userData = payload;
@@ -443,6 +509,7 @@ export class EarthScene {
       this.showBodies && this.diurnalMode === 'sync' ? 0.06 : 0.22;
     updateAtmosphereSun(this.atmosphere, dir);
     updateEarthSunDirection(this.earthMaterial, dir);
+    updateHomePatchSun(this.homePatchMaterial, dir);
   }
 
   updateSunLighting(ephemerisDay) {
@@ -580,6 +647,71 @@ export class EarthScene {
     if (this.weatherGroup) this.weatherGroup.visible = visible;
   }
 
+  setRadarVisible(visible) {
+    this.showRadar = visible;
+    if (this.radarGroup) this.radarGroup.visible = visible;
+  }
+
+  setHomeDetailVisible(visible) {
+    this.showHomeDetail = visible;
+    if (this.homePatchGroup) this.homePatchGroup.visible = visible && !!this.homePatch;
+    this.applyHomeFocusDim();
+  }
+
+  setHomeTerrainVisible(visible) {
+    this.showHomeTerrain = visible;
+    setHomeTerrainVisible(this.homePatchMaterial, visible && !!this.homeRegionConfig?.terrain);
+  }
+
+  getHomeTerrainAbout() {
+    return this.homeRegionConfig?.terrain?.about ?? null;
+  }
+
+  applyHomeFocusDim() {
+    const homeActive = this.showHomeDetail && !!this.homePatch;
+    updateEarthContextDim(this.earthMaterial, homeActive ? 0.16 : 1);
+  }
+
+  getHomeRegionConfig() {
+    return this.homeRegionConfig;
+  }
+
+  flyToHome({ animate = true, duration = 900 } = {}) {
+    const center = this.homeRegionConfig?.center;
+    if (!center || !this.controls) return false;
+    const frame = frameCameraForLatLon(center.lat, center.lon, { altitude: 0.085 });
+    if (animate) {
+      this.cameraFly = {
+        start: performance.now(),
+        duration,
+        fromPos: this.camera.position.clone(),
+        toPos: frame.position,
+        fromTarget: this.controls.target.clone(),
+        toTarget: frame.target,
+      };
+      this.cameraEntry = null;
+    } else {
+      this.camera.position.copy(frame.position);
+      this.controls.target.copy(frame.target);
+      this.defaultCameraPosition.copy(frame.position);
+      this.cameraFly = null;
+    }
+    return true;
+  }
+
+  setEarthOpacity(opacity) {
+    this.earthOpacity = Math.max(0.08, Math.min(1, opacity));
+    updateEarthOpacity(this.earthMaterial, this.earthOpacity);
+    if (this.grid?.material) {
+      this.grid.material.opacity = 0.05 + 0.24 * (1 - this.earthOpacity);
+      this.grid.visible = this.earthOpacity < 0.97;
+    }
+    if (this.atmosphere?.material?.uniforms?.uIntensity) {
+      this.atmosphere.material.uniforms.uIntensity.value =
+        0.55 + 0.75 * Math.min(1, this.earthOpacity + 0.25);
+    }
+  }
+
   setCyclones(storms, viewDate = this.viewDate) {
     this.cycloneGroup.clear();
     if (!this.showCyclones) return;
@@ -715,6 +847,18 @@ export class EarthScene {
     return this.plateMotionGroup?.userData?.about ?? null;
   }
 
+  getRadarAbout() {
+    return this.radarGroup?.userData?.about ?? null;
+  }
+
+  getRadarCoverageNote() {
+    return this.radarGroup?.userData?.coverageNote ?? null;
+  }
+
+  getRadarSiteCount() {
+    return this.radarSiteCount ?? 0;
+  }
+
   hoverPickAt(clientX, clientY) {
     const rect = this.setPointerFromClient(clientX, clientY);
     this.raycaster.setFromCamera(this.pointer, this.camera);
@@ -724,6 +868,7 @@ export class EarthScene {
       { visible: this.showFieldLines, group: this.magneticPoleGroup },
       { visible: this.showFieldLines, group: this.geomagGroup },
       { visible: this.showWeather, group: this.weatherGroup },
+      { visible: this.showRadar, group: this.radarGroup },
       { visible: this.showCyclones, group: this.cycloneGroup },
       { visible: this.showHotspots, group: this.hotspotGroup },
       { visible: this.showQuakes, group: this.quakeGroup },
@@ -779,7 +924,15 @@ export class EarthScene {
     return this.hoverPickAt(clientX, clientY);
   }
 
-  updateCameraEntry(now) {
+  updateCameraMotion(now) {
+    if (this.cameraFly) {
+      const t = Math.min(1, (now - this.cameraFly.start) / this.cameraFly.duration);
+      const eased = t * t * (3 - 2 * t);
+      this.camera.position.lerpVectors(this.cameraFly.fromPos, this.cameraFly.toPos, eased);
+      this.controls.target.lerpVectors(this.cameraFly.fromTarget, this.cameraFly.toTarget, eased);
+      if (t >= 1) this.cameraFly = null;
+      return;
+    }
     if (!this.cameraEntry) return;
     const t = Math.min(1, (now - this.cameraEntry.start) / this.cameraEntry.duration);
     const eased = t * t * (3 - 2 * t);
@@ -797,9 +950,10 @@ export class EarthScene {
         this.fieldLinesGroup.rotation.y += spin;
       }
     }
-    this.updateCameraEntry(now);
+    this.updateCameraMotion(now);
     this.eventPulses.update(now);
     this.controls.update();
+    updateGlobeCameraClip(this.camera, this.controls.target);
     this.renderer.render(this.scene, this.camera);
   }
 }

@@ -30,6 +30,7 @@ function renderGlossary(context) {
     ['Boundaries', context.plateBoundary ?? GLOBE_ABOUT.plateBoundary],
     ['Cyclones (IBTrACS)', context.cyclone ?? GLOBE_ABOUT.cyclone],
     ['Weather grid', context.weather ?? GLOBE_ABOUT.weather],
+    ['Radar coverage', context.radarAbout ?? context.radar ?? GLOBE_ABOUT.radar],
     ['Geomagnetic field', context.geomag ?? GLOBE_ABOUT.geomag],
     ['Spin pole (IERS)', context.spinPole ?? GLOBE_ABOUT.spinPole],
     ['Magnetic poles (IGRF)', context.magneticPole ?? GLOBE_ABOUT.magneticPole],
@@ -62,7 +63,8 @@ export function renderEventInspect(container, selection, context = {}) {
         <div><dt>Type</dt><dd>Earthquake</dd></div>
         <div><dt>Magnitude</dt><dd>M${data.mag?.toFixed(1) ?? '—'}</dd></div>
         <div><dt>Location</dt><dd>${esc(data.place || '—')}</dd></div>
-        <div><dt>Depth</dt><dd>${data.depth != null ? `${data.depth.toFixed(1)} km` : '—'}</dd></div>
+        <div><dt>Depth</dt><dd>${data.depth != null ? `${data.depth.toFixed(1)} km hypocenter` : '—'}</dd></div>
+        <div><dt>Globe position</dt><dd>${data.depth != null && data.depth > 0 ? 'Embedded below surface by depth' : 'Near-surface focus'}</dd></div>
         <div><dt>Coordinates</dt><dd>${data.lat?.toFixed(2)}°, ${data.lon?.toFixed(2)}°</dd></div>
         <div><dt>Date</dt><dd>${data.date || '—'}</dd></div>
         <div><dt>Tsunami</dt><dd>${data.tsunami ? 'Flagged in catalog' : 'No'}</dd></div>
@@ -162,6 +164,31 @@ export function renderEventInspect(container, selection, context = {}) {
     return;
   }
 
+  if (type === 'radar') {
+    const lastSweep = data.lastSweep
+      ? new Date(data.lastSweep).toISOString().replace('T', ' ').slice(0, 19) + ' UTC'
+      : '—';
+    container.innerHTML = `
+      <div class="inspect-epi">${inspectEpistemic(type)}</div>
+      <dl class="inspect-card">
+        <div><dt>Type</dt><dd>Weather radar site</dd></div>
+        <div><dt>Site ID</dt><dd>${esc(data.siteId)}</dd></div>
+        <div><dt>Name</dt><dd>${esc(data.name || '—')}</dd></div>
+        <div><dt>Network</dt><dd>${esc(data.network)} · ${esc(data.stationType || '—')}</dd></div>
+        <div><dt>Country</dt><dd>${esc(data.country || '—')}</dd></div>
+        <div><dt>Position</dt><dd>${data.lat?.toFixed(3)}°, ${data.lon?.toFixed(3)}°</dd></div>
+        <div><dt>Nominal ring</dt><dd>${data.rangeKmNominal != null ? `${data.rangeKmNominal} km` : '—'}</dd></div>
+        <div><dt>Status</dt><dd>${esc(data.status || '—')}</dd></div>
+        <div><dt>Last sweep</dt><dd>${esc(lastSweep)}</dd></div>
+        <div><dt>Source</dt><dd>${esc(data.sourceCitation || '—')}</dd></div>
+      </dl>
+      <p class="inspect-note">Dashed ring is nominal low-level reach from agency docs — not beam-height truth. Composite products merge overlapping site sweeps; gaps remain outside all rings.</p>
+      <p class="inspect-about">${esc(context.radarAbout ?? context.radar ?? GLOBE_ABOUT.radar)}</p>
+      ${data.sourceUrl ? `<a class="inspect-link" href="${esc(data.sourceUrl)}" target="_blank" rel="noopener">Source record →</a>` : ''}
+    `;
+    return;
+  }
+
   if (type === 'plate-boundary') {
     const note = plateBoundaryNote(data);
     const styleHints = {
@@ -252,6 +279,7 @@ export function classifyPick(hit) {
     if (d?.pickType === 'hotspot') return { type: 'hotspot', data: d };
     if (d?.pickType === 'cyclone') return { type: 'cyclone', data: d };
     if (d?.pickType === 'weather') return { type: 'weather', data: d };
+    if (d?.pickType === 'radar' || d?.pickType === 'radar-ring') return { type: 'radar', data: d };
     if (d?.pickType === 'magnetometer') return { type: 'magnetometer', data: d };
     if (d?.pickType === 'magnetic-pole') return { type: 'magnetic-pole', data: d };
     if (d?.pickType === 'spin-pole') return { type: 'spin-pole', data: d };

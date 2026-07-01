@@ -16,7 +16,17 @@ const server = createServer((req, res) => {
   }
 
   try {
-    const { status, body } = routeRequest(db, req.url);
+    const result = routeRequest(db, req.url);
+    if (result.binary) {
+      res.writeHead(result.status, {
+        'Content-Type': result.mime,
+        'Access-Control-Allow-Origin': '*',
+        ...result.headers,
+      });
+      res.end(result.body);
+      return;
+    }
+    const { status, body } = result;
     res.writeHead(status, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(body));
   } catch (err) {
