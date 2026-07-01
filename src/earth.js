@@ -18,6 +18,7 @@ import {
 } from './home-region.js';
 import {
   EARTH_RADIUS,
+  ephemerisBodyToGeoVector,
   latLonToVector3,
   poleOffsetToTilt,
   iersPoleGlobePosition,
@@ -68,8 +69,9 @@ export class EarthScene {
     this.showCyclones = true;
     this.showWeather = true;
     this.showRadar = true;
-    this.showHomeDetail = true;
+    this.showHomeDetail = false;
     this.showHomeTerrain = true;
+    this.homeFocusDim = false;
     this.radarSiteCount = 0;
     this.earthOpacity = 1;
     this.homeRegionConfig = null;
@@ -298,13 +300,7 @@ export class EarthScene {
     this.defaultCameraPosition = new THREE.Vector3(0, 0.3, 2.8);
     this.cameraEntry = null;
     this.cameraFly = null;
-    this.pendingHomeFrame = this.homeRegionConfig?.center
-      ? frameCameraForLatLon(
-          this.homeRegionConfig.center.lat,
-          this.homeRegionConfig.center.lon,
-          { altitude: 0.085 },
-        )
-      : null;
+    this.pendingHomeFrame = null;
 
     this.ambientLight = new THREE.AmbientLight(0x223344, 0.28);
     this.scene.add(this.ambientLight);
@@ -491,11 +487,22 @@ export class EarthScene {
 
   lerpBodyDirection(start, end, phase) {
     if (!start) return null;
-    const a = new THREE.Vector3(start.x, start.y, start.z).normalize();
+    const aRaw = ephemerisBodyToGeoVector(start);
+    const a = aRaw
+      ? new THREE.Vector3(aRaw.x, aRaw.y, aRaw.z)
+      : new THREE.Vector3(start.x, start.y, start.z).normalize();
     if (!end || phase <= 0) return a;
-    const b = new THREE.Vector3(end.x, end.y, end.z).normalize();
+    const bRaw = ephemerisBodyToGeoVector(end);
+    const b = bRaw
+      ? new THREE.Vector3(bRaw.x, bRaw.y, bRaw.z)
+      : new THREE.Vector3(end.x, end.y, end.z).normalize();
     if (phase >= 1) return b;
     return a.clone().lerp(b, phase).normalize();
+  }
+
+  geoVectorFromEphemeris(body) {
+    const g = ephemerisBodyToGeoVector(body);
+    return g ? new THREE.Vector3(g.x, g.y, g.z) : null;
   }
 
   updateSunLightingFromDir(sunDir, ephemerisDay = null) {
@@ -513,9 +520,7 @@ export class EarthScene {
   }
 
   updateSunLighting(ephemerisDay) {
-    const sunDir = ephemerisDay?.sun
-      ? new THREE.Vector3(ephemerisDay.sun.x, ephemerisDay.sun.y, ephemerisDay.sun.z).normalize()
-      : this.defaultSunDirection;
+    const sunDir = this.geoVectorFromEphemeris(ephemerisDay?.sun) ?? this.defaultSunDirection;
     this.updateSunLightingFromDir(sunDir, ephemerisDay);
   }
 
@@ -589,30 +594,26 @@ export class EarthScene {
     const sunDist = 7.5;
 
     if (ephemerisDay.moon) {
-      const m = new THREE.Vector3(
-        ephemerisDay.moon.x,
-        ephemerisDay.moon.y,
-        ephemerisDay.moon.z
-      ).normalize();
-      this.moonMesh.position.copy(m.multiplyScalar(moonDist));
-      const illum = ephemerisDay.lunar?.illumination ?? 0.5;
-      this.moonMesh.material.color.setRGB(
-        0.55 + illum * 0.45,
-        0.55 + illum * 0.45,
-        0.58 + illum * 0.4
-      );
+      const m = this.geoVectorFromEphemeris(ephemerisDay.moon);
+      if (m) {
+        this.moonMesh.position.copy(m.multiplyScalar(moonDist));
+        const illum = ephemerisDay.lunar?.illumination ?? 0.5;
+        this.moonMesh.material.color.setRGB(
+          0.55 + illum * 0.45,
+          0.55 + illum * 0.45,
+          0.58 + illum * 0.4
+        );
+      }
     }
 
     if (ephemerisDay.sun) {
-      const s = new THREE.Vector3(
-        ephemerisDay.sun.x,
-        ephemerisDay.sun.y,
-        ephemerisDay.sun.z
-      ).normalize();
-      this.sunMarker.position.copy(s.clone().multiplyScalar(sunDist));
-      const pts = [new THREE.Vector3(0, 0, 0), s.clone().multiplyScalar(sunDist * 0.95)];
-      this.sunLine.geometry.dispose();
-      this.sunLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+      const s = this.geoVectorFromEphemeris(ephemerisDay.sun);
+      if (s) {
+        this.sunMarker.position.copy(s.clone().multiplyScalar(sunDist));
+        const pts = [new THREE.Vector3(0, 0, 0), s.clone().multiplyScalar(sunDist * 0.95)];
+        this.sunLine.geometry.dispose();
+        this.sunLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+      }
     }
   }
 
@@ -655,6 +656,12 @@ export class EarthScene {
   setHomeDetailVisible(visible) {
     this.showHomeDetail = visible;
     if (this.homePatchGroup) this.homePatchGroup.visible = visible && !!this.homePatch;
+    if (!visible) this.homeFocusDim = false;
+    this.applyHomeFocusDim();
+  }
+
+  setHomeFocusDim(active) {
+    this.homeFocusDim = !!active;
     this.applyHomeFocusDim();
   }
 
@@ -668,8 +675,8 @@ export class EarthScene {
   }
 
   applyHomeFocusDim() {
-    const homeActive = this.showHomeDetail && !!this.homePatch;
-    updateEarthContextDim(this.earthMaterial, homeActive ? 0.16 : 1);
+    const dimShell = this.showHomeDetail && this.homeFocusDim && !!this.homePatch;
+    updateEarthContextDim(this.earthMaterial, dimShell ? 0.16 : 1);
   }
 
   getHomeRegionConfig() {
@@ -679,6 +686,8 @@ export class EarthScene {
   flyToHome({ animate = true, duration = 900 } = {}) {
     const center = this.homeRegionConfig?.center;
     if (!center || !this.controls) return false;
+    this.setHomeDetailVisible(true);
+    this.setHomeFocusDim(true);
     const frame = frameCameraForLatLon(center.lat, center.lon, { altitude: 0.085 });
     if (animate) {
       this.cameraFly = {

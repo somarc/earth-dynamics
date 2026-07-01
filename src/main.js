@@ -854,11 +854,18 @@ function setupControls() {
     let savedOpacity = 1;
     try {
       const raw = localStorage.getItem(EARTH_OPACITY_KEY);
-      if (raw != null) savedOpacity = Math.max(0.12, Math.min(1, parseFloat(raw)));
+      if (raw != null) {
+        const parsed = parseFloat(raw);
+        if (Number.isFinite(parsed)) {
+          savedOpacity = Math.max(0.12, Math.min(1, parsed));
+          // Reset persisted "x-ray" values that made the globe read as nearly transparent.
+          if (savedOpacity < 0.5) savedOpacity = 1;
+        }
+      }
     } catch {
       /* ignore */
     }
-    applyEarthOpacity(savedOpacity, { persist: false });
+    applyEarthOpacity(savedOpacity, { persist: true });
     earthOpacityEl.addEventListener('input', (e) => {
       applyEarthOpacity(parseInt(e.target.value, 10) / 100);
     });
@@ -866,6 +873,8 @@ function setupControls() {
 
   document.getElementById('fly-home-btn')?.addEventListener('click', () => {
     if (state.view !== 'geocentric') return;
+    const detailEl = document.getElementById('show-home-detail');
+    if (detailEl) detailEl.checked = true;
     geocentricScene?.flyToHome({ animate: true });
   });
 
@@ -1010,14 +1019,13 @@ async function main() {
   setupControls();
   setupGlobePick();
   applyLayerPreset('atmosphere');
-  geocentricScene?.setHomeDetailVisible(true);
   geocentricScene?.setHomeTerrainVisible(true);
   const homeCfg = geocentricScene?.getHomeRegionConfig?.();
   const homeChip = document.getElementById('chip-home-detail');
   if (homeChip && homeCfg) {
     const mpp = homeCfg.metersPerPixel?.eastWest;
     const res = mpp ? `~${mpp} m/px` : 'high-res';
-    homeChip.title = `${homeCfg.name} detail patch (${res}) — global shell dimmed as context only`;
+    homeChip.title = `${homeCfg.name} detail patch (${res}) — enable Detail or press Home; global shell dims only in Home focus`;
     homeChip.dataset.baseTitle = homeChip.title;
   }
   const terrainChip = document.getElementById('chip-home-terrain');

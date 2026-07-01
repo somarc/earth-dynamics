@@ -23,6 +23,24 @@ export function quakeMarkerRadius(depthKm, surfaceRadius = EARTH_RADIUS) {
 export function quakeMarkerPosition(lat, lon, depthKm, surfaceRadius = EARTH_RADIUS) {
   return latLonToVector3(lat, lon, quakeMarkerRadius(depthKm, surfaceRadius));
 }
+const OBLIQUITY_RAD = (23.4367 * Math.PI) / 180;
+const COS_OBLIQUITY = Math.cos(OBLIQUITY_RAD);
+const SIN_OBLIQUITY = Math.sin(OBLIQUITY_RAD);
+
+/** JPL Horizons ecliptic vectors (REF_PLANE=ECLIPTIC) → Y-up geographic frame for the globe. */
+export function eclipticToGeographicDirection(x, y, z) {
+  const eqY = y * COS_OBLIQUITY - z * SIN_OBLIQUITY;
+  const eqZ = y * SIN_OBLIQUITY + z * COS_OBLIQUITY;
+  return { x, y: eqZ, z: -eqY };
+}
+
+export function ephemerisBodyToGeoVector(body) {
+  if (!body || body.x == null) return null;
+  const g = eclipticToGeographicDirection(body.x, body.y, body.z);
+  const len = Math.hypot(g.x, g.y, g.z) || 1;
+  return { x: g.x / len, y: g.y / len, z: g.z / len };
+}
+
 export const POLE_EXAGGERATION = 8000;
 /** Globe pole marker/trail exaggeration — true polar wander is ~m; this keeps it visible on the 3D globe. */
 export const POLE_GLOBE_EXAGGERATION = 6000;

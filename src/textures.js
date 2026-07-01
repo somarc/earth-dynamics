@@ -77,6 +77,7 @@ uniform float uHasMaskMap;
 uniform float uLandOpacity;
 uniform float uOceanOpacity;
 uniform float uContextDim;
+uniform float uDebugSun;
 
 varying vec2 vUv;
 varying vec3 vWorldNormal;
@@ -113,6 +114,12 @@ void main() {
   vec3 color = mix(nightColor, dayColor, dayMix);
   color = mix(color, color * twilightTint + nightColor * 0.15, twilight * 0.65);
 
+  if (uDebugSun > 0.5) {
+    float vis = clamp(sunDot * 0.5 + 0.5, 0.0, 1.0);
+    gl_FragColor = vec4(vec3(vis), 1.0);
+    return;
+  }
+
   float landMask = surfaceLandMask(dayColor);
   float alpha = mix(uOceanOpacity, uLandOpacity, landMask);
   color *= uContextDim;
@@ -126,6 +133,9 @@ export function createTerminatorEarthMaterial(textures) {
   const { day, night, mask } = textures;
   const nightTex = night ?? day;
   const maskTex = mask ?? day;
+  const debugSun =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('debugSun');
   return new THREE.ShaderMaterial({
     uniforms: {
       uDayMap: { value: day },
@@ -137,6 +147,7 @@ export function createTerminatorEarthMaterial(textures) {
       uLandOpacity: { value: 1 },
       uOceanOpacity: { value: 1 },
       uContextDim: { value: 1 },
+      uDebugSun: { value: debugSun ? 1 : 0 },
     },
     vertexShader: terminatorVertexShader,
     fragmentShader: terminatorFragmentShader,
