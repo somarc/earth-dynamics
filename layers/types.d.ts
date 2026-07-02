@@ -19,6 +19,7 @@ export interface LayerGlobeContext {
   EARTH_RADIUS: number;
   scene: import('three').Scene;
   surfaceGroup: import('three').Group;
+  renderer: import('three').WebGLRenderer;
 }
 
 export interface LayerGlobeManifest {
@@ -31,8 +32,10 @@ export interface LayerGlobeManifest {
     group: import('three').Group,
     frame: Record<string, unknown>,
     date: string,
-    ctx: LayerGlobeContext,
+    ctx: LayerGlobeContext & { visible?: boolean },
   ) => void;
+  updateSun?: (group: import('three').Group, sunDirection: import('three').Vector3) => void;
+  setTerrainVisible?: (group: import('three').Group, visible: boolean) => void;
   pickTypes?: string[];
   legend?: {
     id: string;

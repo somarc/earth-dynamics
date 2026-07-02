@@ -1,4 +1,9 @@
 import * as THREE from 'three';
+import {
+  TERMINATOR_VERTEX_SHADER,
+  TERMINATOR_DAYNIGHT_BLEND,
+  updateShaderSunDirection,
+} from './shaders/terminator-daynight.js';
 
 function createFallbackTexture() {
   const size = 512;
@@ -55,18 +60,6 @@ export function loadEarthTexture() {
   return loadEarthTextures().then((t) => t.day);
 }
 
-const terminatorVertexShader = `
-varying vec2 vUv;
-varying vec3 vWorldNormal;
-
-void main() {
-  vUv = uv;
-  vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-  vWorldNormal = normalize(mat3(modelMatrix) * normal);
-  gl_Position = projectionMatrix * viewMatrix * worldPosition;
-}
-`;
-
 const terminatorFragmentShader = `
 uniform sampler2D uDayMap;
 uniform sampler2D uNightMap;
@@ -98,23 +91,10 @@ float surfaceLandMask(vec3 dayColor) {
 }
 
 void main() {
-  vec3 sunDir = normalize(uSunDirection);
-  vec3 normal = normalize(vWorldNormal);
-  float sunDot = dot(normal, sunDir);
-
-  float dayMix = smoothstep(-0.12, 0.42, sunDot);
-  float twilight = smoothstep(-0.38, 0.08, sunDot) * (1.0 - dayMix);
-
-  vec3 dayColor = texture2D(uDayMap, vUv).rgb;
-  vec3 nightColor = uHasNightMap > 0.5
-    ? texture2D(uNightMap, vUv).rgb * 0.55
-    : dayColor * 0.08;
-
-  vec3 twilightTint = vec3(1.0, 0.52, 0.28);
-  vec3 color = mix(nightColor, dayColor, dayMix);
-  color = mix(color, color * twilightTint + nightColor * 0.15, twilight * 0.65);
+${TERMINATOR_DAYNIGHT_BLEND}
 
   if (uDebugSun > 0.5) {
+    float sunDot = dot(normalize(vWorldNormal), normalize(uSunDirection));
     float vis = clamp(sunDot * 0.5 + 0.5, 0.0, 1.0);
     gl_FragColor = vec4(vec3(vis), 1.0);
     return;
@@ -149,7 +129,7 @@ export function createTerminatorEarthMaterial(textures) {
       uContextDim: { value: 1 },
       uDebugSun: { value: debugSun ? 1 : 0 },
     },
-    vertexShader: terminatorVertexShader,
+    vertexShader: TERMINATOR_VERTEX_SHADER,
     fragmentShader: terminatorFragmentShader,
   });
 }
@@ -178,9 +158,7 @@ export function updateEarthContextDim(material, dim = 1) {
 }
 
 export function updateEarthSunDirection(material, sunDirection) {
-  const uniform = material?.uniforms?.uSunDirection;
-  if (!uniform || !sunDirection) return;
-  uniform.value.copy(sunDirection);
+  updateShaderSunDirection(material, sunDirection);
 }
 
 export function createEarthMaterial(textures) {

@@ -7,15 +7,7 @@ import {
   updateEarthOpacity,
   updateEarthSunDirection,
 } from './textures.js';
-import {
-  buildHomePatchMesh,
-  createHomePatchMaterial,
-  frameCameraForLatLon,
-  loadHomeRegionConfig,
-  loadHomeRegionTextures,
-  setHomeTerrainVisible,
-  updateHomePatchSun,
-} from './home-region.js';
+import { frameCameraForLatLon } from '../layers/home-region/globe.mjs';
 import {
   EARTH_RADIUS,
   ephemerisBodyToGeoVector,
@@ -73,7 +65,6 @@ export class EarthScene {
     this.homeFocusDim = false;
     this.radarSiteCount = 0;
     this.earthOpacity = 1;
-    this.homeRegionConfig = null;
     this.viewDate = null;
     this.ready = this.init(canvas);
   }
@@ -108,22 +99,6 @@ export class EarthScene {
     this.earthMaterial = earthMat;
     this.earth = new THREE.Mesh(earthGeo, earthMat);
     this.surfaceGroup.add(this.earth);
-
-    this.homePatchGroup = new THREE.Group();
-    this.surfaceGroup.add(this.homePatchGroup);
-    try {
-      this.homeRegionConfig = await loadHomeRegionConfig();
-      const homeTextures = await loadHomeRegionTextures(this.renderer, this.homeRegionConfig);
-      this.homePatchMaterial = createHomePatchMaterial(homeTextures);
-      this.homePatch = buildHomePatchMesh(this.homeRegionConfig, this.homePatchMaterial);
-      this.homePatchGroup.add(this.homePatch);
-      this.homePatchGroup.visible = this.showHomeDetail;
-      this.setHomeTerrainVisible(this.showHomeTerrain);
-      this.applyHomeFocusDim();
-    } catch (err) {
-      console.warn('Home region imagery unavailable:', err);
-      this.homeRegionConfig = null;
-    }
 
     // Inertial shell — does not spin with surfaceGroup so limb tracks ephemeris sun.
     this.atmosphere = createAtmosphereShell(EARTH_RADIUS);
@@ -238,7 +213,12 @@ export class EarthScene {
         earth: this.earthGroup,
         axis: this.axisGroup,
       },
-      { EARTH_RADIUS, scene: this.scene, surfaceGroup: this.surfaceGroup },
+      {
+        EARTH_RADIUS,
+        scene: this.scene,
+        surfaceGroup: this.surfaceGroup,
+        renderer: this.renderer,
+      },
     );
 
     try {
@@ -512,7 +492,7 @@ export class EarthScene {
       this.showBodies && this.diurnalMode === 'sync' ? 0.06 : 0.22;
     updateAtmosphereSun(this.atmosphere, dir);
     updateEarthSunDirection(this.earthMaterial, dir);
-    updateHomePatchSun(this.homePatchMaterial, dir);
+    this.layerControllers.get('home-region')?.updateSun(dir);
   }
 
   updateSunLighting(ephemerisDay) {
@@ -670,9 +650,19 @@ export class EarthScene {
     if (this.radarGroup) this.radarGroup.visible = visible;
   }
 
+  getHomeRegionController() {
+    return this.layerControllers.get('home-region');
+  }
+
+  getHomeRegionGroup() {
+    return this.getHomeRegionController()?.group ?? null;
+  }
+
   setHomeDetailVisible(visible) {
     this.showHomeDetail = visible;
-    if (this.homePatchGroup) this.homePatchGroup.visible = visible && !!this.homePatch;
+    const ctrl = this.getHomeRegionController();
+    const hasPatch = !!ctrl?.group?.userData?.mesh;
+    if (ctrl) ctrl.setVisible(visible && hasPatch);
     if (!visible) this.homeFocusDim = false;
     this.applyHomeFocusDim();
   }
@@ -684,27 +674,29 @@ export class EarthScene {
 
   setHomeTerrainVisible(visible) {
     this.showHomeTerrain = visible;
-    setHomeTerrainVisible(this.homePatchMaterial, visible && !!this.homeRegionConfig?.terrain);
+    this.getHomeRegionController()?.invokeGlobe('setTerrainVisible', visible);
   }
 
   getHomeTerrainAbout() {
-    return this.homeRegionConfig?.terrain?.about ?? null;
+    return this.getHomeRegionGroup()?.userData?.config?.terrain?.about ?? null;
   }
 
   applyHomeFocusDim() {
-    const dimShell = this.showHomeDetail && this.homeFocusDim && !!this.homePatch;
+    const hasPatch = !!this.getHomeRegionGroup()?.userData?.mesh;
+    const dimShell = this.showHomeDetail && this.homeFocusDim && hasPatch;
     updateEarthContextDim(this.earthMaterial, dimShell ? 0.16 : 1);
   }
 
   getHomeRegionConfig() {
-    return this.homeRegionConfig;
+    return this.getHomeRegionGroup()?.userData?.config ?? null;
   }
 
   flyToHome({ animate = true, duration = 900 } = {}) {
-    const center = this.homeRegionConfig?.center;
+    const config = this.getHomeRegionConfig();
+    const center = config?.center;
     if (!center || !this.controls) return false;
     this.setHomeDetailVisible(true);
-    this.setHomeTerrainVisible(!!this.homeRegionConfig?.terrain);
+    this.setHomeTerrainVisible(!!config?.terrain);
     this.setHomeFocusDim(true);
     const frame = frameCameraForLatLon(center.lat, center.lon, { altitude: 0.085 });
     if (animate) {

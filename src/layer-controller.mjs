@@ -58,6 +58,17 @@ export class LayerController {
     if (updateFn) updateFn(this.group, frame, date, ctx);
   }
 
+  updateSun(sunDirection) {
+    const updateFn = this.layer.globe?.updateSun;
+    if (updateFn) updateFn(this.group, sunDirection);
+  }
+
+  invokeGlobe(method, ...args) {
+    const fn = this.layer.globe?.[method];
+    if (fn) return fn(this.group, ...args);
+    return undefined;
+  }
+
   getAbout() {
     if (this.group.userData?.about) return this.group.userData.about;
     for (const child of this.group.children) {
