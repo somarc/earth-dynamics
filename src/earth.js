@@ -619,8 +619,15 @@ export class EarthScene {
     this.updatePlateMotionVisible();
   }
 
+  setLayerVisible(layerId, visible) {
+    const ctrl = this.layerControllers.get(layerId);
+    if (!ctrl) return false;
+    ctrl.setVisible(visible);
+    return true;
+  }
+
   setHotspotsVisible(visible) {
-    this.layerControllers.get('hotspots')?.setVisible(visible);
+    this.setLayerVisible('hotspots', visible);
   }
 
   get showHotspots() {
@@ -642,7 +649,7 @@ export class EarthScene {
   }
 
   setCyclonesVisible(visible) {
-    this.layerControllers.get('cyclones')?.setVisible(visible);
+    this.setLayerVisible('cyclones', visible);
   }
 
   get showCyclones() {

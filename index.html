@@ -233,30 +233,19 @@ npm run start</pre>
           <div class="controls__cluster controls__cluster--layers">
             <div class="layer-group" role="group" aria-label="Solid Earth layers">
               <span class="layer-group__label">Solid</span>
-              <label class="layer-chip" title="USGS earthquakes"><input type="checkbox" id="show-quakes" checked /><span>Quakes</span></label>
-              <label class="layer-chip" title="GVP eruption episodes in window"><input type="checkbox" id="show-volcanoes" checked /><span>GVP</span></label>
-              <label class="layer-chip" id="chip-spin-pole" title="IERS spin pole marker (exaggerated on globe)"><input type="checkbox" id="show-spin-pole" checked /><span>Spin</span></label>
-              <label class="layer-chip" id="chip-pole-trail" title="IERS polar wander path — recent trail near spin pole"><input type="checkbox" id="show-trail" checked /><span>Trail</span></label>
-              <label class="layer-chip" title="PB2002 steps — red=subduction, green=ridge/rift, yellow dashed=transform, orange=convergent (kinematic class, not quake intensity)"><input type="checkbox" id="show-plates" checked /><span>Plates</span></label>
-              <label class="layer-chip" title="Plate motion vectors"><input type="checkbox" id="show-plate-motion" checked /><span>Motion</span></label>
-              <label class="layer-chip" title="Mantle hotspots"><input type="checkbox" id="show-hotspots" checked /><span>Hotspots</span></label>
+              <div class="layer-group__chips" data-layer-chips="solid"></div>
             </div>
             <div class="layer-group" role="group" aria-label="Atmosphere layers">
               <span class="layer-group__label">Atmos</span>
-              <label class="layer-chip" id="chip-cyclones" title="IBTrACS cyclone tracks in date window"><input type="checkbox" id="show-cyclones" checked /><span>Cyclones</span></label>
-              <label class="layer-chip" id="chip-weather" title="ERA5 weather glyphs at 16 grid cities"><input type="checkbox" id="show-weather-glyphs" checked /><span>Weather</span></label>
-              <label class="layer-chip" id="chip-radar" title="US NEXRAD/TDWR and Canada MSC radar sites with nominal coverage rings"><input type="checkbox" id="show-radar-sites" checked /><span>Radar</span></label>
+              <div class="layer-group__chips" data-layer-chips="atmos"></div>
             </div>
             <div class="layer-group" role="group" aria-label="Space weather layers">
               <span class="layer-group__label">Space</span>
-              <label class="layer-chip" title="OVATION / Kp aurora"><input type="checkbox" id="show-aurora" checked /><span>Aurora</span></label>
-              <label class="layer-chip" id="chip-geomag" title="WMM field lines, IGRF magnetic poles, INTERMAGNET when space-weather data exists"><input type="checkbox" id="show-field-lines" checked /><span>Geomag</span></label>
-              <label class="layer-chip" id="show-moon-label" style="display:none" title="Moon in heliocentric view"><input type="checkbox" id="show-moon" checked /><span>Moon</span></label>
-              <label class="layer-chip" id="show-cme-label" style="display:none" title="CME markers"><input type="checkbox" id="show-cme" checked /><span>CME</span></label>
+              <div class="layer-group__chips" data-layer-chips="space"></div>
             </div>
             <div class="layer-group layer-group--sky" id="geo-motion-group" role="group" aria-label="Sky and diurnal motion">
               <span class="layer-group__label">Sky</span>
-              <label class="layer-chip" title="Moon and Sun markers"><input type="checkbox" id="show-bodies" checked /><span>Bodies</span></label>
+              <div class="layer-group__chips" data-layer-chips="sky"></div>
               <div
                 class="segmented segmented--diurnal"
                 role="group"

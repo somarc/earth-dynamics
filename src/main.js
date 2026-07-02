@@ -15,14 +15,20 @@ import { formatDate, addDays, filterQuakesByMinMag } from './utils.js';
 import { hasGeomagContext } from './geomag-globe.js';
 import { loadCatalog, loadFrame } from './data-client.js';
 import {
-  EPISTEMIC,
-  LAYER_EPISTEMICS,
   renderAsOfChips,
   renderCitationsList,
   renderPanelEpistemics,
   renderStalenessChips,
 } from './epistemics.js';
 import { bindLegendHelp, renderLegendHtml } from './legend-help.js';
+import { buildLayerPresets } from './layers/ui-registry.mjs';
+import {
+  applyEpistemicTitles,
+  applyPresetToScenes,
+  renderLayerChips,
+  wireLayerToggles,
+} from './layers/layer-ui.mjs';
+import { allLayerUi } from './layers/ui-registry.mjs';
 import { createTimelineSlider } from './timeline-slider.js';
 import { createViewTransition, updateViewTransition } from './view-transition.js';
 
@@ -119,93 +125,7 @@ function setDiurnalMode(mode) {
   geocentricScene?.setDiurnalMode(state.diurnalMode);
 }
 
-const LAYER_PRESETS = {
-  solid: {
-    label: 'Solid Earth',
-    quakes: true,
-    volcanoes: true,
-    spinPole: true,
-    trail: true,
-    plates: true,
-    plateMotion: true,
-    hotspots: true,
-    aurora: false,
-    fieldLines: false,
-    bodies: true,
-    moon: true,
-    cyclones: false,
-    weather: false,
-    radar: false,
-  },
-  space: {
-    label: 'Space Weather',
-    quakes: false,
-    volcanoes: false,
-    spinPole: true,
-    trail: true,
-    plates: false,
-    plateMotion: false,
-    hotspots: false,
-    aurora: true,
-    fieldLines: true,
-    bodies: false,
-    moon: false,
-    cyclones: false,
-    weather: false,
-    radar: false,
-  },
-  orbital: {
-    label: 'Orbital',
-    quakes: false,
-    volcanoes: false,
-    spinPole: true,
-    trail: true,
-    plates: false,
-    plateMotion: false,
-    hotspots: false,
-    aurora: false,
-    fieldLines: false,
-    bodies: true,
-    moon: true,
-    cyclones: false,
-    weather: false,
-    radar: false,
-  },
-  full: {
-    label: 'Full stack',
-    quakes: true,
-    volcanoes: true,
-    spinPole: true,
-    trail: true,
-    plates: true,
-    plateMotion: true,
-    hotspots: true,
-    aurora: true,
-    fieldLines: true,
-    bodies: true,
-    moon: true,
-    cyclones: true,
-    weather: true,
-    radar: true,
-  },
-  atmosphere: {
-    label: 'Atmosphere',
-    quakes: false,
-    volcanoes: false,
-    spinPole: true,
-    trail: true,
-    plates: false,
-    plateMotion: false,
-    hotspots: false,
-    aurora: false,
-    fieldLines: false,
-    bodies: false,
-    moon: false,
-    cyclones: true,
-    weather: true,
-    radar: true,
-  },
-};
+const LAYER_PRESETS = buildLayerPresets();
 
 function activeScene() {
   return state.view === 'heliocentric' ? heliocentricScene : geocentricScene;
@@ -284,9 +204,14 @@ function updateLayerChipLabels(counts = {}, { geomagContext = false, magnetomete
       : chip.dataset.baseTitle;
   };
 
-  setChip('chip-cyclones', 'Cyclones', counts.cyclones ?? 0);
-  setChip('chip-weather', 'Weather', counts.weather ?? 0);
-  setChip('chip-radar', 'Radar', counts.radar ?? 0);
+  for (const layer of allLayerUi()) {
+    if (!layer.ui.countKey || !layer.ui.chipId) continue;
+    let n = counts[layer.ui.countKey] ?? 0;
+    if (layer.ui.countKey === 'radar' && geocentricScene && !geocentricScene.showRadar) {
+      n = 0;
+    }
+    setChip(layer.ui.chipId, layer.ui.chipLabel, n);
+  }
 
   const geomagChip = document.getElementById('chip-geomag');
   if (geomagChip) {
@@ -340,31 +265,6 @@ function applyEventLayers(frame, date) {
 
 function renderCitations() {
   renderCitationsList(state.catalog?.manifest);
-}
-
-const LAYER_TOGGLE_MAP = {
-  'show-quakes': 'quakes',
-  'show-volcanoes': 'volcanoes',
-  'show-plates': 'plates',
-  'show-plate-motion': 'plateMotion',
-  'show-hotspots': 'hotspots',
-  'show-cyclones': 'cyclones',
-  'show-weather-glyphs': 'weather',
-  'show-radar-sites': 'radar',
-  'show-aurora': 'aurora',
-  'show-field-lines': 'fieldLines',
-  'show-bodies': 'bodies',
-};
-
-function applyLayerEpistemicTitles() {
-  for (const [id, key] of Object.entries(LAYER_TOGGLE_MAP)) {
-    const input = document.getElementById(id);
-    const epi = LAYER_EPISTEMICS[key];
-    if (!input || !epi) continue;
-    const label = input.closest('label');
-    const meta = EPISTEMIC[epi];
-    if (label && meta) label.title = `${meta.title} (${meta.label})`;
-  }
 }
 
 function updateLegend() {
@@ -638,47 +538,7 @@ function applyLayerPreset(presetId) {
   const preset = LAYER_PRESETS[presetId];
   if (!preset) return;
 
-  const set = (id, checked) => {
-    const el = document.getElementById(id);
-    if (el) el.checked = checked;
-  };
-
-  set('show-quakes', preset.quakes);
-  set('show-volcanoes', preset.volcanoes);
-  set('show-spin-pole', preset.spinPole ?? true);
-  set('show-trail', preset.trail);
-  set('show-plates', preset.plates);
-  set('show-plate-motion', preset.plateMotion);
-  set('show-hotspots', preset.hotspots);
-  set('show-aurora', preset.aurora);
-  set('show-field-lines', preset.fieldLines);
-  set('show-bodies', preset.bodies);
-  set('show-moon', preset.moon);
-  set('show-cyclones', preset.cyclones ?? true);
-  set('show-weather-glyphs', preset.weather ?? true);
-  set('show-radar-sites', preset.radar ?? true);
-
-  geocentricScene.showQuakes = preset.quakes;
-  geocentricScene.showVolcanoes = preset.volcanoes;
-  geocentricScene.setSpinPoleVisible(preset.spinPole ?? true);
-  geocentricScene.setTrailVisible(preset.trail);
-  geocentricScene.setPlatesVisible(preset.plates);
-  geocentricScene.setPlateMotionVisible(preset.plateMotion);
-  geocentricScene.setHotspotsVisible(preset.hotspots);
-  geocentricScene.showAurora = preset.aurora;
-  geocentricScene.showFieldLines = preset.fieldLines;
-  geocentricScene.refreshGeomagLayer(geocentricScene.lastGeomagnetic);
-  geocentricScene.showBodies = preset.bodies;
-  geocentricScene.setCyclonesVisible(preset.cyclones ?? true);
-  geocentricScene.setWeatherVisible(preset.weather ?? true);
-  geocentricScene.setRadarVisible(preset.radar ?? true);
-  heliocentricScene.showQuakes = preset.quakes;
-  heliocentricScene.showVolcanoes = preset.volcanoes;
-  heliocentricScene.setSpinPoleVisible(preset.spinPole ?? true);
-  heliocentricScene.setTrailVisible(preset.trail);
-  heliocentricScene.showAurora = preset.aurora;
-  heliocentricScene.showFieldLines = preset.fieldLines;
-  heliocentricScene.showMoon = preset.moon;
+  applyPresetToScenes(preset, geocentricScene, heliocentricScene);
 
   document.querySelectorAll('.preset-btn').forEach((btn) => {
     btn.classList.toggle('preset-btn--active', btn.dataset.preset === presetId);
@@ -765,44 +625,14 @@ function setupControls() {
     });
   }
 
-  const sync = (id, prop) => {
-    document.getElementById(id).addEventListener('change', (e) => {
-      geocentricScene[prop] = e.target.checked;
-      heliocentricScene[prop] = e.target.checked;
-      updateUI();
-    });
-  };
-  sync('show-quakes', 'showQuakes');
-  sync('show-volcanoes', 'showVolcanoes');
-
-  document.getElementById('show-spin-pole').addEventListener('change', (e) => {
-    geocentricScene.setSpinPoleVisible(e.target.checked);
-    heliocentricScene.setSpinPoleVisible(e.target.checked);
-  });
-
-  document.getElementById('show-trail').addEventListener('change', (e) => {
-    geocentricScene.setTrailVisible(e.target.checked);
-    heliocentricScene.setTrailVisible(e.target.checked);
-  });
-
-  document.getElementById('show-plates').addEventListener('change', (e) => {
-    geocentricScene.setPlatesVisible(e.target.checked);
-  });
-  document.getElementById('show-hotspots').addEventListener('change', (e) => {
-    geocentricScene.setHotspotsVisible(e.target.checked);
-  });
-  document.getElementById('show-plate-motion').addEventListener('change', (e) => {
-    geocentricScene.setPlateMotionVisible(e.target.checked);
-  });
-
-  document.getElementById('show-aurora').addEventListener('change', (e) => {
-    geocentricScene.showAurora = e.target.checked;
-    updateUI();
-  });
-  document.getElementById('show-field-lines').addEventListener('change', (e) => {
-    geocentricScene.showFieldLines = e.target.checked;
-    geocentricScene.refreshGeomagLayer(geocentricScene.lastGeomagnetic);
-    if (state.cachedFrame) {
+  wireLayerToggles({
+    geocentricScene,
+    heliocentricScene,
+    getView: () => state.view,
+    onReapplyEvents: reapplyEventLayersFromCache,
+    onUpdateUI: updateUI,
+    onGeomagChips: () => {
+      if (!state.cachedFrame) return;
       updateLayerChipLabels(
         {
           cyclones: state.cachedFrame.cyclones?.length ?? 0,
@@ -817,12 +647,23 @@ function setupControls() {
           magnetometers: state.cachedFrame.magnetometers?.length ?? 0,
         },
       );
-    }
-  });
-
-  document.getElementById('show-bodies').addEventListener('change', (e) => {
-    geocentricScene.showBodies = e.target.checked;
-    updateUI();
+    },
+    onUpdateChipCounts: () => {
+      updateLayerChipLabels(
+        {
+          cyclones: state.cachedFrame?.cyclones?.length ?? 0,
+          weather: state.cachedFrame?.weather?.length ?? 0,
+          radar: geocentricScene.showRadar ? geocentricScene.getRadarSiteCount() : 0,
+        },
+        {
+          geomagContext: hasGeomagContext(
+            state.cachedFrame?.geomagnetic,
+            state.cachedFrame?.spaceWeather,
+          ),
+          magnetometers: state.cachedFrame?.magnetometers?.length ?? 0,
+        },
+      );
+    },
   });
 
   document.querySelectorAll('[data-diurnal]').forEach((btn) => {
@@ -832,23 +673,6 @@ function setupControls() {
     });
   });
   setDiurnalMode(state.diurnalMode);
-  document.getElementById('show-moon').addEventListener('change', (e) => {
-    heliocentricScene.showMoon = e.target.checked;
-    updateUI();
-  });
-  document.getElementById('show-cme').addEventListener('change', (e) => {
-    heliocentricScene.showCme = e.target.checked;
-    updateUI();
-  });
-
-  document.getElementById('show-cyclones').addEventListener('change', (e) => {
-    geocentricScene.setCyclonesVisible(e.target.checked);
-    reapplyEventLayersFromCache();
-  });
-  document.getElementById('show-weather-glyphs').addEventListener('change', (e) => {
-    geocentricScene.setWeatherVisible(e.target.checked);
-    reapplyEventLayersFromCache();
-  });
   const earthOpacityEl = document.getElementById('earth-opacity');
   if (earthOpacityEl) {
     let savedOpacity = 1;
@@ -886,23 +710,6 @@ function setupControls() {
     geocentricScene?.setHomeTerrainVisible(e.target.checked);
   });
 
-  document.getElementById('show-radar-sites').addEventListener('change', (e) => {
-    geocentricScene.setRadarVisible(e.target.checked);
-    updateLayerChipLabels(
-      {
-        cyclones: state.cachedFrame?.cyclones?.length ?? 0,
-        weather: state.cachedFrame?.weather?.length ?? 0,
-        radar: e.target.checked ? geocentricScene.getRadarSiteCount() : 0,
-      },
-      {
-        geomagContext: hasGeomagContext(
-          state.cachedFrame?.geomagnetic,
-          state.cachedFrame?.spaceWeather,
-        ),
-        magnetometers: state.cachedFrame?.magnetometers?.length ?? 0,
-      },
-    );
-  });
 }
 
 function animate(timestamp) {
@@ -1011,7 +818,8 @@ async function main() {
   renderCitations();
   renderPanelEpistemics();
   renderStalenessChips(state.catalog?.manifest);
-  applyLayerEpistemicTitles();
+  renderLayerChips();
+  applyEpistemicTitles();
   bindLegendHelp(
     document.getElementById('legend'),
     document.getElementById('legend-help'),

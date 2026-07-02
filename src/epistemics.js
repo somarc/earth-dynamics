@@ -1,5 +1,7 @@
 /** Epistemic classes for Wobblescope trust layer (Phase F). */
 
+import { layerEpistemicMap } from './layers/ui-registry.mjs';
+
 export const EPISTEMIC = {
   measured: {
     id: 'measured',
@@ -40,22 +42,13 @@ export const PANEL_EPISTEMICS = {
   citations: [],
 };
 
+/** Layer epistemics derived from ui-registry + home-region overrides */
 export const LAYER_EPISTEMICS = {
-  quakes: 'measured',
-  volcanoes: 'measured',
-  plates: 'pedagogical',
-  plateMotion: 'derived',
-  hotspots: 'pedagogical',
-  cyclones: 'measured',
-  weather: 'modeled',
-  radar: 'measured',
+  ...layerEpistemicMap(),
   homeDetail: 'derived',
   homeTerrain: 'derived',
-  aurora: 'derived',
-  fieldLines: 'modeled',
   geomag: 'modeled',
   magpole: 'modeled',
-  bodies: 'measured',
 };
 
 export const PICK_EPISTEMICS = {

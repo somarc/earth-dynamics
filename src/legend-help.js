@@ -1,4 +1,5 @@
 import { GLOBE_ABOUT } from './globe-inspect.js';
+import { registryLegendGeoEntries } from './layers/ui-registry.mjs';
 
 const DEFAULT_HELP = 'Hover a legend chip to see what it represents on the globe.';
 
@@ -112,13 +113,7 @@ export const LEGEND_GEO = [
     title: 'Plate motion',
     help: GLOBE_ABOUT.plate,
   },
-  {
-    id: 'hotspot',
-    class: 'hotspot',
-    label: '◎ Hotspot',
-    title: 'Mantle hotspots',
-    help: GLOBE_ABOUT.hotspot,
-  },
+
   {
     id: 'aurora',
     class: 'aurora',
@@ -135,13 +130,7 @@ export const LEGEND_GEO = [
     help:
       'Default WMM dipole field-line arcs for orientation (pedagogical). When the scrub date has space-weather context (Kp, Dst, solar wind, or DONKI events), INTERMAGNET observatory dots and IGRF-14 declination ticks appear — modeled vectors at measured station sites, not live magnetograms.',
   },
-  {
-    id: 'cyclone',
-    class: 'cyclone',
-    label: '〰 Cyclone',
-    title: 'Tropical cyclones',
-    help: GLOBE_ABOUT.cyclone,
-  },
+
   {
     id: 'weather',
     class: 'weather',
@@ -212,8 +201,18 @@ export const LEGEND_HELIO = [
   },
 ];
 
+function mergeRegistryLegends(base) {
+  const registry = registryLegendGeoEntries();
+  const byId = new Map(base.map((item) => [item.id, item]));
+  for (const item of registry) {
+    byId.set(item.id, item);
+  }
+  return [...byId.values()];
+}
+
 function legendItems(view) {
-  return view === 'heliocentric' ? LEGEND_HELIO : LEGEND_GEO;
+  if (view === 'heliocentric') return LEGEND_HELIO;
+  return mergeRegistryLegends(LEGEND_GEO);
 }
 
 function itemLabel(item, quakeMinMag) {
@@ -234,7 +233,7 @@ export function bindLegendHelp(legendEl, helpEl) {
   if (!legendEl || !helpEl) return;
 
   const lookup = new Map(
-    [...LEGEND_GEO, ...LEGEND_HELIO].map((item) => [item.id, item]),
+    [...mergeRegistryLegends(LEGEND_GEO), ...LEGEND_HELIO].map((item) => [item.id, item]),
   );
 
   const show = (id) => {

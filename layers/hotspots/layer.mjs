@@ -49,4 +49,10 @@ export default {
     full: true,
     atmosphere: false,
   },
+
+  ui: {
+    group: 'solid',
+    chipLabel: 'Hotspots',
+    title: 'Mantle hotspots',
+  },
 };

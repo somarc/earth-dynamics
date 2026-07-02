@@ -55,4 +55,12 @@ export default {
     full: true,
     atmosphere: true,
   },
+
+  ui: {
+    group: 'atmos',
+    chipId: 'chip-cyclones',
+    chipLabel: 'Cyclones',
+    countKey: 'cyclones',
+    title: 'IBTrACS cyclone tracks in date window',
+  },
 };
