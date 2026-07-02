@@ -1,4 +1,4 @@
 import './style.css';
-import mountWobblescope from './main.js';
+import mountWeatherly from './main.js';
 
-export default mountWobblescope;
+export default mountWeatherly;

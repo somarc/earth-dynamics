@@ -8,6 +8,7 @@
     "dev": "node ./node_modules/vite/bin/vite.js",
     "build": "node ./node_modules/vite/bin/vite.js build",
     "build:widget": "node ./node_modules/vite/bin/vite.js build --config vite.config.widget.js",
+    "sync:eds": "node scripts/sync-widget-to-eds.mjs",
     "preview": "node ./node_modules/vite/bin/vite.js preview",
     "fetch-data": "node scripts/fetch-data.mjs",
     "fetch-heliocentric": "node scripts/fetch-heliocentric.mjs",

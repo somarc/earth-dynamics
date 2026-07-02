@@ -15,12 +15,12 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/widget-entry.js'),
       formats: ['es'],
-      fileName: () => 'wobblescope.js',
+      fileName: () => 'weatherly.js',
     },
     rollupOptions: {
       output: {
         assetFileNames: (info) => {
-          if (info.name?.endsWith('.css')) return 'wobblescope.css';
+          if (info.name?.endsWith('.css')) return 'weatherly.css';
           return 'assets/[name][extname]';
         },
       },
@@ -34,8 +34,8 @@ export default defineConfig({
         const out = resolve(__dirname, 'dist-widget');
         mkdirSync(out, { recursive: true });
         copyFileSync(
-          resolve(__dirname, 'widget/wobblescope.html'),
-          resolve(out, 'wobblescope.html'),
+          resolve(__dirname, 'widget/weatherly.html'),
+          resolve(out, 'weatherly.html'),
         );
         const publicAssets = resolve(__dirname, 'public/assets');
         if (existsSync(publicAssets)) {

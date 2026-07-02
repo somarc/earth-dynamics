@@ -25,6 +25,9 @@ export class LayerController {
       try {
         const content = await initFn(ctx);
         if (content?.isObject3D) {
+          if (content.userData && Object.keys(content.userData).length) {
+            Object.assign(this.group.userData, content.userData);
+          }
           this.group.add(content);
         }
         this.group.visible = this.visible;

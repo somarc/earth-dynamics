@@ -1,0 +1,66 @@
+name: Sync Weatherly widget to EDS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'layers/**'
+      - 'widget/**'
+      - 'public/**'
+      - 'vite.config.widget.js'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout earth-dynamics
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install and build widget
+        run: |
+          npm ci
+          npm run build:widget
+
+      - name: Checkout earth-dynamics-eds
+        uses: actions/checkout@v4
+        with:
+          repository: somarc/earth-dynamics-eds
+          token: ${{ secrets.EDS_SYNC_TOKEN || github.token }}
+          path: eds
+
+      - name: Copy widget bundle
+        run: |
+          rm -rf eds/widgets/weatherly
+          mkdir -p eds/widgets/weatherly
+          cp -r dist-widget/* eds/widgets/weatherly/
+
+      - name: Commit and push to sync branch
+        working-directory: eds
+        env:
+          GH_TOKEN: ${{ secrets.EDS_SYNC_TOKEN || github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="sync-weatherly-widget-${GITHUB_SHA::7}"
+          git checkout -b "$BRANCH"
+          git add widgets/weatherly
+          if git diff --staged --quiet; then
+            echo "No widget changes to sync."
+            exit 0
+          fi
+          git commit -m "chore(widget): sync Weatherly bundle from earth-dynamics@${GITHUB_SHA::7}"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "Sync Weatherly widget (${GITHUB_SHA::7})" \
+            --body "Automated widget bundle from [earth-dynamics@${GITHUB_SHA}](https://github.com/somarc/earth-dynamics/commit/${GITHUB_SHA}). Preview: https://${BRANCH//\//-}--earth-dynamics-eds--somarc.aem.page/drafts/weatherly" \
+            --base main || echo "PR may already exist or token lacks permission — push branch manually."

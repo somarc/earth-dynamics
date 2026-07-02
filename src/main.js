@@ -777,7 +777,8 @@ function seedStateFromDataset(root) {
   if (date) state.initialDate = date;
 }
 
-export default async function mountWobblescope(root) {
+export default async function mountWeatherly(root) {
+  root.classList.add('weatherly');
   setDomRoot(root);
   seedStateFromDataset(root);
 
@@ -884,5 +885,5 @@ function setupGlobePick() {
 
 if (import.meta.env.VITE_WIDGET !== 'true') {
   setDomRoot(document.body);
-  mountWobblescope(document.body);
+  mountWeatherly(document.body);
 }

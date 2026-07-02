@@ -1,4 +1,4 @@
-.wobblescope {
+.weatherly {
   --bg-deep: #060a12;
   --bg-panel: rgba(12, 18, 32, 0.92);
   --border: rgba(100, 140, 200, 0.18);
@@ -18,14 +18,14 @@
   --scrollbar-border: rgba(100, 140, 200, 0.22);
 }
 
-.wobblescope * {
+.weatherly * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-.wobblescope,
-.wobblescope #app {
+.weatherly,
+.weatherly #app {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -34,7 +34,7 @@
   font-family: var(--font-sans);
 }
 
-.wobblescope #app {
+.weatherly #app {
   display: grid;
   grid-template-rows: auto 1fr auto;
 }
