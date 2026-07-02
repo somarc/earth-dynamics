@@ -11,6 +11,7 @@ import { ingestEphemeris } from './sources/ephemeris.mjs';
 import { ingestIbtracs } from './sources/ibtracs.mjs';
 import { ingestGeomag } from './sources/geomag.mjs';
 import { ingestHome } from './sources/home.mjs';
+import { runRegistryIngest } from '../layers/registry-runner.mjs';
 import { dbPath } from './db.mjs';
 
 const args = new Set(process.argv.slice(2));
@@ -86,6 +87,16 @@ async function main() {
   if (!only || only === 'home') {
     console.log('9. Home region assets (imagery + terrain blobs)…');
     await ingestHome({ force });
+  }
+
+  const registryOnly = only && ![
+    'json', 'weather', 'storms', 'solar', 'space-weather', 'omni',
+    'earthquakes', 'aam', 'geomag', 'ephemeris', 'ibtracs', 'home',
+  ].includes(only);
+
+  if (!only || registryOnly) {
+    console.log('\nRegistry layer ingest…');
+    await runRegistryIngest({ only: registryOnly ? only : null, force, extra: { weatherGrid } });
   }
 
   console.log('\nDone.');

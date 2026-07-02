@@ -39,7 +39,8 @@ import {
   loadPlateMotion,
   buildMotionGroup,
 } from './plates.js';
-import { loadHotspots, buildHotspotGroup } from './hotspots.js';
+import { initGlobeLayers } from './layer-controller.mjs';
+import { GLOBE_LAYERS } from './layers/registry.mjs';
 import { classifyPick } from './event-inspect.js';
 import { createAtmosphereShell, updateAtmosphereSun } from './atmosphere.js';
 import { buildCycloneGroup } from './cyclones.js';
@@ -65,7 +66,7 @@ export class EarthScene {
     this.showFieldLines = true;
     this.showPlates = true;
     this.showPlateMotion = true;
-    this.showHotspots = true;
+    this.layerControllers = new Map();
     this.showCyclones = true;
     this.showWeather = true;
     this.showRadar = true;
@@ -194,8 +195,6 @@ export class EarthScene {
     this.surfaceGroup.add(this.plateGroup);
     this.plateMotionGroup = new THREE.Group();
     this.surfaceGroup.add(this.plateMotionGroup);
-    this.hotspotGroup = new THREE.Group();
-    this.surfaceGroup.add(this.hotspotGroup);
     this.cycloneGroup = new THREE.Group();
     this.surfaceGroup.add(this.cycloneGroup);
     this.weatherGroup = new THREE.Group();
@@ -236,14 +235,15 @@ export class EarthScene {
       console.warn('Plate boundaries unavailable:', err);
     }
 
-    try {
-      const hotspotData = await loadHotspots();
-      this.hotspotGroup.add(buildHotspotGroup(hotspotData));
-      this.hotspotGroup.userData.about = hotspotData.about ?? null;
-      this.hotspotGroup.visible = this.showHotspots;
-    } catch (err) {
-      console.warn('Hotspots unavailable:', err);
-    }
+    this.layerControllers = await initGlobeLayers(
+      GLOBE_LAYERS,
+      {
+        surface: this.surfaceGroup,
+        earth: this.earthGroup,
+        axis: this.axisGroup,
+      },
+      { EARTH_RADIUS, scene: this.scene, surfaceGroup: this.surfaceGroup },
+    );
 
     try {
       const radarData = await loadRadarSites();
@@ -624,8 +624,15 @@ export class EarthScene {
   }
 
   setHotspotsVisible(visible) {
-    this.showHotspots = visible;
-    if (this.hotspotGroup) this.hotspotGroup.visible = visible;
+    this.layerControllers.get('hotspots')?.setVisible(visible);
+  }
+
+  get showHotspots() {
+    return this.layerControllers.get('hotspots')?.visible ?? true;
+  }
+
+  get hotspotGroup() {
+    return this.layerControllers.get('hotspots')?.group ?? null;
   }
 
   setSpinPoleVisible(visible) {
@@ -849,7 +856,7 @@ export class EarthScene {
   }
 
   getHotspotAbout() {
-    return this.hotspotGroup?.userData?.about ?? null;
+    return this.layerControllers.get('hotspots')?.getAbout() ?? null;
   }
 
   getPlateMotionAbout() {
