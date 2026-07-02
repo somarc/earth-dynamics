@@ -1,5 +1,6 @@
 import { SOURCES } from '../ingest/constants.mjs';
 import { composeLayerSnapshots } from '../layers/api-compose.mjs';
+import { matchLayerRoute } from '../layers/api-routes.mjs';
 import { getHomeAsset, getHomeRegionConfig, listHomeAssetKeys } from '../ingest/home-store.mjs';
 import { igrfDipPoles, igrfFieldAt } from './igrf.mjs';
 
@@ -423,27 +424,9 @@ export function routeRequest(db, url) {
     return { status: 200, body: handlers.getAamWindow(end, days) };
   }
 
-  if (path === '/api/home') {
-    const config = handlers.getHome();
-    if (!config) return { status: 404, body: { error: 'Home region not ingested — run npm run sync-home' } };
-    return { status: 200, body: config };
-  }
-
-  const homeAssetMatch = path.match(/^\/api\/home\/assets\/([a-z0-9-]+)$/);
-  if (homeAssetMatch) {
-    const asset = handlers.getHomeAssetBinary(homeAssetMatch[1]);
-    if (!asset) return { status: 404, body: { error: 'Home asset not found' } };
-    return {
-      status: 200,
-      binary: true,
-      mime: asset.mime,
-      body: asset.data,
-      headers: {
-        'Cache-Control': 'public, max-age=31536000, immutable',
-        ETag: `"${asset.sha256}"`,
-        'Content-Length': String(asset.byteLength),
-      },
-    };
+  const layerMatch = matchLayerRoute(url);
+  if (layerMatch) {
+    return layerMatch.route.handler(db, url, layerMatch.params);
   }
 
   return { status: 404, body: { error: 'Not found' } };

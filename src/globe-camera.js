@@ -17,9 +17,9 @@ export function configureGlobeControls(controls, { earthRadius = EARTH_RADIUS } 
   controls.maxDistance = GLOBE_MAX_DISTANCE;
   controls.zoomSpeed = 0.85;
   controls.zoomToCursor = true;
-  controls.enablePan = true;
-  controls.screenSpacePanning = true;
-  controls.panSpeed = 0.65;
+  // Pan + zoomToCursor drifts the orbit target off the globe center on scroll/click.
+  controls.enablePan = false;
+  controls.screenSpacePanning = false;
   controls.rotateSpeed = 0.55;
   controls.maxPolarAngle = Math.PI;
 }
