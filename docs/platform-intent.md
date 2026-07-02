@@ -107,21 +107,38 @@ Prove the contract with low-risk layers before touching core timeline or space-w
 
 Defer: EOP/ephemeris (timeline core), space-weather multi-panel chain, plates (multi-sub-layer).
 
-### 5. Make the contributor path real
+### 5. Shared ingest primitives (P0/P1 — not a follow-up)
+
+Each layer owns its ingest logic, but **must not re-copy ad hoc ETL**. Today every `ingest/sources/*.mjs` hand-rolls fetch, retry, incremental windows, and upsert (weather has `retry-after` backoff; space-weather has a fixed retry pause; earthquakes has overlap-day incremental; most others throw on first failure). Migrating into `layers/*/ingest.mjs` without shared helpers would preserve the mess inside a prettier folder structure.
+
+**P0 delivers `ingest/lib/` shared primitives** and the contract requires ingested layers to use them:
+
+| Primitive | Purpose |
+|-----------|---------|
+| `fetchWithRetry` | HTTP with backoff, `Retry-After` respect, max attempts, typed errors |
+| `incrementalWindow` | Watermark from `ingest_log` / `MAX(date)` + overlap policy |
+| `upsertRows` | Transactional `INSERT OR REPLACE` / batched writes from column maps |
+| `runLayerIngest` | Per-layer wrapper: skip-if-fresh (`wasIngested`), try/catch, `logIngest`, isolated failure |
+
+**P1 exit check:** the proof ingested layer (`radar` or `cyclones`) uses only shared primitives — no inline `fetch` + manual retry in the layer file.
+
+**Registry runner (`ingest/run.mjs`):** iterates ingestable layers with **per-source failure isolation** — one flaky upstream logs a failure and returns; remaining layers still run. No single throw aborts the full pipeline.
+
+### 6. Make the contributor path real
 
 `layers/README.md` with copy-paste templates per kind. A new source is:
 
 ```
 layers/grace-mass/
   layer.mjs      # manifest
-  ingest.mjs     # optional, if kind requires
+  ingest.mjs     # optional; must use ingest/lib primitives if present
   schema.sql     # optional fragment
   globe.mjs      # buildGroup / update
 ```
 
 Zero edits to `run.mjs`, `handlers.mjs`, `earth.js`, or `index.html`.
 
-### 6. Wire platform concerns that depend on this
+### 7. Wire platform concerns that depend on this
 
 These roadmap items should build on registry layer IDs, not today's ad-hoc wiring:
 
@@ -130,7 +147,7 @@ These roadmap items should build on registry layer IDs, not today's ad-hoc wirin
 - **Regional/NRT imagery** — first new layer *on the contract*, not another one-off subsystem
 - **Future sources** (GRACE, GHCN, ENSO, webcam feeds) — template-fill exercises
 
-### 7. Fix blocking UX in parallel
+### 8. Fix blocking UX in parallel
 
 Zoom/pan focus bug and regional camera behavior are independent of the registry but block regional-layer UX. Do not gate the architecture work on them; do not defer them past the first `regional-imagery` layer.
 
@@ -157,19 +174,30 @@ Zoom/pan focus bug and regional camera behavior are independent of the registry 
 | 5 | **Behavioral parity** | Proof layers (hotspots, cyclones, radar) render and inspect identically to pre-refactor |
 | 6 | **Contributor docs** | `layers/README.md` enables a second developer to add a source without a guided tour |
 | 7 | **Shareable layer state** | URL/query restores visible layers by registry ID |
+| 8 | **Resilient ingest** | Shared `ingest/lib/` primitives; per-layer failure isolation; proof layer ingest uses helpers only |
 
 ---
 
 ## Sequencing
 
 ```
-P0  Contract spec + registry skeleton + hotspots proof (static-reference)
-P1  Ingested path proof (radar or cyclones)
+P0  Contract spec + registry skeleton + ingest/lib primitives + hotspots proof (static-reference)
+P1  Ingested path proof (radar or cyclones) — full stack via manifest, ingest on shared primitives
 P2  Registry drives UI (presets, toggles, legend, epistemics) — god-object freeze
 P3  home-region → regional-imagery kind; first NRT tile layer on contract
 P4  Migrate remaining layers incrementally; core timeline last
-∥  Zoom/pan focus fix (parallel, user-facing)
+∥  Zoom/pan focus fix (parallel, user-facing; land before or alongside P3)
 ```
+
+### Phase exit checks
+
+| Phase | Exit check |
+|-------|------------|
+| **P0** | Hotspots re-registered via registry only — zero manual edits to `run.mjs`, `handlers.mjs`, `earth.js`, `index.html`. `ingest/lib/` primitives exist and are documented in contract spec. |
+| **P1** | Proof ingested layer: ingest → schema → API → globe through manifest; behavioral parity with pre-migration; ingest uses `ingest/lib/` only. |
+| **P2** | No new `showX` on `EarthScene`; no new hand-authored checkbox; UI derived from registry. |
+| **P3** | `home-region` is `regional-imagery` kind; NRT tile layer addable without forking `home-region.js`. |
+| **P4** | Remaining layers migrated incrementally; EOP/ephemeris and space-weather chain last. |
 
 **This is an architecture investment, not a bug fix.** It pays off the moment a second contributor appears, the moment Phase G needs stable layer IDs, and the moment regional imagery becomes contributor-addable instead of another fork of `home-region.js`.
 
