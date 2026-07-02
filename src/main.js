@@ -697,17 +697,7 @@ function setupControls() {
 
   document.getElementById('fly-home-btn')?.addEventListener('click', () => {
     if (state.view !== 'geocentric') return;
-    const detailEl = document.getElementById('show-home-detail');
-    if (detailEl) detailEl.checked = true;
     geocentricScene?.flyToHome({ animate: true });
-  });
-
-  document.getElementById('show-home-detail')?.addEventListener('change', (e) => {
-    geocentricScene?.setHomeDetailVisible(e.target.checked);
-  });
-
-  document.getElementById('show-home-terrain')?.addEventListener('change', (e) => {
-    geocentricScene?.setHomeTerrainVisible(e.target.checked);
   });
 
 }
@@ -827,21 +817,12 @@ async function main() {
   setupControls();
   setupGlobePick();
   applyLayerPreset('atmosphere');
-  geocentricScene?.setHomeTerrainVisible(true);
   const homeCfg = geocentricScene?.getHomeRegionConfig?.();
-  const homeChip = document.getElementById('chip-home-detail');
-  if (homeChip && homeCfg) {
+  const homeBtn = document.getElementById('fly-home-btn');
+  if (homeBtn && homeCfg) {
     const mpp = homeCfg.metersPerPixel?.eastWest;
-    const res = mpp ? `~${mpp} m/px` : 'high-res';
-    homeChip.title = `${homeCfg.name} detail patch (${res}) — enable Detail or press Home; global shell dims only in Home focus`;
-    homeChip.dataset.baseTitle = homeChip.title;
-  }
-  const terrainChip = document.getElementById('chip-home-terrain');
-  if (terrainChip && homeCfg?.terrain) {
-    terrainChip.title =
-      homeCfg.terrain.about ??
-      'Cross-border LiDAR hillshade fused on the home detail patch';
-    terrainChip.dataset.baseTitle = terrainChip.title;
+    const res = mpp ? `~${mpp} m/px` : 'hi-res';
+    homeBtn.title = `Fly to ${homeCfg.name} — ${res} imagery with LiDAR hillshade on the regional patch; global shell dims while focused`;
   }
   updateLegend();
   requestAnimationFrame(animate);

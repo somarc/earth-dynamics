@@ -704,6 +704,7 @@ export class EarthScene {
     const center = this.homeRegionConfig?.center;
     if (!center || !this.controls) return false;
     this.setHomeDetailVisible(true);
+    this.setHomeTerrainVisible(!!this.homeRegionConfig?.terrain);
     this.setHomeFocusDim(true);
     const frame = frameCameraForLatLon(center.lat, center.lon, { altitude: 0.085 });
     if (animate) {

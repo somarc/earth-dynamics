@@ -14,26 +14,7 @@ export default {
 
   ui: {
     placement: 'globe-appearance',
-    toggles: [
-      {
-        id: 'home-detail',
-        toggleId: 'show-home-detail',
-        chipId: 'chip-home-detail',
-        chipLabel: 'Detail',
-        legacyKey: 'homeDetail',
-        title: 'High-resolution regional imagery where you live — global shell dims only when Home focus is active',
-        defaultVisible: false,
-      },
-      {
-        id: 'home-terrain',
-        toggleId: 'show-home-terrain',
-        chipId: 'chip-home-terrain',
-        chipLabel: 'Terrain',
-        legacyKey: 'homeTerrain',
-        title: 'Cross-border LiDAR hillshade — Canada HRDEM + US 3DEP fused at the border',
-        defaultVisible: true,
-      },
-    ],
+    actionId: 'fly-home-btn',
   },
 
   presets: {

@@ -45,8 +45,7 @@ export const PANEL_EPISTEMICS = {
 /** Layer epistemics derived from ui-registry + home-region overrides */
 export const LAYER_EPISTEMICS = {
   ...layerEpistemicMap(),
-  homeDetail: 'derived',
-  homeTerrain: 'derived',
+  homeRegion: 'derived',
   geomag: 'modeled',
   magpole: 'modeled',
 };

@@ -207,15 +207,7 @@ npm run start</pre>
             <span id="footer-tally" class="footer-tally" aria-live="polite"></span>
           </div>
           <div class="controls__cluster controls__cluster--globe" role="group" aria-label="Globe appearance">
-            <button type="button" id="fly-home-btn" class="preset-btn" title="Frame Eastern Ontario home patch (~75 m/px) and dim the rest of the world">Home</button>
-            <label class="layer-chip" id="chip-home-detail" title="High-resolution regional imagery where you live — global shell dims only when Home focus is active">
-              <input type="checkbox" id="show-home-detail" />
-              <span>Detail</span>
-            </label>
-            <label class="layer-chip" id="chip-home-terrain" title="Cross-border LiDAR hillshade — Canada HRDEM + US 3DEP fused at the border">
-              <input type="checkbox" id="show-home-terrain" checked />
-              <span>Terrain</span>
-            </label>
+            <button type="button" id="fly-home-btn" class="preset-btn" title="Fly to Eastern Ontario and show the hi-res regional patch (~75 m/px Blue Marble + LiDAR hillshade). Dims the global shell while focused.">Home</button>
             <label class="earth-opacity" for="earth-opacity" title="Solid continents with transparent oceans — depth-embedded quakes and geomag field lines show through water; drag to 100% for fully solid Earth">
               <span class="controls__cluster-label">Globe</span>
               <input type="range" id="earth-opacity" class="earth-opacity__range" min="12" max="100" value="100" aria-valuemin="12" aria-valuemax="100" aria-valuenow="100" />
