@@ -54,6 +54,8 @@ globe: {
 
 ### Ingest interface
 
+Node-only ingest lives in `layers/<id>/ingest.mjs` (export `ingest`) — **not** imported from `layer.mjs`, so the browser bundle stays clean. `registry-runner.mjs` discovers ingest files by convention.
+
 Ingested layers **must** use `ingest/lib/` primitives:
 
 - `fetchWithRetry` — HTTP with backoff + Retry-After

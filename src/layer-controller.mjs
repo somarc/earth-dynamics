@@ -39,6 +39,18 @@ export class LayerController {
   setVisible(visible) {
     this.visible = visible;
     this.group.visible = visible;
+    if (this.layer.globe?.dynamic && this.frameData != null) {
+      this.refreshFrameData(this.frameData, this.viewDate, this.lastCtx);
+    }
+  }
+
+  refreshFrameData(data, viewDate, ctx = {}) {
+    this.frameData = data;
+    this.viewDate = viewDate;
+    this.lastCtx = ctx;
+    const updateFn = this.layer.globe?.update;
+    if (!updateFn) return;
+    updateFn(this.group, data, viewDate, { ...ctx, visible: this.visible });
   }
 
   update(frame, date, ctx) {

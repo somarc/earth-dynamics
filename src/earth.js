@@ -43,7 +43,6 @@ import { initGlobeLayers } from './layer-controller.mjs';
 import { GLOBE_LAYERS } from './layers/registry.mjs';
 import { classifyPick } from './event-inspect.js';
 import { createAtmosphereShell, updateAtmosphereSun } from './atmosphere.js';
-import { buildCycloneGroup } from './cyclones.js';
 import { buildWeatherGlyphGroup } from './weather-globe.js';
 import { loadRadarSites, buildRadarSiteGroup } from './radar-globe.js';
 import {
@@ -67,7 +66,6 @@ export class EarthScene {
     this.showPlates = true;
     this.showPlateMotion = true;
     this.layerControllers = new Map();
-    this.showCyclones = true;
     this.showWeather = true;
     this.showRadar = true;
     this.showHomeDetail = false;
@@ -195,8 +193,6 @@ export class EarthScene {
     this.surfaceGroup.add(this.plateGroup);
     this.plateMotionGroup = new THREE.Group();
     this.surfaceGroup.add(this.plateMotionGroup);
-    this.cycloneGroup = new THREE.Group();
-    this.surfaceGroup.add(this.cycloneGroup);
     this.weatherGroup = new THREE.Group();
     this.surfaceGroup.add(this.weatherGroup);
     this.radarGroup = new THREE.Group();
@@ -646,8 +642,15 @@ export class EarthScene {
   }
 
   setCyclonesVisible(visible) {
-    this.showCyclones = visible;
-    if (this.cycloneGroup) this.cycloneGroup.visible = visible;
+    this.layerControllers.get('cyclones')?.setVisible(visible);
+  }
+
+  get showCyclones() {
+    return this.layerControllers.get('cyclones')?.visible ?? true;
+  }
+
+  get cycloneGroup() {
+    return this.layerControllers.get('cyclones')?.group ?? null;
   }
 
   setWeatherVisible(visible) {
@@ -729,10 +732,7 @@ export class EarthScene {
   }
 
   setCyclones(storms, viewDate = this.viewDate) {
-    this.cycloneGroup.clear();
-    if (!this.showCyclones) return;
-    this.cycloneGroup.add(buildCycloneGroup(storms, viewDate));
-    this.cycloneGroup.visible = true;
+    this.layerControllers.get('cyclones')?.refreshFrameData(storms, viewDate, { EARTH_RADIUS });
   }
 
   setWeatherGlyphs(readings) {

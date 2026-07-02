@@ -8,7 +8,6 @@ import { ingestOmni } from './sources/omni.mjs';
 import { ingestEarthquakes } from './sources/earthquakes.mjs';
 import { ingestAam } from './sources/aam.mjs';
 import { ingestEphemeris } from './sources/ephemeris.mjs';
-import { ingestIbtracs } from './sources/ibtracs.mjs';
 import { ingestGeomag } from './sources/geomag.mjs';
 import { ingestHome } from './sources/home.mjs';
 import { runRegistryIngest } from '../layers/registry-runner.mjs';
@@ -79,11 +78,6 @@ async function main() {
     await ingestEphemeris({ force });
   }
 
-  if (only === 'ibtracs') {
-    console.log('NOAA IBTrACS tropical cyclones…');
-    await ingestIbtracs({ force });
-  }
-
   if (!only || only === 'home') {
     console.log('9. Home region assets (imagery + terrain blobs)…');
     await ingestHome({ force });
@@ -91,7 +85,7 @@ async function main() {
 
   const registryOnly = only && ![
     'json', 'weather', 'storms', 'solar', 'space-weather', 'omni',
-    'earthquakes', 'aam', 'geomag', 'ephemeris', 'ibtracs', 'home',
+    'earthquakes', 'aam', 'geomag', 'ephemeris', 'home',
   ].includes(only);
 
   if (!only || registryOnly) {

@@ -17,7 +17,7 @@ export async function runLayerIngest(layerId, fn, { force = false, skipIfFresh =
     const rowCount = result?.rowCount ?? result?.rows ?? 0;
     const notes = result?.notes ?? '';
     if (result?.logged !== false) {
-      logIngest(layerId, rowCount, notes);
+      logIngest(result?.logKey ?? layerId, rowCount, notes);
     }
     console.log(`  ${label}: ok`);
     return { status: 'ok', layerId, ...result };
