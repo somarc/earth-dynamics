@@ -1,6 +1,7 @@
 node_modules/
 scripts/.venv/
 dist/
+dist-widget/
 .DS_Store
 data/*.db
 data/*.db-*

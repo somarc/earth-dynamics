@@ -1,6 +1,7 @@
 /** Epistemic classes for Wobblescope trust layer (Phase F). */
 
 import { layerEpistemicMap } from './layers/ui-registry.mjs';
+import { $id, $ } from './dom-scope.js';
 
 export const EPISTEMIC = {
   measured: {
@@ -99,7 +100,7 @@ export function renderPanelEpistemics() {
   ];
 
   for (const { selector, key, parent } of panels) {
-    const el = document.querySelector(selector);
+    const el = $(selector);
     if (!el) continue;
     const host = parent ? el.closest('.panel') : el;
     const h2 = host?.querySelector('h2');
@@ -108,7 +109,7 @@ export function renderPanelEpistemics() {
     if (badges) h2.insertAdjacentHTML('beforeend', badges);
   }
 
-  const orbitalPanel = document.querySelector('.panel--orbital-split');
+  const orbitalPanel = $('.panel--orbital-split');
   if (orbitalPanel) {
     const panes = orbitalPanel.querySelectorAll('.orbital-split__pane');
     const keys = ['ecliptic', 'helical'];
@@ -128,7 +129,7 @@ export function renderPanelEpistemics() {
     }
   }
 
-  const lunarPanel = document.getElementById('orbital-metrics')?.closest('.panel');
+  const lunarPanel = $id('orbital-metrics')?.closest('.panel');
   const lunarH2 = lunarPanel?.querySelector('h2');
   if (lunarH2 && !lunarH2.querySelector('.epi-badge-row')) {
     lunarH2.insertAdjacentHTML('beforeend', epistemicBadgeRow(PANEL_EPISTEMICS.lunar));
@@ -235,7 +236,7 @@ export function buildAsOfChips(requestedDate, asOf, coverage) {
 }
 
 export function renderAsOfChips(requestedDate, asOf, coverage) {
-  const el = document.getElementById('asof-chips');
+  const el = $id('asof-chips');
   if (!el) return;
   const chips = buildAsOfChips(requestedDate, asOf, coverage);
   if (!chips.length) {
@@ -253,7 +254,7 @@ export function renderAsOfChips(requestedDate, asOf, coverage) {
 }
 
 export function renderStalenessChips(meta) {
-  const el = document.getElementById('staleness-chips');
+  const el = $id('staleness-chips');
   if (!el) return;
   const chips = buildStalenessChips(meta);
   if (!chips.length) {
@@ -271,7 +272,7 @@ export function renderStalenessChips(meta) {
 }
 
 export function renderCitationsList(meta) {
-  const el = document.getElementById('citations');
+  const el = $id('citations');
   if (!el) return;
   const sources = meta?.sources || {};
   const ingested = new Map((meta.ingested || []).map((r) => [r.source, r]));

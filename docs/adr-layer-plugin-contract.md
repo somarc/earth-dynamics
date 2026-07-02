@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="/assets/weatherly-mascot.jpg" alt="Weatherly mascot" width="56" height="56" />
+</p>
+
 # ADR: Layer Plugin Contract
 
 **Status:** accepted (P0 implementation)  

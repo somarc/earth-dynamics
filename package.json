@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "node ./node_modules/vite/bin/vite.js",
     "build": "node ./node_modules/vite/bin/vite.js build",
+    "build:widget": "node ./node_modules/vite/bin/vite.js build --config vite.config.widget.js",
     "preview": "node ./node_modules/vite/bin/vite.js preview",
     "fetch-data": "node scripts/fetch-data.mjs",
     "fetch-heliocentric": "node scripts/fetch-heliocentric.mjs",
@@ -30,7 +31,10 @@
     "geomagnetism": "^0.2.0",
     "geopack-ts": "^0.1.0",
     "three": "^0.175.0",
-    "@imagemagick/magick-wasm": "0.0.41"
+    "@imagemagick/magick-wasm": "0.0.41",
+    "@somarc/da-cli": "^0.4.5",
+    "esbuild-wasm": "^0.28.1",
+    "marked": "^18.0.5"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

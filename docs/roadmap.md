@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="/assets/weatherly-mascot.jpg" alt="Weatherly mascot" width="56" height="56" />
+</p>
+
 # Wobblescope — Product Roadmap
 
 Prioritized delivery plan for a **time-synchronized Earth-system correlation instrument**.  

@@ -1,5 +1,6 @@
 import { allLayerUi } from './ui-registry.mjs';
 import { EPISTEMIC } from '../epistemics.js';
+import { $id, $ } from '../dom-scope.js';
 
 function esc(value) {
   return String(value ?? '')
@@ -26,7 +27,7 @@ export function renderLayerChips() {
   }
 
   for (const [group, items] of byGroup) {
-    const mount = document.querySelector(`[data-layer-chips="${group}"]`);
+    const mount = $(`[data-layer-chips="${group}"]`);
     if (!mount) continue;
     mount.innerHTML = items
       .map((layer) => {
@@ -51,7 +52,7 @@ export function wireLayerToggles(handlers) {
   } = handlers;
 
   for (const layer of allLayerUi()) {
-    const el = document.getElementById(layer.toggleId);
+    const el = $id(layer.toggleId);
     if (!el) continue;
 
     el.addEventListener('change', (e) => {
@@ -87,7 +88,7 @@ export function wireLayerToggles(handlers) {
 
 export function applyPresetToScenes(preset, geocentricScene, heliocentricScene) {
   const set = (id, checked) => {
-    const el = document.getElementById(id);
+    const el = $id(id);
     if (el) el.checked = checked;
   };
 
@@ -105,7 +106,7 @@ export function applyPresetToScenes(preset, geocentricScene, heliocentricScene) 
 
 export function applyEpistemicTitles() {
   for (const layer of allLayerUi()) {
-    const input = document.getElementById(layer.toggleId);
+    const input = $id(layer.toggleId);
     const meta = EPISTEMIC[layer.epistemic];
     if (!input || !meta) continue;
     const label = input.closest('label');

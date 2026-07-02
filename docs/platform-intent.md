@@ -1,8 +1,12 @@
+<p align="center">
+  <img src="/assets/weatherly-mascot.jpg" alt="Weatherly mascot" width="56" height="56" />
+</p>
+
 # Wobblescope — Platform Intent
 
 **Status:** active intent (architecture investment)  
 **Supersedes:** ad-hoc per-layer wiring as the default extension model  
-**Related:** [`architecture.md`](architecture.md) · [`roadmap.md`](roadmap.md)
+**Related:** [`architecture.md`](architecture.md) · [`roadmap.md`](roadmap.md) · [`wobblescope-widget-integration-spec.md`](wobblescope-widget-integration-spec.md)
 
 ---
 

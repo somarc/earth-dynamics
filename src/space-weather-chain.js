@@ -1,3 +1,5 @@
+import { $id } from './dom-scope.js';
+
 export function evaluateSpaceWeatherChain(frame, { ovationMode = false } = {}) {
   const g = frame?.geomagnetic;
   const events = frame?.spaceWeather || [];
@@ -32,10 +34,10 @@ export function evaluateSpaceWeatherChain(frame, { ovationMode = false } = {}) {
 }
 
 export function applySpaceWeatherChainHighlight(chain) {
-  const panel = document.getElementById('space-weather-panel');
-  const kp = document.getElementById('kp-chart');
-  const dst = document.getElementById('dst-chart');
-  const metrics = document.getElementById('space-weather-metrics');
+  const panel = $id('space-weather-panel');
+  const kp = $id('kp-chart');
+  const dst = $id('dst-chart');
+  const metrics = $id('space-weather-metrics');
 
   panel?.classList.toggle('panel--chain-active', chain.active);
   kp?.classList.toggle('chart--chain-step', chain.kpStorm || chain.aurora);

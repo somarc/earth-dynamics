@@ -31,6 +31,7 @@ import {
 import { allLayerUi } from './layers/ui-registry.mjs';
 import { createTimelineSlider } from './timeline-slider.js';
 import { createViewTransition, updateViewTransition } from './view-transition.js';
+import { setDomRoot, $id, $, $$ } from './dom-scope.js';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -69,8 +70,8 @@ function applyEarthOpacity(opacity, { persist = true } = {}) {
   state.earthOpacity = clamped;
   geocentricScene?.setEarthOpacity(clamped);
 
-  const slider = document.getElementById('earth-opacity');
-  const label = document.getElementById('earth-opacity-label');
+  const slider = $id('earth-opacity');
+  const label = $id('earth-opacity-label');
   if (slider) {
     slider.value = String(Math.round(clamped * 100));
     slider.setAttribute('aria-valuenow', String(Math.round(clamped * 100)));
@@ -119,7 +120,7 @@ function playbackMetaSuffix() {
 
 function setDiurnalMode(mode) {
   state.diurnalMode = mode === 'free' ? 'free' : 'sync';
-  document.querySelectorAll('[data-diurnal]').forEach((btn) => {
+  $$('[data-diurnal]').forEach((btn) => {
     btn.classList.toggle('segmented__btn--active', btn.dataset.diurnal === state.diurnalMode);
   });
   geocentricScene?.setDiurnalMode(state.diurnalMode);
@@ -149,11 +150,11 @@ function formatGlobeTally(counts) {
 }
 
 function updateEventsPanelMeta(date, counts = null) {
-  const eventsTitle = document.getElementById('events-panel-title');
-  const eventsDesc = document.getElementById('events-panel-desc');
-  const recentEl = document.getElementById('recent-only');
-  const recentLabel = document.getElementById('recent-only-label');
-  const filterLabel = document.querySelector('.filter-label');
+  const eventsTitle = $id('events-panel-title');
+  const eventsDesc = $id('events-panel-desc');
+  const recentEl = $id('recent-only');
+  const recentLabel = $id('recent-only-label');
+  const filterLabel = $('.filter-label');
 
   if (recentEl) recentEl.checked = state.recentOnly;
   filterLabel?.classList.toggle('filter-label--active', state.recentOnly);
@@ -163,7 +164,7 @@ function updateEventsPanelMeta(date, counts = null) {
     recentLabel.textContent = state.recentOnly ? '7d' : '±7d';
   }
 
-  const footerTally = document.getElementById('footer-tally');
+  const footerTally = $id('footer-tally');
   if (footerTally) {
     footerTally.textContent = tally || '';
     footerTally.title = tally || 'Globe event counts';
@@ -191,7 +192,7 @@ function visibleEarthquakes(quakes) {
 
 function updateLayerChipLabels(counts = {}, { geomagContext = false, magnetometers = 0 } = {}) {
   const setChip = (chipId, label, count) => {
-    const chip = document.getElementById(chipId);
+    const chip = $id(chipId);
     if (!chip) return;
     if (!chip.dataset.baseTitle) chip.dataset.baseTitle = chip.title;
     const span = chip.querySelector('span');
@@ -213,10 +214,10 @@ function updateLayerChipLabels(counts = {}, { geomagContext = false, magnetomete
     setChip(layer.ui.chipId, layer.ui.chipLabel, n);
   }
 
-  const geomagChip = document.getElementById('chip-geomag');
+  const geomagChip = $id('chip-geomag');
   if (geomagChip) {
     const span = geomagChip.querySelector('span');
-    const on = document.getElementById('show-field-lines')?.checked;
+    const on = $id('show-field-lines')?.checked;
     if (span) {
       if (on && geomagContext && magnetometers > 0) {
         span.textContent = `Geomag (${magnetometers})`;
@@ -268,14 +269,14 @@ function renderCitations() {
 }
 
 function updateLegend() {
-  const legend = document.getElementById('legend');
+  const legend = $id('legend');
   if (!legend) return;
   legend.innerHTML = renderLegendHtml(state.view, state.quakeMinMag);
 }
 
 function applyViewCanvasVisibility(now = performance.now()) {
-  const geoCanvas = document.getElementById('geo-canvas');
-  const helioCanvas = document.getElementById('helio-canvas');
+  const geoCanvas = $id('geo-canvas');
+  const helioCanvas = $id('helio-canvas');
 
   if (!viewTransition) {
     geoCanvas.classList.toggle('scene-canvas--hidden', state.view !== 'geocentric');
@@ -311,14 +312,14 @@ function setView(view) {
   viewTransition = createViewTransition(state.view, view);
   state.view = view;
 
-  document.querySelectorAll('.view-btn').forEach((btn) => {
+  $$('.view-btn').forEach((btn) => {
     btn.classList.toggle('view-btn--active', btn.dataset.view === view);
   });
-  const geoMotionGroup = document.getElementById('geo-motion-group');
+  const geoMotionGroup = $id('geo-motion-group');
   if (geoMotionGroup) geoMotionGroup.style.display = view === 'geocentric' ? '' : 'none';
-  document.getElementById('show-moon-label').style.display =
+  $id('show-moon-label').style.display =
     view === 'heliocentric' ? '' : 'none';
-  document.getElementById('show-cme-label').style.display =
+  $id('show-cme-label').style.display =
     view === 'heliocentric' ? '' : 'none';
   geocentricScene.setLabelsVisible?.(false);
   heliocentricScene.setLabelsVisible(view === 'heliocentric');
@@ -363,7 +364,7 @@ async function updateUI() {
   state.cachedFrame = frame;
   state.cachedDate = date;
 
-  document.getElementById('date-display').textContent = formatDate(date);
+  $id('date-display').textContent = formatDate(date);
   renderAsOfChips(frame.requestedDate || date, frame.asOf, frame.coverage);
   timelineSlider?.update(state.currentIndex);
 
@@ -404,17 +405,17 @@ async function updateUI() {
 
   try {
     const chartIndex = eopWindow.length - 1;
-    drawPolhode(document.getElementById('polhode-chart'), eopWindow, chartIndex);
-    drawLodChart(document.getElementById('lod-chart'), eopWindow, chartIndex, {
+    drawPolhode($id('polhode-chart'), eopWindow, chartIndex);
+    drawLodChart($id('lod-chart'), eopWindow, chartIndex, {
       aamWindow: frame.aamWindow,
     });
 
     if (ephemerisForChart) {
-      drawEclipticChart(document.getElementById('ecliptic-chart'), ephemerisForChart, date);
+      drawEclipticChart($id('ecliptic-chart'), ephemerisForChart, date);
       const helicalSource = frame.ephemerisOrbit || ephemerisForChart;
       const helicalDays = frame.ephemerisOrbit ? 365 : 90;
       drawHelicalChart(
-        document.getElementById('helical-chart'),
+        $id('helical-chart'),
         helicalSource,
         date,
         helicalDays,
@@ -422,23 +423,23 @@ async function updateUI() {
     }
     if (ephemerisDay) {
       renderOrbitalMetrics(
-        document.getElementById('orbital-metrics'),
+        $id('orbital-metrics'),
         { byDate: { [date]: ephemerisDay } },
         date
       );
     }
     drawKpChart(
-      document.getElementById('kp-chart'),
+      $id('kp-chart'),
       frame.geomagneticWindow || [],
       date
     );
     drawDstChart(
-      document.getElementById('dst-chart'),
+      $id('dst-chart'),
       frame.geomagneticWindow || [],
       date
     );
     renderSpaceWeatherMetrics(
-      document.getElementById('space-weather-metrics'),
+      $id('space-weather-metrics'),
       frame.geomagnetic,
       frame.spaceWeather,
       { ovationLat, ovationMode }
@@ -450,7 +451,7 @@ async function updateUI() {
     console.error('Chart render error:', err);
   }
 
-  const list = document.getElementById('event-list');
+  const list = $id('event-list');
   const items = [];
 
   if (frame.geomagnetic?.kpMax != null) {
@@ -540,7 +541,7 @@ function applyLayerPreset(presetId) {
 
   applyPresetToScenes(preset, geocentricScene, heliocentricScene);
 
-  document.querySelectorAll('.preset-btn').forEach((btn) => {
+  $$('.preset-btn').forEach((btn) => {
     btn.classList.toggle('preset-btn--active', btn.dataset.preset === presetId);
   });
 
@@ -548,24 +549,24 @@ function applyLayerPreset(presetId) {
 }
 
 function setupControls() {
-  const slider = document.getElementById('time-slider');
-  const playBtn = document.getElementById('play-btn');
-  const speedSelect = document.getElementById('speed-select');
-  const dayLengthSelect = document.getElementById('day-length-select');
+  const slider = $id('time-slider');
+  const playBtn = $id('play-btn');
+  const speedSelect = $id('speed-select');
+  const dayLengthSelect = $id('day-length-select');
 
   slider.min = 0;
   slider.max = state.dates.length - 1;
   slider.setAttribute('aria-valuemax', String(state.dates.length - 1));
-  document.getElementById('start-label').textContent = state.dates[0]?.slice(0, 4) || '1962';
-  document.getElementById('end-label').textContent = state.dates.at(-1)?.slice(0, 4) || '2026';
+  $id('start-label').textContent = state.dates[0]?.slice(0, 4) || '1962';
+  $id('end-label').textContent = state.dates.at(-1)?.slice(0, 4) || '2026';
 
   timelineSlider = createTimelineSlider({
     dates: state.dates,
     slider,
-    ticksEl: document.getElementById('timeline-ticks'),
-    fillEl: document.getElementById('timeline-fill'),
-    dateEl: document.getElementById('scrub-date'),
-    metaEl: document.getElementById('scrub-meta'),
+    ticksEl: $id('timeline-ticks'),
+    fillEl: $id('timeline-fill'),
+    dateEl: $id('scrub-date'),
+    metaEl: $id('scrub-meta'),
   });
   timelineSlider.setMetaSuffix(playbackMetaSuffix);
   timelineSlider.update(state.currentIndex);
@@ -597,15 +598,15 @@ function setupControls() {
     });
   }
 
-  document.querySelectorAll('.view-btn').forEach((btn) => {
+  $$('.view-btn').forEach((btn) => {
     btn.addEventListener('click', () => setView(btn.dataset.view));
   });
 
-  document.querySelectorAll('.preset-btn').forEach((btn) => {
+  $$('.preset-btn').forEach((btn) => {
     btn.addEventListener('click', () => applyLayerPreset(btn.dataset.preset));
   });
 
-  const recentOnlyEl = document.getElementById('recent-only');
+  const recentOnlyEl = $id('recent-only');
   if (recentOnlyEl) {
     recentOnlyEl.checked = state.recentOnly;
     recentOnlyEl.addEventListener('change', (e) => {
@@ -615,7 +616,7 @@ function setupControls() {
     });
   }
 
-  const quakeMagEl = document.getElementById('quake-min-mag');
+  const quakeMagEl = $id('quake-min-mag');
   if (quakeMagEl) {
     quakeMagEl.value = String(state.quakeMinMag);
     quakeMagEl.addEventListener('change', (e) => {
@@ -666,14 +667,14 @@ function setupControls() {
     },
   });
 
-  document.querySelectorAll('[data-diurnal]').forEach((btn) => {
+  $$('[data-diurnal]').forEach((btn) => {
     btn.addEventListener('click', () => {
       setDiurnalMode(btn.dataset.diurnal);
       updateUI();
     });
   });
   setDiurnalMode(state.diurnalMode);
-  const earthOpacityEl = document.getElementById('earth-opacity');
+  const earthOpacityEl = $id('earth-opacity');
   if (earthOpacityEl) {
     let savedOpacity = 1;
     try {
@@ -695,7 +696,7 @@ function setupControls() {
     });
   }
 
-  document.getElementById('fly-home-btn')?.addEventListener('click', () => {
+  $id('fly-home-btn')?.addEventListener('click', () => {
     if (state.view !== 'geocentric') return;
     geocentricScene?.flyToHome({ animate: true });
   });
@@ -718,7 +719,7 @@ function animate(timestamp) {
         updateUI();
       } else {
         state.playing = false;
-        document.getElementById('play-btn').textContent = '▶';
+        $id('play-btn').textContent = '▶';
       }
     }
   }
@@ -742,9 +743,9 @@ function animate(timestamp) {
 }
 
 function showBootstrapGate(catalog, err) {
-  const gate = document.getElementById('bootstrap-gate');
-  const desc = document.getElementById('bootstrap-desc');
-  const app = document.getElementById('app');
+  const gate = $id('bootstrap-gate');
+  const desc = $id('bootstrap-desc');
+  const app = $id('app');
   if (!gate) return;
 
   if (catalog?.mode === 'api') {
@@ -760,17 +761,26 @@ function showBootstrapGate(catalog, err) {
 
   gate.classList.remove('bootstrap-gate--hidden');
   app?.classList.add('app--gated');
-  document.getElementById('date-display').textContent = 'No data';
+  $id('date-display').textContent = 'No data';
 }
 
 function setupBootstrapRetry() {
-  const retryBtn = document.getElementById('bootstrap-retry');
+  const retryBtn = $id('bootstrap-retry');
   if (!retryBtn || retryBtn.dataset.bound) return;
   retryBtn.dataset.bound = '1';
   retryBtn.addEventListener('click', () => window.location.reload());
 }
 
-async function main() {
+function seedStateFromDataset(root) {
+  const { date, view } = root?.dataset ?? {};
+  if (view === 'heliocentric' || view === 'geocentric') state.view = view;
+  if (date) state.initialDate = date;
+}
+
+export default async function mountWobblescope(root) {
+  setDomRoot(root);
+  seedStateFromDataset(root);
+
   try {
     state.catalog = await loadCatalog();
     state.dates = state.catalog.dates || [];
@@ -787,12 +797,18 @@ async function main() {
     return;
   }
 
-  state.currentIndex = Math.max(0, state.dates.length - 1);
+  if (state.initialDate) {
+    const idx = state.dates.indexOf(state.initialDate);
+    if (idx >= 0) state.currentIndex = idx;
+    delete state.initialDate;
+  } else {
+    state.currentIndex = Math.max(0, state.dates.length - 1);
+  }
 
-  geocentricScene = await new EarthScene(document.getElementById('geo-canvas')).ready;
-  heliocentricScene = await new HeliocentricScene(document.getElementById('helio-canvas')).ready;
+  geocentricScene = await new EarthScene($id('geo-canvas')).ready;
+  heliocentricScene = await new HeliocentricScene($id('helio-canvas')).ready;
 
-  const modeBadge = document.getElementById('mode-badge');
+  const modeBadge = $id('mode-badge');
   if (modeBadge) {
     modeBadge.textContent = state.catalog.mode === 'api' ? 'API' : 'JSON';
     modeBadge.title = state.catalog.mode === 'api' ? 'SQLite API backend' : 'Static JSON fallback';
@@ -800,7 +816,7 @@ async function main() {
   }
 
   renderEventInspect(
-    document.getElementById('event-inspect'),
+    $id('event-inspect'),
     null,
     getGlobeInspectContext(geocentricScene),
   );
@@ -811,14 +827,14 @@ async function main() {
   renderLayerChips();
   applyEpistemicTitles();
   bindLegendHelp(
-    document.getElementById('legend'),
-    document.getElementById('legend-help'),
+    $id('legend'),
+    $id('legend-help'),
   );
   setupControls();
   setupGlobePick();
   applyLayerPreset('atmosphere');
   const homeCfg = geocentricScene?.getHomeRegionConfig?.();
-  const homeBtn = document.getElementById('fly-home-btn');
+  const homeBtn = $id('fly-home-btn');
   if (homeBtn && homeCfg) {
     const mpp = homeCfg.metersPerPixel?.eastWest;
     const res = mpp ? `~${mpp} m/px` : 'hi-res';
@@ -829,8 +845,8 @@ async function main() {
 }
 
 function setupGlobePick() {
-  const canvas = document.getElementById('geo-canvas');
-  const tooltip = document.getElementById('plate-tooltip');
+  const canvas = $id('geo-canvas');
+  const tooltip = $id('plate-tooltip');
   canvas.classList.add('scene-canvas--pickable');
 
   const inspectContext = () => getGlobeInspectContext(geocentricScene);
@@ -838,7 +854,7 @@ function setupGlobePick() {
   canvas.addEventListener('click', (e) => {
     if (state.view !== 'geocentric') return;
     const picked = geocentricScene.pickAt(e.clientX, e.clientY);
-    renderEventInspect(document.getElementById('event-inspect'), picked, inspectContext());
+    renderEventInspect($id('event-inspect'), picked, inspectContext());
   });
 
   canvas.addEventListener('mousemove', (e) => {
@@ -866,4 +882,7 @@ function setupGlobePick() {
   });
 }
 
-main();
+if (import.meta.env.VITE_WIDGET !== 'true') {
+  setDomRoot(document.body);
+  mountWobblescope(document.body);
+}
