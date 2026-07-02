@@ -24,8 +24,7 @@
   padding: 0;
 }
 
-.weatherly,
-.weatherly #app {
+.weatherly {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -34,7 +33,16 @@
   font-family: var(--font-sans);
 }
 
+/* EDS widget block — viewport band when mount root is not <body> */
+div.weatherly {
+  min-height: 100dvh;
+  max-height: 100dvh;
+}
+
 .weatherly #app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr auto;
 }
