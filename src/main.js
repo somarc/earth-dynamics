@@ -4,6 +4,7 @@ import { drawPolhode, drawLodChart } from './charts.js';
 import { drawEclipticChart, renderOrbitalMetrics } from './ephemeris.js';
 import { drawHelicalChart } from './helical-chart.js';
 import { drawKpChart, drawDstChart, renderSpaceWeatherMetrics } from './space-weather.js';
+import { drawOceanSstChart, renderOceanSstMetrics } from './ocean-sst.js';
 import {
   applySpaceWeatherChainHighlight,
   evaluateSpaceWeatherChain,
@@ -446,6 +447,16 @@ async function updateUI() {
     );
     applySpaceWeatherChainHighlight(
       evaluateSpaceWeatherChain(frame, { ovationMode }),
+    );
+    drawOceanSstChart(
+      $id('ocean-sst-chart'),
+      frame.oceanWindow || { monthly: [], oni: [] },
+      date,
+    );
+    renderOceanSstMetrics(
+      $id('ocean-sst-metrics'),
+      frame.ocean,
+      { oni: frame.oceanWindow?.oni?.at(-1) },
     );
   } catch (err) {
     console.error('Chart render error:', err);

@@ -72,6 +72,12 @@ async function main() {
     await ingestGeomag({ force });
   }
 
+  if (only === 'ocean-sst' || only === 'ocean' || only === 'enso' || only === 'oni') {
+    console.log('NOAA CPC ocean SST & ENSO indices…');
+    const { ingest } = await import('../layers/ocean-sst/ingest.mjs');
+    await ingest({ force });
+  }
+
   if (only === 'ephemeris') {
     console.log('JPL Horizons ephemeris (incremental)…');
     await ingestEphemeris({ force });
@@ -79,7 +85,7 @@ async function main() {
 
   const registryOnly = only && ![
     'json', 'weather', 'storms', 'solar', 'space-weather', 'omni',
-    'earthquakes', 'aam', 'geomag', 'ephemeris',
+    'earthquakes', 'aam', 'geomag', 'ephemeris', 'ocean-sst', 'ocean', 'enso', 'oni',
   ].includes(only);
 
   if (!only || registryOnly) {

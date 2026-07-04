@@ -69,13 +69,14 @@ function ephWindowToChart(ephWindow, selectedDate, ephemerisDay) {
 export async function loadFrame(catalog, date, currentIndex, { recentOnly = false } = {}) {
   if (catalog.mode === 'api') {
     const dayPath = recentOnly ? `/api/day/${date}?past=7` : `/api/day/${date}`;
-    const [day, eopWindow, ephWindow, ephOrbit, geoWindow, aamWindow] = await Promise.all([
+    const [day, eopWindow, ephWindow, ephOrbit, geoWindow, aamWindow, oceanWindow] = await Promise.all([
       api(dayPath),
       api(`/api/eop/window?end=${date}&days=400`),
       api(`/api/ephemeris/window?end=${date}&days=28`),
       api(`/api/ephemeris/window?end=${date}&days=365`),
       api(`/api/geomagnetic/window?end=${date}&days=28`).catch(() => []),
       api(`/api/aam/window?end=${date}&days=400`).catch(() => []),
+      api(`/api/ocean/window?end=${date}&months=180`).catch(() => ({ monthly: [], oni: [] })),
     ]);
     return {
       record: day.eop,
@@ -94,6 +95,8 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
       geomagnetic: day.geomagnetic,
       spaceWeather: day.spaceWeather || [],
       geomagneticWindow: geoWindow,
+      ocean: day.ocean || null,
+      oceanWindow: oceanWindow,
       magnetometers: day.magnetometers || [],
       magneticPoles: day.magneticPoles || null,
       asOf: day.asOf || null,

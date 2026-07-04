@@ -1,7 +1,8 @@
 import cyclonesLayer from './cyclones/layer.mjs';
+import oceanSstLayer from './ocean-sst/layer.mjs';
 
 /** Layers that contribute slices to /api/day/:date — add manifests here as they migrate. */
-const SNAPSHOT_LAYERS = [cyclonesLayer];
+const SNAPSHOT_LAYERS = [cyclonesLayer, oceanSstLayer];
 
 export function composeLayerSnapshots(db, date, opts = {}) {
   const out = {};

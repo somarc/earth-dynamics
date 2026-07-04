@@ -171,6 +171,27 @@ CREATE TABLE IF NOT EXISTS aam_daily (
 );
 CREATE INDEX IF NOT EXISTS idx_aam_date ON aam_daily(date);
 
+CREATE TABLE IF NOT EXISTS ocean_sst_monthly (
+  ym TEXT PRIMARY KEY,
+  nino12_anom_c REAL,
+  nino3_anom_c REAL,
+  nino34_anom_c REAL,
+  nino4_anom_c REAL,
+  global_tropics_anom_c REAL,
+  north_atlantic_anom_c REAL,
+  south_atlantic_anom_c REAL
+);
+CREATE INDEX IF NOT EXISTS idx_ocean_sst_ym ON ocean_sst_monthly(ym);
+
+CREATE TABLE IF NOT EXISTS ocean_enso_oni (
+  season TEXT NOT NULL,
+  year INTEGER NOT NULL,
+  sst_total_c REAL,
+  anomaly_c REAL NOT NULL,
+  PRIMARY KEY (season, year)
+);
+CREATE INDEX IF NOT EXISTS idx_ocean_oni_year ON ocean_enso_oni(year);
+
 CREATE TABLE IF NOT EXISTS cyclone_storms (
   sid TEXT PRIMARY KEY,
   name TEXT,

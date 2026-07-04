@@ -231,6 +231,14 @@ export const SOURCES = {
     epistemic: 'measured',
     ingestKeys: ['ibtracs'],
   },
+  noaaOceanSst: {
+    name: 'NOAA CPC Ocean SST & ENSO Indices',
+    org: 'NOAA Climate Prediction Center',
+    citation: 'ERSSTv5 Niño region anomalies, OISST global-tropics index, Oceanic Niño Index (ONI)',
+    link: 'https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/',
+    epistemic: 'measured',
+    ingestKeys: ['ocean-sst'],
+  },
   noaaRadarSites: {
     name: 'NOAA NWS Radar Station Registry',
     org: 'NOAA National Weather Service',

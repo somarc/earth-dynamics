@@ -1,6 +1,7 @@
 import { homeRoutes } from './home-region/routes.mjs';
+import { oceanRoutes } from './ocean-sst/routes.mjs';
 
-export const LAYER_ROUTES = homeRoutes();
+export const LAYER_ROUTES = [...homeRoutes(), ...oceanRoutes()];
 
 export function matchLayerRoute(url) {
   const path = new URL(url, 'http://local').pathname;
