@@ -213,4 +213,22 @@ P4  Migrate remaining layers incrementally; core timeline last
 
 ---
 
-*Authored: 2026-07-01 — platform transition intent. Implementation spec (manifest schema, migration checklist) follows as ADR.*
+## Experience platform (presentation layer)
+
+The layer registry answers **how to add a source**. The experience platform answers **how a user enters the instrument**.
+
+Three-layer stack (see [`experience-platform-plan.md`](experience-platform-plan.md)):
+
+| Layer | Location | Role |
+|-------|----------|------|
+| **Connectors** | `layer.mjs` + `ingest/constants.mjs` + `/api/meta` | Acquisition truth: sync class, freshness, epistemic |
+| **Layers** | `layers/*/layer.mjs` | Atomic plugins: ingest, globe, chart |
+| **Experiences** | `experiences/*/experience.mjs` | Guided themes composing layers + panels |
+
+Platform P0–P4 builds the layer foundation. Phase K (roadmap) builds experiences on top without new fetch paths.
+
+**ADR:** [`adr-connector-contract.md`](adr-connector-contract.md)
+
+---
+
+*Authored: 2026-07-01 — platform transition intent. Implementation spec (manifest schema, migration checklist) follows as ADR. Experience maturation plan added 2026-07-03.*

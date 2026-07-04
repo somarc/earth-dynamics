@@ -8,6 +8,8 @@
 
 A **time-synchronized Earth-system correlation explorer**: verifiable signals from rotation geodesy, orbital mechanics, solid-earth events, atmosphere, and space weather on one scrubbable timeline. Not a prediction engine — an instrument for seeing what co-occurs.
 
+**Three-layer stack** (ingest → truth → presentation): **Connectors** (how data is acquired and how fresh it is) → **Layers** (`layers/*/`, registry plugins) → **Experiences** (`experiences/*/`, guided themes). See [`experience-platform-plan.md`](experience-platform-plan.md).
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  AEM Edge Delivery Services (static) — planned (H1)         │

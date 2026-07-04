@@ -44,7 +44,7 @@ Ideas, gaps, and “consider but aren’t yet” items captured from macro revie
 | D8 | **OVATION historical** | `debt` | Nowcast ~2d; historical aurora uses Kp-derived rings |
 | D9 | **Incremental ephemeris refresh** | `idea` | Extend Horizons ingest past EOP without full re-fetch |
 | D10 | **Tsunami propagation** | `icebox` | USGS `tsunami` flag on quakes; no wave / arrival layer |
-| D11 | **ENSO / ONI / SST** | `icebox` | T17; hydrosphere bridge to weather and LOD |
+| D11 | **ENSO / ONI / SST** | `done` | T17 chart lane shipped; spatial grid → Phase K6 |
 | D12 | **Sea level / cryosphere** | `icebox` | Not in multi-sphere model today |
 
 ---
@@ -111,7 +111,7 @@ Ideas, gaps, and “consider but aren’t yet” items captured from macro revie
 | I7 | **Reproducible DB artifact** | `debt` | `ecdo.db` gitignored; seed story for deploy |
 | I8 | **API contract versioning** | `idea` | `/api/meta` schema version for clients |
 | I9 | **Automated smoke tests** | `gap` | Build + API day snapshot + chart render sanity |
-| I10 | **Data freshness dashboard** | `idea` | Per-source last ingested in header or meta panel |
+| I10 | **Data freshness dashboard** | `planned` | Phase K5 — experience-scoped freshness strip, not global sprawl |
 
 ---
 

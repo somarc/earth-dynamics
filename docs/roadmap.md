@@ -15,6 +15,8 @@ Full idea backlog → [`wishlist.md`](wishlist.md)
 
 Close the gap between **co-display** (many lanes, one timeline) and **co-analysis** (physics coupling, globe equity, shareable evidence). Ship a public read-only instrument when the narrative is trustworthy.
 
+**Experience platform** (guided themes + connector truth): [`experience-platform-plan.md`](experience-platform-plan.md)
+
 ---
 
 ## Shipped foundation (Phases A–C + graphics)
@@ -49,6 +51,7 @@ Phase G  Share & compare   U7 → U6 → change summary
 Phase H  Ship              I3 → I4 → I5 → I6
 Phase I  Graphics harden   G4 → visual contracts → helio parity
 Phase J  Co-analysis       lag explorer → anomalies (from wishlist)
+Phase K  Experience platform  connectors → themes → guided UX (see plan)
 ```
 
 ---
@@ -155,6 +158,34 @@ npm run ingest -- --only=ibtracs
 
 ---
 
+## Phase K — Experience platform `next`
+
+**Why:** Mature from control-room UX to guided Earth-system themes — solid Earth, ocean, magnetosphere, spin, orbit — without abandoning composability or ingest truth.
+
+**Plan:** [`experience-platform-plan.md`](experience-platform-plan.md) · **ADR:** [`adr-connector-contract.md`](adr-connector-contract.md)
+
+| ID | Item | Status |
+|----|------|--------|
+| **K0** | Connector contract + ingest unification | `next` |
+| **K1** | Experience registry + manifest types | `planned` |
+| **K2** | Proof experiences: solid-earth, ocean-climate | `planned` |
+| **K3** | Theme rail + dynamic sidebar | `planned` |
+| **K4** | Guided moments + `?experience=` URLs | `planned` |
+| **K5** | Experience-scoped freshness (extends F2, I10) | `planned` |
+| **K6** | Grid connector spike (OISST strip, optional) | `planned` |
+
+**Done when:** New user enters via a theme without configuring footer chips; connector sync class visible per source; `?experience=ocean-climate&date=2026-06-15` restores state.
+
+```bash
+# K0 exit checks
+npm run ingest -- --only=ocean-sst   # must write ingest_log
+curl -s localhost:3001/api/meta | jq '.connectors // .ingested'
+```
+
+Runs on top of platform-intent P0–P4; K0–K2 can start before full layer migration.
+
+---
+
 ## Phase J — Co-analysis (wishlist promotion)
 
 **Why:** Completes the product thesis from [`wishlist.md`](wishlist.md) W1–W5.
@@ -192,7 +223,7 @@ Promote to `planned` after Phase D + F establish trustworthy baselines.
 | T7–T14 | Solar, Kp, CME, aurora, Dst, wind, OVATION | Various | `done` |
 | T15 | IBTrACS cyclones | NOAA | `done` |
 | T16 | Atmospheric angular momentum | GFZ ESMGFZ AAM | `done` |
-| T17 | ENSO / ONI | NOAA CPC | `icebox` |
+| T17 | ENSO / ONI / ocean SST indices | NOAA CPC | `done` (chart lane; spatial grid → K6) |
 
 ### Views & UX
 
@@ -242,7 +273,10 @@ NASA_API_KEY=xxx npm run fetch-space-weather
 | **M4 — Shareable** | G | URLs + date compare |
 | **M5 — Public instrument** | H | EDS + Worker + scheduled ingest |
 | **M6 — Production graphics** | I | G4 + visual regression |
+| **M7 — Guided instrument** | K0–K3 | Theme rail; proof experiences; dynamic sidebar |
+| **M8 — Shareable stories** | K4 + G | URLs restore experience + moment |
+| **M9 — Truth at theme scope** | K5 | Freshness follows active experience |
 
 ---
 
-*Last updated: 2026-06-26 — Phases A–F shipped; **Phase G (share & compare)** is next. See [`wishlist.md`](wishlist.md) and [`session-handoff.md`](session-handoff.md).*
+*Last updated: 2026-07-03 — **Phase K (experience platform)** is next alongside Phase G. See [`experience-platform-plan.md`](experience-platform-plan.md), [`wishlist.md`](wishlist.md), [`session-handoff.md`](session-handoff.md).*
