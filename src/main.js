@@ -22,10 +22,8 @@ import {
   renderStalenessChips,
 } from './epistemics.js';
 import { bindLegendHelp, renderLegendHtml } from './legend-help.js';
-import { buildLayerPresets } from './layers/ui-registry.mjs';
 import {
   applyEpistemicTitles,
-  applyPresetToScenes,
   renderLayerChips,
   wireLayerToggles,
 } from './layers/layer-ui.mjs';
@@ -134,8 +132,6 @@ function setDiurnalMode(mode) {
   });
   geocentricScene?.setDiurnalMode(state.diurnalMode);
 }
-
-const LAYER_PRESETS = buildLayerPresets();
 
 function activeScene() {
   return state.view === 'heliocentric' ? heliocentricScene : geocentricScene;
@@ -557,19 +553,6 @@ async function updateUI() {
     : `<li class="empty">No events in ${state.recentOnly ? 'past 7 days' : 'window'}${magNote}</li>`;
 }
 
-function applyLayerPreset(presetId) {
-  const preset = LAYER_PRESETS[presetId];
-  if (!preset) return;
-
-  applyPresetToScenes(preset, geocentricScene, heliocentricScene);
-
-  $$('.preset-btn').forEach((btn) => {
-    btn.classList.toggle('preset-btn--active', btn.dataset.preset === presetId);
-  });
-
-  updateUI();
-}
-
 function selectExperience(id) {
   state.experienceId = id || DEFAULT_EXPERIENCE_ID;
   const exp = getExperience(state.experienceId);
@@ -647,10 +630,6 @@ function setupControls() {
 
   $$('.view-btn').forEach((btn) => {
     btn.addEventListener('click', () => setView(btn.dataset.view));
-  });
-
-  $$('.preset-btn').forEach((btn) => {
-    btn.addEventListener('click', () => applyLayerPreset(btn.dataset.preset));
   });
 
   const recentOnlyEl = $id('recent-only');

@@ -236,15 +236,7 @@ npm run start</pre>
               <span id="earth-opacity-label" class="earth-opacity__label">Solid</span>
             </label>
           </div>
-          <div class="controls__cluster controls__cluster--presets" role="group" aria-label="Layer presets">
-            <span class="controls__cluster-label">Preset</span>
-            <button type="button" class="preset-btn" data-preset="solid" title="Solid Earth layers">Solid</button>
-            <button type="button" class="preset-btn" data-preset="space" title="Space weather layers">Space</button>
-            <button type="button" class="preset-btn" data-preset="orbital" title="Orbital geometry">Orbit</button>
-            <button type="button" class="preset-btn" data-preset="atmosphere" title="Cyclones and weather">Atmos</button>
-            <button type="button" class="preset-btn" data-preset="full" title="All layers">Full</button>
-          </div>
-          <div class="controls__cluster controls__cluster--layers" id="footer-layers">
+          <div class="controls__cluster controls__cluster--layers controls__cluster--hidden" id="footer-layers" aria-label="Layer toggles (Full Instrument)">
             <div class="layer-group" role="group" aria-label="Solid Earth layers">
               <span class="layer-group__label">Solid</span>
               <div class="layer-group__chips" data-layer-chips="solid"></div>

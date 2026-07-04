@@ -355,15 +355,8 @@ div.weatherly {
   display: none !important;
 }
 
-.controls__cluster--collapsed .layer-group {
-  display: none;
-}
-
-.controls__cluster--collapsed::before {
-  content: 'Layers in footer — open Full Instrument for all chips';
-  font: 400 0.62rem/1.3 var(--font-sans);
-  color: var(--muted);
-  padding: 0.15rem 0.35rem;
+.controls__cluster--hidden {
+  display: none !important;
 }
 
 .viewport {
@@ -1337,12 +1330,6 @@ div.weatherly {
   padding: 0.12rem 0.1rem 0.14rem;
 }
 
-.controls__cluster--presets {
-  padding: 0.12rem 0.42rem;
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-}
-
 .controls__cluster--filters {
   padding: 0.12rem 0.35rem 0.12rem 0.1rem;
 }
@@ -1659,7 +1646,6 @@ select {
 
   .controls__cluster--filters,
   .controls__cluster--globe,
-  .controls__cluster--presets,
   .controls__cluster--layers {
     flex: 1 1 100%;
     max-width: 100%;

@@ -131,7 +131,7 @@ export function applyExperience(exp, {
 
   const footerLayers = $id('footer-layers');
   if (footerLayers) {
-    footerLayers.classList.toggle('controls__cluster--collapsed', !exp.showAllLayers);
+    footerLayers.classList.toggle('controls__cluster--hidden', !exp.showAllLayers);
   }
 
   renderMoments(exp);
