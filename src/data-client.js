@@ -69,7 +69,7 @@ function ephWindowToChart(ephWindow, selectedDate, ephemerisDay) {
 export async function loadFrame(catalog, date, currentIndex, { recentOnly = false } = {}) {
   if (catalog.mode === 'api') {
     const dayPath = recentOnly ? `/api/day/${date}?past=7` : `/api/day/${date}`;
-    const [day, eopWindow, ephWindow, ephOrbit, geoWindow, aamWindow, oceanWindow] = await Promise.all([
+    const [day, eopWindow, ephWindow, ephOrbit, geoWindow, aamWindow, oceanWindow, oceanTempGrid] = await Promise.all([
       api(dayPath),
       api(`/api/eop/window?end=${date}&days=400`),
       api(`/api/ephemeris/window?end=${date}&days=28`),
@@ -77,6 +77,7 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
       api(`/api/geomagnetic/window?end=${date}&days=28`).catch(() => []),
       api(`/api/aam/window?end=${date}&days=400`).catch(() => []),
       api(`/api/ocean/window?end=${date}&months=180`).catch(() => ({ monthly: [], oni: [] })),
+      api(`/api/ocean/temp-grid/${date}`).catch(() => null),
     ]);
     return {
       record: day.eop,
@@ -97,6 +98,7 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
       geomagneticWindow: geoWindow,
       ocean: day.ocean || null,
       oceanWindow: oceanWindow,
+      oceanTempGrid: oceanTempGrid,
       magnetometers: day.magnetometers || [],
       magneticPoles: day.magneticPoles || null,
       asOf: day.asOf || null,

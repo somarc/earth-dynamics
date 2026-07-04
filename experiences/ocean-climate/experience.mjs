@@ -1,0 +1,30 @@
+/** @type {import('../types.d.ts').ExperienceManifest} */
+export default {
+  id: 'ocean-climate',
+  title: 'Ocean & Atmosphere',
+  tagline: 'Hydrosphere + weather on one scrubbable timeline',
+  layers: {
+    quakes: false,
+    volcanoes: false,
+    plates: false,
+    plateMotion: false,
+    hotspots: false,
+    weather: true,
+    radar: false,
+    cyclones: true,
+    fieldLines: false,
+    aurora: false,
+    oceanTempGrid: true,
+    bodies: false,
+    spinPole: false,
+    trail: false,
+  },
+  panels: ['ocean-sst', 'events'],
+  hiddenPanels: ['polhode', 'rotation', 'orbital-split', 'lunar', 'space-weather', 'inspect', 'citations'],
+  defaultView: 'geocentric',
+  freshnessKeys: ['noaaOceanSst', 'openMeteo', 'openMeteoGrid', 'ibtracs'],
+  suggestedMoments: [
+    { date: '2026-06-15', label: 'CPC El Niño context', connectorRefs: ['noaaOceanSst'] },
+    { date: '1997-11-15', label: '1997–98 El Niño peak', connectorRefs: ['noaaOceanSst'] },
+  ],
+};

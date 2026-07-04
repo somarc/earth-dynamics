@@ -15,6 +15,17 @@ export type LayerEpistemic =
   | 'pedagogical'
   | 'exploratory';
 
+export type SyncClass = 'incremental' | 'snapshot' | 'nowcast' | 'manual' | 'computed';
+export type ScaleClass = 'point' | 'index' | 'track' | 'grid' | 'archive' | 'static';
+
+export interface LayerConnector {
+  syncClass: SyncClass;
+  scaleClass: ScaleClass;
+  cadence: string;
+  maxStaleDays?: number | null;
+  upstreamLagNote?: string;
+}
+
 export interface LayerGlobeContext {
   EARTH_RADIUS: number;
   scene: import('three').Scene;
@@ -57,6 +68,7 @@ export interface LayerManifest {
   name: string;
   epistemic: LayerEpistemic;
   sourceKey?: string;
+  connector?: LayerConnector;
   order?: number;
   ingestKey?: string;
   ingestAliases?: string[];

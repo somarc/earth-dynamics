@@ -7,6 +7,13 @@ export default {
   name: 'Global Ocean SST (NOAA CPC)',
   epistemic: 'measured',
   sourceKey: 'noaaOceanSst',
+  connector: {
+    syncClass: 'snapshot',
+    scaleClass: 'index',
+    cadence: 'monthly',
+    maxStaleDays: 45,
+    upstreamLagNote: 'Global tropics index may lag Niño regions by one month',
+  },
   order: 55,
   ingestKey: 'ocean-sst',
   ingestAliases: ['ocean', 'enso', 'oni'],

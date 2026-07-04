@@ -158,8 +158,44 @@ function ageDaysFrom(isoTimestamp) {
   return Math.floor((Date.now() - ms) / DAY_MS);
 }
 
-export function buildStalenessChips(meta) {
+function connectorChip(c) {
+  const age = ageDaysFrom(c.ingestedAt);
+  const short = c.id.replace(/^(noaa|usgs|openMeteo|nasa|gfz|iers|jpl)/i, '').slice(0, 12) || c.name.split(' ')[0];
+  if (c.syncClass === 'nowcast') {
+    return {
+      id: c.id,
+      label: `${short} live`,
+      stale: false,
+      title: `${c.name} · on-demand · ${c.epistemic}`,
+    };
+  }
+  if (c.syncClass === 'computed' || c.syncClass === 'manual') {
+    return {
+      id: c.id,
+      label: `${short} ${c.syncClass}`,
+      stale: false,
+      title: `${c.name} · ${c.syncClass}`,
+    };
+  }
+  const stale = age != null && c.maxStaleDays != null && age > c.maxStaleDays;
+  const through = c.upstreamThrough ? ` · through ${c.upstreamThrough}` : '';
+  return {
+    id: c.id,
+    label: age != null ? `${short} +${age}d` : short,
+    stale,
+    title: `${c.name}${through} · ${c.syncClass} · ${c.epistemic}`,
+  };
+}
+
+export function buildStalenessChips(meta, { freshnessKeys = null } = {}) {
   if (!meta) return [];
+
+  const connectors = meta.connectors ?? [];
+  if (freshnessKeys?.length && connectors.length) {
+    const keySet = new Set(freshnessKeys);
+    return connectors.filter((c) => keySet.has(c.id)).map(connectorChip);
+  }
+
   const chips = [];
   const freshness = meta.freshness || {};
   const ingested = new Map((meta.ingested || []).map((r) => [r.source, r]));
@@ -255,10 +291,10 @@ export function renderAsOfChips(requestedDate, asOf, coverage) {
     .join('');
 }
 
-export function renderStalenessChips(meta) {
+export function renderStalenessChips(meta, options = {}) {
   const el = $id('staleness-chips');
   if (!el) return;
-  const chips = buildStalenessChips(meta);
+  const chips = buildStalenessChips(meta, options);
   if (!chips.length) {
     el.innerHTML = '';
     el.classList.add('staleness-chips--hidden');

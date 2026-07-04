@@ -1,3 +1,5 @@
+import { fetchTropicalTempGrid } from './grid-route.mjs';
+
 /** CPC season label year + approximate center month for chronological sort. */
 const SEASON_CENTER_MONTH = {
   DJF: 1, JFM: 2, FMA: 3, MAM: 4, AMJ: 5, MJJ: 6, JJA: 7,
@@ -91,6 +93,18 @@ export function oceanRoutes() {
       },
       handler(db, _url, params) {
         return { status: 200, body: getOceanSnapshot(db, params.date) };
+      },
+    },
+    {
+      path: '/api/ocean/temp-grid',
+      match(url) {
+        const path = new URL(url, 'http://local').pathname;
+        const m = path.match(/^\/api\/ocean\/temp-grid\/(\d{4}-\d{2}-\d{2})$/);
+        return m ? { date: m[1] } : null;
+      },
+      async handler(_db, _url, params) {
+        const body = await fetchTropicalTempGrid(params.date);
+        return { status: 200, body };
       },
     },
   ];

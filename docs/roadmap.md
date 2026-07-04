@@ -166,13 +166,13 @@ npm run ingest -- --only=ibtracs
 
 | ID | Item | Status |
 |----|------|--------|
-| **K0** | Connector contract + ingest unification | `next` |
-| **K1** | Experience registry + manifest types | `planned` |
-| **K2** | Proof experiences: solid-earth, ocean-climate | `planned` |
-| **K3** | Theme rail + dynamic sidebar | `planned` |
-| **K4** | Guided moments + `?experience=` URLs | `planned` |
-| **K5** | Experience-scoped freshness (extends F2, I10) | `planned` |
-| **K6** | Grid connector spike (OISST strip, optional) | `planned` |
+| **K0** | Connector contract + ingest unification | `done` |
+| **K1** | Experience registry + manifest types | `done` |
+| **K2** | Six experiences + solid-earth / ocean-climate proofs | `done` |
+| **K3** | Theme rail + dynamic sidebar | `done` |
+| **K4** | Guided moments + `?experience=` URLs | `done` |
+| **K5** | Experience-scoped freshness (extends F2, I10) | `done` |
+| **K6** | ERA5 tropical grid overlay (on-demand) | `done` |
 
 **Done when:** New user enters via a theme without configuring footer chips; connector sync class visible per source; `?experience=ocean-climate&date=2026-06-15` restores state.
 

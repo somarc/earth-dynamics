@@ -18,7 +18,7 @@ Experiences set which globe layers and sidebar panels are active, default view, 
 
 | Phase | State |
 |-------|--------|
-| K1 registry | `planned` |
-| K2 solid-earth, ocean-climate proofs | `planned` |
+| K1 registry | `done` — `src/experiences/registry.mjs` |
+| K2–K6 experiences + theme rail | `done` — see commit implementing Phase K |
 
 Do not add experiences by hand-editing `index.html` once K1 ships — registry discovery only.

@@ -54,6 +54,10 @@ npm run start</pre>
             <button type="button" class="view-chip view-btn view-btn--active" data-view="geocentric" title="Earth-centered globe">Geo</button>
             <button type="button" class="view-chip view-btn" data-view="heliocentric" title="Sun-centered system">Helio</button>
           </div>
+          <div class="header__cluster header__cluster--experience">
+            <span id="experience-title" class="experience-title">—</span>
+            <span id="experience-tagline" class="experience-tagline"></span>
+          </div>
           <div class="header__cluster header__cluster--meta">
             <span id="date-display" class="header-date">—</span>
             <span id="mode-badge" class="status-chip" hidden></span>
@@ -70,6 +74,7 @@ npm run start</pre>
       </header>
 
       <main class="layout">
+        <nav id="theme-rail" class="theme-rail" aria-label="Earth system themes"></nav>
         <section class="viewport" id="viewport">
           <canvas id="geo-canvas" class="scene-canvas"></canvas>
           <canvas id="helio-canvas" class="scene-canvas scene-canvas--hidden"></canvas>
@@ -79,19 +84,20 @@ npm run start</pre>
         </section>
 
         <aside class="panels">
-          <div class="panel">
+          <div id="experience-moments" class="experience-moments experience-moments--hidden" aria-label="Suggested moments"></div>
+          <div class="panel" data-panel="polhode">
             <h2>Polhode</h2>
             <p class="panel__desc">Spin-pole wander in the Earth-fixed frame (IERS x, −y) — not magnetic north (◆ on globe)</p>
             <canvas id="polhode-chart" width="388" height="240"></canvas>
           </div>
 
-          <div class="panel panel--rotation" id="rotation-panel">
+          <div class="panel panel--rotation" id="rotation-panel" data-panel="rotation">
             <h2>Angular Velocity</h2>
             <p class="panel__desc">ΔLOD, Δω₃, and GFZ AAM z anomaly (established atmosphere–rotation coupling)</p>
             <canvas id="lod-chart" width="388" height="160"></canvas>
           </div>
 
-          <div class="panel panel--orbital-split">
+          <div class="panel panel--orbital-split" data-panel="orbital-split">
             <div class="orbital-split">
               <div class="orbital-split__pane">
                 <h3 class="orbital-split__title">Ecliptic Plane</h3>
@@ -106,12 +112,12 @@ npm run start</pre>
             </div>
           </div>
 
-          <div class="panel">
+          <div class="panel" data-panel="lunar">
             <h2>Lunar &amp; Planetary Geometry</h2>
             <div id="orbital-metrics"></div>
           </div>
 
-          <div class="panel panel--space-weather" id="space-weather-panel">
+          <div class="panel panel--space-weather" id="space-weather-panel" data-panel="space-weather">
             <h2>Space Weather</h2>
             <p class="panel__desc">Kp, Dst, solar wind, CMEs &amp; flares (OMNI / DONKI / NOAA SWPC)</p>
             <canvas id="kp-chart" width="388" height="88"></canvas>
@@ -119,27 +125,27 @@ npm run start</pre>
             <div id="space-weather-metrics"></div>
           </div>
 
-          <div class="panel panel--ocean-sst" id="ocean-sst-panel">
+          <div class="panel panel--ocean-sst" id="ocean-sst-panel" data-panel="ocean-sst">
             <h2>Ocean Temperature</h2>
             <p class="panel__desc">Equatorial Pacific &amp; global-tropics SST anomalies (NOAA CPC ERSSTv5 / OISST)</p>
             <canvas id="ocean-sst-chart" width="388" height="120"></canvas>
             <div id="ocean-sst-metrics"></div>
           </div>
 
-          <div class="panel panel--inspect">
+          <div class="panel panel--inspect" data-panel="inspect">
             <h2>Inspect</h2>
             <p class="panel__desc">Hover or click quakes, volcanoes, hotspots, plates &amp; boundaries</p>
             <div id="event-inspect"></div>
           </div>
 
-          <div class="panel panel--events">
+          <div class="panel panel--events" data-panel="events">
             <h2 id="events-panel-title">Events at Date</h2>
             <p class="panel__desc" id="events-panel-desc">±7 day windows (API default)</p>
             <p class="panel__hint" id="events-volc-hint">▲ cones = Smithsonian GVP eruption <em>episodes</em> active on the selected date — not every holocene volcano.</p>
             <ul id="event-list" class="event-list"></ul>
           </div>
 
-          <div class="panel panel--citations">
+          <div class="panel panel--citations" data-panel="citations">
             <h2>Data Sources</h2>
             <ul class="citations" id="citations"></ul>
           </div>
@@ -238,7 +244,7 @@ npm run start</pre>
             <button type="button" class="preset-btn" data-preset="atmosphere" title="Cyclones and weather">Atmos</button>
             <button type="button" class="preset-btn" data-preset="full" title="All layers">Full</button>
           </div>
-          <div class="controls__cluster controls__cluster--layers">
+          <div class="controls__cluster controls__cluster--layers" id="footer-layers">
             <div class="layer-group" role="group" aria-label="Solid Earth layers">
               <span class="layer-group__label">Solid</span>
               <div class="layer-group__chips" data-layer-chips="solid"></div>

@@ -33,6 +33,13 @@ import { allLayerUi } from './layers/ui-registry.mjs';
 import { createTimelineSlider } from './timeline-slider.js';
 import { createViewTransition, updateViewTransition } from './view-transition.js';
 import { setDomRoot, $id, $, $$ } from './dom-scope.js';
+import { getExperience, DEFAULT_EXPERIENCE_ID } from './experiences/registry.mjs';
+import {
+  applyExperience,
+  renderThemeRail,
+  wireMoments,
+  parseExperienceUrl,
+} from './experiences/controller.mjs';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -55,6 +62,7 @@ const state = {
   earthOpacity: 1,
   cachedFrame: null,
   cachedDate: null,
+  experienceId: DEFAULT_EXPERIENCE_ID,
 };
 
 const EARTH_OPACITY_KEY = 'wobblescope-earth-opacity';
@@ -260,6 +268,7 @@ function applyEventLayers(frame, date) {
   geocentricScene.setVolcanoes(frame.eruptions);
   geocentricScene.setCyclones(frame.cyclones, date);
   geocentricScene.setWeatherGlyphs(frame.weather);
+  geocentricScene.setOceanTempGrid(frame.oceanTempGrid);
   heliocentricScene.setEarthquakes(quakes);
   heliocentricScene.setVolcanoes(frame.eruptions);
   heliocentricScene.setCmeEvents(frame.spaceWeather, date);
@@ -367,6 +376,8 @@ async function updateUI() {
 
   $id('date-display').textContent = formatDate(date);
   renderAsOfChips(frame.requestedDate || date, frame.asOf, frame.coverage);
+  const exp = getExperience(state.experienceId);
+  renderStalenessChips(state.catalog?.manifest, { freshnessKeys: exp.freshnessKeys });
   timelineSlider?.update(state.currentIndex);
 
   applyEventLayers(frame, date);
@@ -556,6 +567,30 @@ function applyLayerPreset(presetId) {
     btn.classList.toggle('preset-btn--active', btn.dataset.preset === presetId);
   });
 
+  updateUI();
+}
+
+function selectExperience(id) {
+  state.experienceId = id || DEFAULT_EXPERIENCE_ID;
+  const exp = getExperience(state.experienceId);
+  applyExperience(exp, {
+    geocentricScene,
+    heliocentricScene,
+    setView,
+    date: state.dates[state.currentIndex],
+  });
+  renderThemeRail(state.experienceId, selectExperience);
+  renderStalenessChips(state.catalog?.manifest, { freshnessKeys: exp.freshnessKeys });
+  updateUI();
+}
+
+function jumpToMoment(date) {
+  const idx = state.dates.indexOf(date);
+  if (idx < 0) return;
+  state.currentIndex = idx;
+  state.dayAccumulator = 0;
+  geocentricScene?.setDiurnalPhase(0);
+  timelineSlider?.update(state.currentIndex);
   updateUI();
 }
 
@@ -786,6 +821,9 @@ function seedStateFromDataset(root) {
   const { date, view } = root?.dataset ?? {};
   if (view === 'heliocentric' || view === 'geocentric') state.view = view;
   if (date) state.initialDate = date;
+  const url = parseExperienceUrl();
+  if (url.experienceId) state.experienceId = url.experienceId;
+  if (url.date) state.initialDate = url.date;
 }
 
 export default async function mountWeatherly(root) {
@@ -835,7 +873,6 @@ export default async function mountWeatherly(root) {
 
   renderCitations();
   renderPanelEpistemics();
-  renderStalenessChips(state.catalog?.manifest);
   renderLayerChips();
   applyEpistemicTitles();
   bindLegendHelp(
@@ -844,7 +881,9 @@ export default async function mountWeatherly(root) {
   );
   setupControls();
   setupGlobePick();
-  applyLayerPreset('atmosphere');
+  wireMoments({ onMoment: jumpToMoment });
+  renderThemeRail(state.experienceId, selectExperience);
+  selectExperience(state.experienceId);
   const homeCfg = geocentricScene?.getHomeRegionConfig?.();
   const homeBtn = $id('fly-home-btn');
   if (homeBtn && homeCfg) {

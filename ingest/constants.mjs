@@ -103,6 +103,14 @@ export const SOURCES = {
     epistemic: 'modeled',
     ingestKeys: ['weather'],
   },
+  openMeteoGrid: {
+    name: 'Open-Meteo ERA5 Tropical Grid',
+    org: 'Open-Meteo',
+    citation: 'ERA5 2m mean on-demand for tropical band (30°×10°)',
+    link: 'https://open-meteo.com/en/docs/historical-weather-api',
+    epistemic: 'modeled',
+    ingestKeys: [],
+  },
   noaaStorms: {
     name: 'NOAA Storm Events Database',
     org: 'NOAA NCEI',

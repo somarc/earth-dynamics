@@ -1,4 +1,5 @@
 import { SOURCES } from '../ingest/constants.mjs';
+import { buildConnectors } from '../ingest/lib/connectors.mjs';
 import { composeLayerSnapshots } from '../layers/api-compose.mjs';
 import { matchLayerRoute } from '../layers/api-routes.mjs';
 import { getHomeAsset, getHomeRegionConfig, listHomeAssetKeys } from '../ingest/home-store.mjs';
@@ -116,6 +117,7 @@ export function createHandlers(db) {
 
     return {
       sources: SOURCES,
+      connectors: buildConnectors(db, SOURCES),
       eop,
       ingested,
       freshness: {
@@ -278,7 +280,7 @@ export function createHandlers(db) {
         }
       : null;
 
-    const { cyclones = [] } = composeLayerSnapshots(db, date, { pastDays: past });
+    const layerSnapshots = composeLayerSnapshots(db, date, { pastDays: past });
 
     const magnetometers = getMagnetometers(date);
     const magneticPoles = igrfDipPoles(date);
@@ -290,7 +292,7 @@ export function createHandlers(db) {
       aam,
       earthquakes: quakeRows,
       eruptions: volcRows,
-      cyclones,
+      ...layerSnapshots,
       storms,
       weather,
       solar,
@@ -382,7 +384,7 @@ export function createHandlers(db) {
   };
 }
 
-export function routeRequest(db, url) {
+export async function routeRequest(db, url) {
   const handlers = createHandlers(db);
   const path = new URL(url, 'http://local').pathname;
 
@@ -426,7 +428,7 @@ export function routeRequest(db, url) {
 
   const layerMatch = matchLayerRoute(url);
   if (layerMatch) {
-    return layerMatch.route.handler(db, url, layerMatch.params);
+    return await layerMatch.route.handler(db, url, layerMatch.params);
   }
 
   return { status: 404, body: { error: 'Not found' } };

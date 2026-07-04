@@ -75,7 +75,8 @@ async function main() {
   if (only === 'ocean-sst' || only === 'ocean' || only === 'enso' || only === 'oni') {
     console.log('NOAA CPC ocean SST & ENSO indices…');
     const { ingest } = await import('../layers/ocean-sst/ingest.mjs');
-    await ingest({ force });
+    const { runLayerIngest } = await import('./lib/run-layer-ingest.mjs');
+    await runLayerIngest('ocean-sst', () => ingest({ force }), { force });
   }
 
   if (only === 'ephemeris') {

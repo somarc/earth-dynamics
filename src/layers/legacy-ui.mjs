@@ -110,6 +110,26 @@ export const LEGACY_LAYER_UI = [
     },
   },
   {
+    id: 'ocean-temp-grid',
+    key: 'oceanTempGrid',
+    toggleId: 'show-ocean-temp-grid',
+    epistemic: 'modeled',
+    ui: {
+      group: 'atmos',
+      chipId: 'chip-ocean-temp-grid',
+      chipLabel: 'Tropics',
+      title: 'ERA5 2m tropical band grid (on-demand, modeled)',
+    },
+    presets: {
+      solid: false, space: false, orbital: false, atmosphere: true, full: true,
+    },
+    views: ['geocentric'],
+    applyVisible(scene, visible) {
+      scene.setOceanTempGridVisible(visible);
+    },
+    onToggle: 'reapplyEvents',
+  },
+  {
     id: 'weather',
     key: 'weather',
     toggleId: 'show-weather-glyphs',

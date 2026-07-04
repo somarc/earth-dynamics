@@ -1,0 +1,30 @@
+/** @type {import('../types.d.ts').ExperienceManifest} */
+export default {
+  id: 'solid-earth',
+  title: 'Solid Earth',
+  tagline: 'Lithosphere in motion — quakes, volcanoes, plates',
+  layers: {
+    quakes: true,
+    volcanoes: true,
+    plates: true,
+    plateMotion: true,
+    hotspots: true,
+    weather: false,
+    radar: false,
+    cyclones: false,
+    fieldLines: false,
+    aurora: false,
+    oceanTempGrid: false,
+    bodies: false,
+    spinPole: false,
+    trail: false,
+  },
+  panels: ['inspect', 'events'],
+  hiddenPanels: ['polhode', 'rotation', 'orbital-split', 'lunar', 'space-weather', 'ocean-sst', 'citations'],
+  defaultView: 'geocentric',
+  freshnessKeys: ['usgsEarthquakes', 'gvpEruptions'],
+  suggestedMoments: [
+    { date: '2004-12-26', label: 'Sumatra M9.1', connectorRefs: ['usgsEarthquakes'] },
+    { date: '2011-03-11', label: 'Tōhoku M9.0', connectorRefs: ['usgsEarthquakes'] },
+  ],
+};

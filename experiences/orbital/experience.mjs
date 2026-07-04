@@ -1,0 +1,29 @@
+/** @type {import('../types.d.ts').ExperienceManifest} */
+export default {
+  id: 'orbital',
+  title: 'Orbital Geometry',
+  tagline: 'Tides, syzygy, and heliocentric context',
+  layers: {
+    quakes: false,
+    volcanoes: false,
+    plates: false,
+    plateMotion: false,
+    weather: false,
+    cyclones: false,
+    fieldLines: false,
+    aurora: false,
+    oceanTempGrid: false,
+    bodies: true,
+    spinPole: false,
+    trail: false,
+    moon: true,
+    cme: true,
+  },
+  panels: ['orbital-split', 'lunar'],
+  hiddenPanels: ['polhode', 'rotation', 'space-weather', 'ocean-sst', 'inspect', 'events', 'citations'],
+  defaultView: 'geocentric',
+  freshnessKeys: ['jplHorizons'],
+  suggestedMoments: [
+    { date: '2024-04-08', label: 'Total solar eclipse geometry', connectorRefs: ['jplHorizons'] },
+  ],
+};

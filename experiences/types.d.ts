@@ -19,6 +19,8 @@ export interface ExperienceManifest {
   /** Panel DOM ids or chart-lane ids to show */
   panels: string[];
   hiddenPanels?: string[];
+  showAllPanels?: boolean;
+  showAllLayers?: boolean;
 
   defaultView: ExperienceView;
   /** Connector / sourceKey ids for theme-scoped freshness chips */

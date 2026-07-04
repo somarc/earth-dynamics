@@ -256,8 +256,114 @@ div.weatherly {
 
 .layout {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: 4.5rem 1fr 420px;
   min-height: 0;
+}
+
+.theme-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem 0.35rem;
+  border-right: 1px solid var(--border);
+  background: rgba(8, 12, 20, 0.55);
+  min-height: 0;
+}
+
+.theme-rail__btn {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font: 500 0.62rem/1.2 var(--font-sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0.55rem 0.3rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.theme-rail__btn:hover {
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.theme-rail__btn--active {
+  color: var(--accent);
+  border-color: rgba(77, 163, 255, 0.35);
+  background: rgba(77, 163, 255, 0.08);
+}
+
+.experience-title {
+  font: 600 0.82rem/1.2 var(--font-sans);
+  color: var(--text);
+}
+
+.experience-tagline {
+  font: 400 0.68rem/1.3 var(--font-sans);
+  color: var(--muted);
+  max-width: 28rem;
+}
+
+.header__cluster--experience {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.experience-moments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(77, 163, 255, 0.04);
+}
+
+.experience-moments--hidden {
+  display: none;
+}
+
+.experience-moments__label {
+  font: 600 0.62rem/1 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-right: 0.25rem;
+}
+
+.moment-btn {
+  font: 500 0.68rem/1.2 var(--font-sans);
+  color: var(--accent);
+  background: rgba(77, 163, 255, 0.1);
+  border: 1px solid rgba(77, 163, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+}
+
+.moment-btn:hover {
+  background: rgba(77, 163, 255, 0.18);
+}
+
+.panel--experience-hidden {
+  display: none !important;
+}
+
+.controls__cluster--collapsed .layer-group {
+  display: none;
+}
+
+.controls__cluster--collapsed::before {
+  content: 'Layers in footer — open Full Instrument for all chips';
+  font: 400 0.62rem/1.3 var(--font-sans);
+  color: var(--muted);
+  padding: 0.15rem 0.35rem;
 }
 
 .viewport {
@@ -1490,7 +1596,22 @@ select {
 @media (max-width: 960px) {
   .layout {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(220px, 1fr) auto;
+    grid-template-rows: auto minmax(220px, 1fr) auto;
+  }
+
+  .theme-rail {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .theme-rail__btn {
+    writing-mode: horizontal-tb;
+    transform: none;
+    text-transform: none;
+    font-size: 0.72rem;
+    padding: 0.35rem 0.55rem;
   }
 
   .panels {

@@ -6,7 +6,7 @@ import { routeRequest } from './handlers.mjs';
 const PORT = process.env.API_PORT || 3001;
 const db = getDb();
 
-const server = createServer((req, res) => {
+const server = createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') {
@@ -16,7 +16,7 @@ const server = createServer((req, res) => {
   }
 
   try {
-    const result = routeRequest(db, req.url);
+    const result = await routeRequest(db, req.url);
     if (result.binary) {
       res.writeHead(result.status, {
         'Content-Type': result.mime,

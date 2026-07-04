@@ -36,6 +36,7 @@ import { GLOBE_LAYERS } from './layers/registry.mjs';
 import { classifyPick } from './event-inspect.js';
 import { createAtmosphereShell, updateAtmosphereSun } from './atmosphere.js';
 import { buildWeatherGlyphGroup } from './weather-globe.js';
+import { buildOceanTempGridGroup } from './ocean-temp-grid.js';
 import { loadRadarSites, buildRadarSiteGroup } from './radar-globe.js';
 import {
   createEventHalo,
@@ -59,6 +60,7 @@ export class EarthScene {
     this.showPlateMotion = true;
     this.layerControllers = new Map();
     this.showWeather = true;
+    this.showOceanTempGrid = false;
     this.showRadar = true;
     this.showHomeDetail = false;
     this.showHomeTerrain = true;
@@ -170,6 +172,8 @@ export class EarthScene {
     this.surfaceGroup.add(this.plateMotionGroup);
     this.weatherGroup = new THREE.Group();
     this.surfaceGroup.add(this.weatherGroup);
+    this.oceanTempGridGroup = new THREE.Group();
+    this.surfaceGroup.add(this.oceanTempGridGroup);
     this.radarGroup = new THREE.Group();
     this.surfaceGroup.add(this.radarGroup);
     this.geomagGroup = new THREE.Group();
@@ -740,6 +744,18 @@ export class EarthScene {
     if (!this.showWeather || !readings?.length) return;
     this.weatherGroup.add(buildWeatherGlyphGroup(readings));
     this.weatherGroup.visible = true;
+  }
+
+  setOceanTempGridVisible(visible) {
+    this.showOceanTempGrid = visible;
+    if (this.oceanTempGridGroup) this.oceanTempGridGroup.visible = visible;
+  }
+
+  setOceanTempGrid(grid) {
+    this.oceanTempGridGroup.clear();
+    if (!this.showOceanTempGrid || !grid?.points?.length) return;
+    this.oceanTempGridGroup.add(buildOceanTempGridGroup(grid));
+    this.oceanTempGridGroup.visible = true;
   }
 
   setPlateMotionVisible(visible) {
