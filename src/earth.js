@@ -67,6 +67,7 @@ export class EarthScene {
     this.homeFocusDim = false;
     this.radarSiteCount = 0;
     this.earthOpacity = 1;
+    this.hemisphereCullEvents = false;
     this.viewDate = null;
     this.ready = this.init(canvas);
   }
@@ -413,8 +414,10 @@ export class EarthScene {
       const geo = new THREE.SphereGeometry(size, 8, 8);
       const mat = new THREE.MeshBasicMaterial({
         color: q.mag >= 7 ? 0xff2244 : q.mag >= 6 ? 0xff5c6a : 0xff8c99,
-        transparent: true,
-        opacity: 0.85,
+        transparent: false,
+        opacity: 1,
+        depthTest: true,
+        depthWrite: true,
       });
       const mesh = new THREE.Mesh(geo, mat);
       const pos = quakeMarkerPosition(q.lat, q.lon, q.depth);
@@ -722,6 +725,29 @@ export class EarthScene {
     return true;
   }
 
+  setHemisphereCullEvents(enabled) {
+    this.hemisphereCullEvents = !!enabled;
+    if (!enabled) {
+      this.quakeGroup.children.forEach((c) => { c.visible = true; });
+      this.volcanoGroup.children.forEach((c) => { c.visible = true; });
+    }
+  }
+
+  updateEventHemisphereCull() {
+    if (!this.hemisphereCullEvents || !this.camera) return;
+    const cam = this.camera.position;
+    const threshold = 0.08;
+    const cull = (group, layerOn) => {
+      if (!layerOn) return;
+      for (const child of group.children) {
+        if (!child.position) continue;
+        child.visible = child.position.dot(cam) > threshold;
+      }
+    };
+    cull(this.quakeGroup, this.showQuakes);
+    cull(this.volcanoGroup, this.showVolcanoes);
+  }
+
   setEarthOpacity(opacity) {
     this.earthOpacity = Math.max(0.08, Math.min(1, opacity));
     updateEarthOpacity(this.earthMaterial, this.earthOpacity);
@@ -983,6 +1009,7 @@ export class EarthScene {
       }
     }
     this.updateCameraMotion(now);
+    this.updateEventHemisphereCull();
     this.eventPulses.update(now);
     this.controls.update();
     updateGlobeCameraClip(this.camera, this.controls.target);

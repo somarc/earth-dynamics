@@ -22,6 +22,8 @@ export default {
   panels: ['inspect', 'events'],
   hiddenPanels: ['polhode', 'rotation', 'orbital-split', 'lunar', 'space-weather', 'ocean-sst', 'citations'],
   defaultView: 'geocentric',
+  globeOpacity: 1,
+  hemisphereCull: true,
   freshnessKeys: ['usgsEarthquakes', 'gvpEruptions'],
   suggestedMoments: [
     { date: '2004-12-26', label: 'Sumatra M9.1', connectorRefs: ['usgsEarthquakes'] },

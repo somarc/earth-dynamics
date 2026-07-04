@@ -578,6 +578,7 @@ function selectExperience(id) {
     heliocentricScene,
     setView,
     date: state.dates[state.currentIndex],
+    applyEarthOpacity,
   });
   renderThemeRail(state.experienceId, selectExperience);
   renderStalenessChips(state.catalog?.manifest, { freshnessKeys: exp.freshnessKeys });

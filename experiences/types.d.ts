@@ -23,6 +23,10 @@ export interface ExperienceManifest {
   showAllLayers?: boolean;
 
   defaultView: ExperienceView;
+  /** 0–1 globe shell opacity when experience activates (1 = solid, no x-ray bleed) */
+  globeOpacity?: number;
+  /** Hide event markers on the hemisphere facing away from the camera */
+  hemisphereCull?: boolean;
   /** Connector / sourceKey ids for theme-scoped freshness chips */
   freshnessKeys: string[];
 

@@ -105,11 +105,22 @@ export function renderThemeRail(activeId, onSelect) {
   });
 }
 
-export function applyExperience(exp, { geocentricScene, heliocentricScene, setView, date }) {
+export function applyExperience(exp, {
+  geocentricScene,
+  heliocentricScene,
+  setView,
+  date,
+  applyEarthOpacity,
+} = {}) {
   if (!exp) return;
   const preset = experienceToPreset(exp);
   applyPresetToScenes(preset, geocentricScene, heliocentricScene);
   applyExperiencePanels(exp);
+
+  if (exp.globeOpacity != null && applyEarthOpacity) {
+    applyEarthOpacity(exp.globeOpacity, { persist: false });
+  }
+  geocentricScene?.setHemisphereCullEvents?.(!!exp.hemisphereCull);
 
   const title = $id('experience-title');
   const tagline = $id('experience-tagline');
