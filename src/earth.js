@@ -136,6 +136,11 @@ export class EarthScene {
     this.poleMarker = new THREE.Mesh(poleGeo, poleMat);
     this.poleMarker.userData = { pickType: 'spin-pole' };
     this.surfaceGroup.add(this.poleMarker);
+
+    this.pinnedLocalPos = null;
+    this.pinnedLocalTarget = null;
+    this.pendingTerrainPin = null;
+    this.lastInteraction = 0;
     const polePick = new THREE.Mesh(
       new THREE.SphereGeometry(0.04, 8, 8),
       new THREE.MeshBasicMaterial({ visible: false }),
@@ -311,6 +316,11 @@ export class EarthScene {
 
     this.controls = new OrbitControls(this.camera, canvas);
     configureGlobeControls(this.controls);
+
+    const markInteraction = () => { this.lastInteraction = performance.now(); };
+    this.controls.addEventListener('start', markInteraction);
+    this.controls.addEventListener('change', markInteraction);
+    this.controls.addEventListener('end', markInteraction);
 
     if (this.pendingHomeFrame) {
       this.camera.position.copy(this.pendingHomeFrame.position);
@@ -724,6 +734,12 @@ export class EarthScene {
     const config = this.getHomeRegionConfig();
     const center = config?.center;
     if (!center || !this.controls) return false;
+
+    // Clear any previous pin so new fly can set fresh one
+    this.pinnedLocalPos = null;
+    this.pinnedLocalTarget = null;
+    this.pendingTerrainPin = null;
+
     this.setHomeDetailVisible(true);
     this.setHomeTerrainVisible(!!config?.terrain);
     this.setHomeFocusDim(true);
@@ -745,6 +761,9 @@ export class EarthScene {
 
       // UX polish: brief hint that real 3D topo is now active
       this._showTerrainHint();
+
+      // After camera fly completes, pin the geographic view so the terrain patch stays locked in frame as Earth spins
+      this.pendingTerrainPin = { lat: center.lat, lon: center.lon };
     }
 
     const terrainActive = !!terrainCtrl?.group?.userData;
@@ -1035,7 +1054,17 @@ export class EarthScene {
       const eased = t * t * (3 - 2 * t);
       this.camera.position.lerpVectors(this.cameraFly.fromPos, this.cameraFly.toPos, eased);
       this.controls.target.lerpVectors(this.cameraFly.fromTarget, this.cameraFly.toTarget, eased);
-      if (t >= 1) this.cameraFly = null;
+      if (t >= 1) {
+        this.cameraFly = null;
+        if (this.pendingTerrainPin) {
+          const { lat, lon } = this.pendingTerrainPin;
+          const rotY = this.surfaceGroup ? this.surfaceGroup.rotation.y : 0;
+          const invRot = new THREE.Matrix4().makeRotationY(-rotY);
+          this.pinnedLocalPos = this.camera.position.clone().applyMatrix4(invRot);
+          this.pinnedLocalTarget = this.controls.target.clone().applyMatrix4(invRot);
+          this.pendingTerrainPin = null;
+        }
+      }
       return;
     }
     if (!this.cameraEntry) return;
@@ -1044,6 +1073,23 @@ export class EarthScene {
     this.camera.position.lerpVectors(this.entryFromPos, this.defaultCameraPosition, eased);
     this.controls.target.set(0, 0, 0);
     if (t >= 1) this.cameraEntry = null;
+  }
+
+  updatePinnedCamera() {
+    if (!this.pinnedLocalPos || !this.pinnedLocalTarget || !this.surfaceGroup) return;
+
+    const now = performance.now();
+    if (now - this.lastInteraction < 300) return; // give user a moment to control freely
+
+    const rotY = this.surfaceGroup.rotation.y;
+    const rot = new THREE.Matrix4().makeRotationY(rotY);
+
+    const worldPos = this.pinnedLocalPos.clone().applyMatrix4(rot);
+    const worldTarget = this.pinnedLocalTarget.clone().applyMatrix4(rot);
+
+    this.camera.position.copy(worldPos);
+    this.controls.target.copy(worldTarget);
+    this.controls.update();
   }
 
   render(delta) {
@@ -1056,6 +1102,9 @@ export class EarthScene {
       }
     }
     this.updateCameraMotion(now);
+    if (this.pinnedLocalPos) {
+      this.updatePinnedCamera();
+    }
     this.updateEventHemisphereCull();
     this.eventPulses.update(now);
     this.controls.update();

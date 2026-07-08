@@ -240,6 +240,12 @@ export async function initTerrainGlobe(ctx) {
       group.add(patch);
       group.userData.patch = patch;
       group.userData.loadedCenter = center;
+
+      // Boost visual height of the 3D terrain patch so the relief is obvious as a "view"
+      if (patch && patch.scale) {
+        patch.scale.y = 4.5;
+      }
+
       return patch;
     },
     setExaggeration: (exag) => {
