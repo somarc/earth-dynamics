@@ -1053,21 +1053,38 @@ export class EarthScene {
   }
 
   _showTerrainHint() {
-    // Lightweight ephemeral hint (no full toast system yet)
-    const help = document.getElementById('legend-help');
-    if (!help || help.dataset.terrainHint) return;
+    // Lightweight ephemeral toast-style hint for terrain activation
+    const container = document.querySelector('.controls') || document.body;
+    if (container.querySelector('.terrain-hint')) return;
 
-    const original = help.textContent;
-    help.dataset.terrainHint = '1';
-    help.textContent = '3D topo active — drag to orbit or scroll to zoom the real terrain mesh.';
-    help.style.color = 'var(--accent)';
+    const hint = document.createElement('div');
+    hint.className = 'terrain-hint';
+    hint.textContent = '3D topo loaded — orbit/zoom to explore the real elevation mesh';
+    Object.assign(hint.style, {
+      position: 'absolute',
+      bottom: '52px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      fontSize: '0.65rem',
+      padding: '2px 10px',
+      background: 'rgba(20,30,50,0.9)',
+      border: '1px solid rgba(77,163,255,0.4)',
+      borderRadius: '3px',
+      color: '#9cc4ff',
+      whiteSpace: 'nowrap',
+      zIndex: 20,
+      pointerEvents: 'none',
+      opacity: '0',
+      transition: 'opacity 0.2s ease',
+    });
+
+    container.appendChild(hint);
+    // trigger
+    requestAnimationFrame(() => { hint.style.opacity = '0.95'; });
 
     setTimeout(() => {
-      if (help.dataset.terrainHint) {
-        help.textContent = original;
-        help.style.color = '';
-        delete help.dataset.terrainHint;
-      }
-    }, 4200);
+      hint.style.opacity = '0';
+      setTimeout(() => hint.remove(), 200);
+    }, 3800);
   }
 }

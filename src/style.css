@@ -1145,6 +1145,7 @@ div.weatherly {
 }
 
 .controls {
+  position: relative; /* for absolute hints (e.g. terrain activation toast) */
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
