@@ -763,7 +763,7 @@ export class EarthScene {
     if (terrainCtrl?.group?.userData?.load) {
       // Fire and forget; the patch will appear/replace when ready
       // Use higher exaggeration for the terrain patch so the 3D relief is obvious
-      terrainCtrl.group.userData.load({ center, exaggeration: 8.0 }).catch((e) => {
+      terrainCtrl.group.userData.load({ center, exaggeration: 10.0 }).catch((e) => {
         console.warn('Terrain DEM reload for home failed:', e);
       });
       // Auto-show the terrain layer when flying home for a rich experience
