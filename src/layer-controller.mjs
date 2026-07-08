@@ -41,7 +41,12 @@ export class LayerController {
 
   setVisible(visible) {
     this.visible = visible;
-    this.group.visible = visible;
+    const setVisibleFn = this.layer.globe?.setVisible;
+    if (setVisibleFn) {
+      setVisibleFn(this.group, visible);
+    } else {
+      this.group.visible = visible;
+    }
     if (this.layer.globe?.dynamic && this.frameData != null) {
       this.refreshFrameData(this.frameData, this.viewDate, this.lastCtx);
     }

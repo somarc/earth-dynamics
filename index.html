@@ -182,7 +182,10 @@ npm run start</pre>
               <span id="end-label">2026</span>
             </div>
           </div>
+        </div>
+        <div class="controls__row controls__row--tools">
           <div class="controls__group controls__group--playback" role="group" aria-label="Playback rate">
+            <span class="controls__group-label">Playback</span>
             <div class="controls__field" title="How long one simulated day takes at 1× fast-forward">
               <span class="controls__field-label">Day</span>
               <select id="day-length-select" class="footer-select footer-select--day" aria-label="Simulated day length at 1×">
@@ -207,10 +210,8 @@ npm run start</pre>
               </select>
             </div>
           </div>
-        </div>
-        <div class="controls__row controls__row--tools">
           <div class="controls__cluster controls__cluster--filters" role="group" aria-label="Event filters">
-            <span class="controls__cluster-label">Filter</span>
+            <span class="controls__cluster-label">Events</span>
             <label class="filter-chip filter-label" title="Limit events to the 7 days before the selected date">
               <input type="checkbox" id="recent-only" checked />
               <span id="recent-only-label">7d</span>
@@ -230,9 +231,9 @@ npm run start</pre>
           </div>
           <div class="controls__cluster controls__cluster--globe" role="group" aria-label="Globe appearance">
             <button type="button" id="fly-home-btn" class="preset-btn" title="Fly home + load real 3D terrain view (live DEM topo mesh from AWS tiles, like monolith-terrain). Also enables the Terrain chip.">Home</button>
-            <label class="earth-opacity" for="earth-opacity" title="Solid continents with transparent oceans — depth-embedded quakes and geomag field lines show through water; drag to 100% for fully solid Earth">
-              <span class="controls__cluster-label">Globe</span>
-              <input type="range" id="earth-opacity" class="earth-opacity__range" min="12" max="100" value="100" aria-valuemin="12" aria-valuemax="100" aria-valuenow="100" />
+            <label class="earth-opacity" for="earth-opacity" title="Globe surface readability. The planet remains opaque so far-side stars and overlays stay hidden.">
+              <span class="controls__cluster-label">Surface</span>
+              <input type="range" id="earth-opacity" class="earth-opacity__range" min="65" max="100" value="100" aria-valuemin="65" aria-valuemax="100" aria-valuenow="100" />
               <span id="earth-opacity-label" class="earth-opacity__label">Solid</span>
             </label>
           </div>

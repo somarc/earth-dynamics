@@ -786,7 +786,7 @@ export class EarthScene {
       this.pendingTerrainPin = null;
     }
 
-    const terrainActive = !!terrainCtrl?.group?.userData;
+    const terrainActive = !!terrainCtrl?.visible && !!terrainCtrl?.group?.userData?.patch;
     const frame = frameCameraForLatLon(center.lat, center.lon, { 
       altitude: terrainActive ? 0.014 : 0.085,
       terrainMode: terrainActive 
@@ -834,11 +834,11 @@ export class EarthScene {
   }
 
   setEarthOpacity(opacity) {
-    this.earthOpacity = Math.max(0.08, Math.min(1, opacity));
+    this.earthOpacity = Math.max(0.65, Math.min(1, opacity));
     updateEarthOpacity(this.earthMaterial, this.earthOpacity);
     if (this.grid?.material) {
-      this.grid.material.opacity = 0.05 + 0.24 * (1 - this.earthOpacity);
-      this.grid.visible = this.earthOpacity < 0.97;
+      this.grid.material.opacity = 0.04 + 0.12 * (1 - this.earthOpacity);
+      this.grid.visible = this.earthOpacity < 0.88;
     }
     if (this.atmosphere?.material?.uniforms?.uIntensity) {
       this.atmosphere.material.uniforms.uIntensity.value =

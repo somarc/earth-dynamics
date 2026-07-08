@@ -16,6 +16,7 @@ export default {
     async init(ctx) {
       return initTerrainGlobe(ctx);
     },
+    setVisible: setTerrainVisible,
     setTerrainVisible,
     // Allow external reload e.g. scene.layerControllers.get('terrain')?.invokeGlobe('load', {center})
     async load(group, opts) {

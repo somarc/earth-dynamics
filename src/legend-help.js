@@ -41,7 +41,7 @@ export const LEGEND_GEO = [
     label: '◉ M≥',
     title: 'Earthquakes',
     help:
-      'USGS catalog events at or above the magnitude floor in the footer. Size and color reflect magnitude; hypocenters sink below the shell by depth (exaggerated for visibility). Use the Globe opacity slider for an x-ray interior view.',
+      'USGS catalog events at or above the magnitude floor in the footer. Size and color reflect magnitude; hypocenters sink below the shell by depth (exaggerated for visibility). The globe surface remains opaque so far-side events stay hidden.',
   },
   {
     id: 'volcano',

@@ -1,6 +1,6 @@
 export const GLOBE_ABOUT = {
   earthquake:
-    'Earthquakes are sudden fault ruptures that release stored tectonic stress. Marker size and color reflect magnitude. Hypocenters are embedded below the surface by depth (pedagogically exaggerated so shallow vs deep subduction foci are visible inside the globe). Lower Globe opacity for hybrid x-ray mode — solid continents, transparent oceans.',
+    'Earthquakes are sudden fault ruptures that release stored tectonic stress. Marker size and color reflect magnitude. Hypocenters are embedded below the surface by depth (pedagogically exaggerated so shallow vs deep subduction foci are visible inside the globe). The surface remains opaque so far-side overlays stay hidden.',
   volcano:
     'Each orange cone is one Smithsonian GVP eruption episode whose activity dates overlap the date you selected — not the full holocene volcano list, and not every eruption since 1960 at once. Cone size reflects VEI; brighter orange means GVP still lists the episode as continuing.',
   hotspot:

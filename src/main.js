@@ -68,12 +68,12 @@ const EARTH_OPACITY_KEY = 'wobblescope-earth-opacity';
 function formatEarthOpacityLabel(opacity) {
   const pct = Math.round(opacity * 100);
   if (pct >= 98) return 'Solid';
-  if (pct <= 40) return 'X-ray';
-  return `Hybrid ${pct}%`;
+  if (pct <= 70) return `Depth ${pct}%`;
+  return `Readable ${pct}%`;
 }
 
 function applyEarthOpacity(opacity, { persist = true } = {}) {
-  const clamped = Math.max(0.12, Math.min(1, opacity));
+  const clamped = Math.max(0.65, Math.min(1, opacity));
   state.earthOpacity = clamped;
   geocentricScene?.setEarthOpacity(clamped);
 
@@ -708,9 +708,9 @@ function setupControls() {
       if (raw != null) {
         const parsed = parseFloat(raw);
         if (Number.isFinite(parsed)) {
-          savedOpacity = Math.max(0.12, Math.min(1, parsed));
+          savedOpacity = Math.max(0.65, Math.min(1, parsed));
           // Reset persisted "x-ray" values that made the globe read as nearly transparent.
-          if (savedOpacity < 0.5) savedOpacity = 1;
+          if (savedOpacity < 0.65) savedOpacity = 1;
         }
       }
     } catch {
@@ -869,7 +869,7 @@ export default async function mountWeatherly(root) {
   if (homeBtn && homeCfg) {
     const mpp = homeCfg.metersPerPixel?.eastWest;
     const res = mpp ? `~${mpp} m/px` : 'hi-res';
-    homeBtn.title = `Fly to ${homeCfg.name} — ${res} imagery with LiDAR hillshade on the regional patch; global shell dims while focused`;
+    homeBtn.title = `Fly to ${homeCfg.name} — ${res} imagery plus live 3D terrain mesh; enables Terrain and frames the local surface`;
   }
   updateLegend();
   requestAnimationFrame(animate);

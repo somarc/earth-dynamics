@@ -67,9 +67,8 @@ uniform sampler2D uMaskMap;
 uniform vec3 uSunDirection;
 uniform float uHasNightMap;
 uniform float uHasMaskMap;
-uniform float uLandOpacity;
-uniform float uOceanOpacity;
 uniform float uContextDim;
+uniform float uSurfaceLift;
 uniform float uDebugSun;
 
 varying vec2 vUv;
@@ -101,10 +100,11 @@ ${TERMINATOR_DAYNIGHT_BLEND}
   }
 
   float landMask = surfaceLandMask(dayColor);
-  float alpha = mix(uOceanOpacity, uLandOpacity, landMask);
+  float lum = dot(color, vec3(0.299, 0.587, 0.114));
+  color = mix(vec3(lum), color, 1.18);
+  color = max(mix(color, dayColor, 0.18), dayColor * uSurfaceLift);
   color *= uContextDim;
-  alpha *= mix(uContextDim, 1.0, landMask * 0.35);
-  gl_FragColor = vec4(color, alpha);
+  gl_FragColor = vec4(color, 1.0);
 }
 `;
 
@@ -124,30 +124,25 @@ export function createTerminatorEarthMaterial(textures) {
       uSunDirection: { value: new THREE.Vector3(1, 0.2, 0.5) },
       uHasNightMap: { value: night ? 1 : 0 },
       uHasMaskMap: { value: mask ? 1 : 0 },
-      uLandOpacity: { value: 1 },
-      uOceanOpacity: { value: 1 },
       uContextDim: { value: 1 },
+      uSurfaceLift: { value: 0.72 },
       uDebugSun: { value: debugSun ? 1 : 0 },
     },
     vertexShader: TERMINATOR_VERTEX_SHADER,
     fragmentShader: terminatorFragmentShader,
+    transparent: false,
+    depthWrite: true,
+    depthTest: true,
   });
 }
 
-/**
- * Hybrid shell: continents stay solid while oceans take the slider transparency.
- * At full solid both are opaque; lower values x-ray through water only.
- */
 export function updateEarthOpacity(material, opacity) {
-  if (!material?.uniforms?.uLandOpacity) return;
-  const t = Math.max(0.08, Math.min(1, opacity));
-  const oceanOpacity = t;
-  const landOpacity = 1;
-  material.uniforms.uLandOpacity.value = landOpacity;
-  material.uniforms.uOceanOpacity.value = oceanOpacity;
-  const fullySolid = landOpacity >= 0.998 && oceanOpacity >= 0.998;
-  material.transparent = !fullySolid;
-  material.depthWrite = fullySolid;
+  if (!material?.uniforms?.uSurfaceLift) return;
+  const t = Math.max(0.65, Math.min(1, opacity));
+  material.uniforms.uSurfaceLift.value = 0.46 + 0.26 * t;
+  material.transparent = false;
+  material.depthWrite = true;
+  material.depthTest = true;
 }
 
 /** Dim the coarse global shell when a regional detail patch is active. */
