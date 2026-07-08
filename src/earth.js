@@ -732,7 +732,8 @@ export class EarthScene {
     const terrainCtrl = this.layerControllers.get('terrain');
     if (terrainCtrl?.group?.userData?.load) {
       // Fire and forget; the patch will appear/replace when ready
-      terrainCtrl.group.userData.load({ center }).catch((e) => {
+      // Use higher exaggeration for the terrain patch so the 3D relief is obvious
+      terrainCtrl.group.userData.load({ center, exaggeration: 8.0 }).catch((e) => {
         console.warn('Terrain DEM reload for home failed:', e);
       });
       // Auto-show the terrain layer when flying home for a rich experience
@@ -746,7 +747,11 @@ export class EarthScene {
       this._showTerrainHint();
     }
 
-    const frame = frameCameraForLatLon(center.lat, center.lon, { altitude: 0.085 });
+    const terrainActive = !!terrainCtrl?.group?.userData;
+    const frame = frameCameraForLatLon(center.lat, center.lon, { 
+      altitude: terrainActive ? 0.014 : 0.085,
+      terrainMode: terrainActive 
+    });
     if (animate) {
       this.cameraFly = {
         start: performance.now(),

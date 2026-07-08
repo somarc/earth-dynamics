@@ -60,7 +60,7 @@ export function createTerrainMeshFromDem(dem, centerLat, centerLon, { exaggerati
   // For local patches this is close enough to a flat tangent plane.
   const physicalSize = (extentMeters / 1_000_000) * 1.15;
   // Target a clearly visible regional patch on the globe (larger so "terrain view" is obvious even at moderate zoom)
-  const targetSize = Math.min(0.38, Math.max(0.15, physicalSize));
+  const targetSize = Math.min(0.45, Math.max(0.18, physicalSize));
   const half = targetSize * 0.5;
 
   const res = Math.min(320, Math.max(96, Math.floor(size / 2.6))); // vertex resolution

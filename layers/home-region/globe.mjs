@@ -175,7 +175,7 @@ export function buildHomePatchMesh(config, material, { earthRadius = EARTH_RADIU
 }
 
 /** Camera pose for close inspection over a lat/lon target. */
-export function frameCameraForLatLon(lat, lon, { earthRadius = EARTH_RADIUS, altitude = 0.09 } = {}) {
+export function frameCameraForLatLon(lat, lon, { earthRadius = EARTH_RADIUS, altitude = 0.09, terrainMode = false } = {}) {
   const surface = latLonToVector3(lat, lon, earthRadius);
   const target = new THREE.Vector3(surface.x, surface.y, surface.z);
   const normal = target.clone().normalize();
@@ -187,11 +187,15 @@ export function frameCameraForLatLon(lat, lon, { earthRadius = EARTH_RADIUS, alt
   else east.normalize();
   const north = new THREE.Vector3().crossVectors(normal, east).normalize();
 
+  // For terrain 3D patch, prefer more top-down view and less side offset
+  const nFactor = terrainMode ? 0.25 : 1.1;
+  const eFactor = terrainMode ? 0.08 : 0.35;
+
   const position = normal
     .clone()
     .multiplyScalar(dist)
-    .add(north.clone().multiplyScalar(altitude * 1.1))
-    .add(east.clone().multiplyScalar(altitude * 0.35));
+    .add(north.clone().multiplyScalar(altitude * nFactor))
+    .add(east.clone().multiplyScalar(altitude * eFactor));
 
   return { position, target };
 }
