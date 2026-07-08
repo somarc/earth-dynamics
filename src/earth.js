@@ -1129,9 +1129,10 @@ export class EarthScene {
       }
     }
     this.updateCameraMotion(now);
-    if (this.pinnedLocalPos) {
-      this.updatePinnedCamera();
-    }
+    // Pinning logic disabled in favor of simple rotation lock on HOME for terrain
+    // if (this.pinnedLocalPos) {
+    //   this.updatePinnedCamera();
+    // }
     this.updateEventHemisphereCull();
     this.eventPulses.update(now);
     this.controls.update();
