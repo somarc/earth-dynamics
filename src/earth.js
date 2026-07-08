@@ -689,7 +689,13 @@ export class EarthScene {
   }
 
   setTerrainVisible(visible) {
+    const wasVisible = this.showTerrain;
     this.setLayerVisible('terrain', visible);
+    if (visible && !wasVisible) {
+      // Give feedback when user manually enables the 3D terrain layer
+      // (Home already calls _showTerrainHint after load)
+      setTimeout(() => this._showTerrainHint?.(), 600);
+    }
   }
 
   get showTerrain() {
