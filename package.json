@@ -28,14 +28,14 @@
     "start": "concurrently \"npm run api\" \"npm run dev\""
   },
   "dependencies": {
-    "better-sqlite3": "^11.9.1",
-    "geomagnetism": "^0.2.0",
-    "geopack-ts": "^0.1.0",
-    "three": "^0.175.0",
     "@imagemagick/magick-wasm": "0.0.41",
     "@somarc/da-cli": "^0.4.5",
+    "better-sqlite3": "^11.9.1",
     "esbuild-wasm": "^0.28.1",
-    "marked": "^18.0.5"
+    "geomagnetism": "^0.2.0",
+    "geopack-ts": "^0.1.0",
+    "marked": "^18.0.5",
+    "three": "^0.175.0"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

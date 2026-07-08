@@ -1,4 +1,7 @@
-const modules = import.meta.glob('../../experiences/*/experience.mjs', { eager: true });
+const modules = import.meta.glob(
+  ['../../experiences/*/experience.mjs', '!../../experiences/_*/experience.mjs'],
+  { eager: true },
+);
 
 const ORDER = [
   'solid-earth',

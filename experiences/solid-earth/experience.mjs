@@ -2,6 +2,7 @@
 export default {
   id: 'solid-earth',
   title: 'Solid Earth',
+  railLabel: 'Solid',
   tagline: 'Lithosphere in motion — quakes, volcanoes, plates',
   layers: {
     quakes: true,
@@ -9,6 +10,7 @@ export default {
     plates: true,
     plateMotion: true,
     hotspots: true,
+    terrain: true,
     weather: false,
     radar: false,
     cyclones: false,

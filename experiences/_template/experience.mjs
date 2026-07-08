@@ -2,6 +2,7 @@
 export default {
   id: 'my-experience',
   title: 'My Experience',
+  railLabel: 'My',
   tagline: 'One-line story for the theme rail',
 
   layers: {

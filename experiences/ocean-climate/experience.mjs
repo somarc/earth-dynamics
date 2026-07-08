@@ -2,6 +2,7 @@
 export default {
   id: 'ocean-climate',
   title: 'Ocean & Atmosphere',
+  railLabel: 'Ocean',
   tagline: 'Hydrosphere + weather on one scrubbable timeline',
   layers: {
     quakes: false,

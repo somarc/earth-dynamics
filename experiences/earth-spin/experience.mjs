@@ -2,6 +2,7 @@
 export default {
   id: 'earth-spin',
   title: "Earth's Spin",
+  railLabel: 'Spin',
   tagline: 'Rotation is not constant — pole wander, LOD, AAM',
   layers: {
     quakes: false,

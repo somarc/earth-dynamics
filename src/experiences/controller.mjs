@@ -2,6 +2,7 @@ import { allLayerUi, buildLayerPresets } from '../layers/ui-registry.mjs';
 import { applyPresetToScenes } from '../layers/layer-ui.mjs';
 import { $id, $$ } from '../dom-scope.js';
 import { allExperiences } from './registry.mjs';
+import { getExperienceIcon } from '../experience-icons.mjs';
 
 const PANEL_SELECTOR = '[data-panel]';
 const FULL_PRESET = buildLayerPresets().full;
@@ -88,11 +89,25 @@ export function wireMoments({ onMoment }) {
 export function renderThemeRail(activeId, onSelect) {
   const rail = $id('theme-rail');
   if (!rail) return;
+
   rail.innerHTML = allExperiences()
     .map((exp) => {
       const active = exp.id === activeId ? ' theme-rail__btn--active' : '';
-      const short = exp.id === 'full-instrument' ? 'Full' : exp.title.split(' ')[0];
-      return `<button type="button" class="theme-rail__btn${active}" data-experience="${esc(exp.id)}" title="${esc(exp.tagline)}">${esc(short)}</button>`;
+      const icon = getExperienceIcon(exp.id);
+      const label = exp.railLabel || exp.title;
+
+      // Icon-only button with rich tooltip. The icon itself stays upright.
+      return `
+        <button
+          type="button"
+          class="theme-rail__btn${active}"
+          data-experience="${esc(exp.id)}"
+          title="${esc(label)} — ${esc(exp.tagline)}"
+          aria-label="${esc(label)}: ${esc(exp.tagline)}"
+        >
+          ${icon}
+        </button>
+      `;
     })
     .join('');
 

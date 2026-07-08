@@ -2,6 +2,7 @@
 export default {
   id: 'magnetosphere',
   title: 'Magnetosphere',
+  railLabel: 'Mag',
   tagline: 'Dynamo → space weather coupling',
   layers: {
     quakes: false,

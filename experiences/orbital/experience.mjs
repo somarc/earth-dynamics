@@ -2,6 +2,7 @@
 export default {
   id: 'orbital',
   title: 'Orbital Geometry',
+  railLabel: 'Orbit',
   tagline: 'Tides, syzygy, and heliocentric context',
   layers: {
     quakes: false,
