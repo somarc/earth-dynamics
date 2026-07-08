@@ -688,6 +688,22 @@ export class EarthScene {
     return this.getHomeRegionGroup()?.userData?.config?.terrain?.about ?? null;
   }
 
+  setTerrainVisible(visible) {
+    this.setLayerVisible('terrain', visible);
+  }
+
+  get showTerrain() {
+    return this.layerControllers.get('terrain')?.visible ?? false;
+  }
+
+  get terrainGroup() {
+    return this.layerControllers.get('terrain')?.group ?? null;
+  }
+
+  getTerrainAbout() {
+    return this.layerControllers.get('terrain')?.getAbout() ?? null;
+  }
+
   applyHomeFocusDim() {
     const hasPatch = !!this.getHomeRegionGroup()?.userData?.mesh;
     const dimShell = this.showHomeDetail && this.homeFocusDim && hasPatch;
@@ -705,6 +721,25 @@ export class EarthScene {
     this.setHomeDetailVisible(true);
     this.setHomeTerrainVisible(!!config?.terrain);
     this.setHomeFocusDim(true);
+
+    // If the real topo terrain layer is present, (re)load a DEM patch centered on home
+    const terrainCtrl = this.layerControllers.get('terrain');
+    if (terrainCtrl?.group?.userData?.load) {
+      // Fire and forget; the patch will appear/replace when ready
+      terrainCtrl.group.userData.load({ center }).catch((e) => {
+        console.warn('Terrain DEM reload for home failed:', e);
+      });
+      // Auto-show the terrain layer when flying home for a rich experience
+      if (!terrainCtrl.visible) {
+        this.setTerrainVisible(true);
+        const chip = document.getElementById('show-terrain');
+        if (chip) chip.checked = true;
+      }
+
+      // UX polish: brief hint that real 3D topo is now active
+      this._showTerrainHint();
+    }
+
     const frame = frameCameraForLatLon(center.lat, center.lon, { altitude: 0.085 });
     if (animate) {
       this.cameraFly = {
@@ -929,6 +964,7 @@ export class EarthScene {
       { visible: this.showRadar, group: this.radarGroup },
       { visible: this.showCyclones, group: this.cycloneGroup },
       { visible: this.showHotspots, group: this.hotspotGroup },
+      { visible: this.showTerrain, group: this.terrainGroup },
       { visible: this.showQuakes, group: this.quakeGroup },
       { visible: this.showVolcanoes, group: this.volcanoGroup },
       { visible: this.showPlates && this.showPlateMotion, group: this.plateMotionGroup },
@@ -1014,5 +1050,24 @@ export class EarthScene {
     this.controls.update();
     updateGlobeCameraClip(this.camera, this.controls.target);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  _showTerrainHint() {
+    // Lightweight ephemeral hint (no full toast system yet)
+    const help = document.getElementById('legend-help');
+    if (!help || help.dataset.terrainHint) return;
+
+    const original = help.textContent;
+    help.dataset.terrainHint = '1';
+    help.textContent = '3D topo active — drag to orbit or scroll to zoom the real terrain mesh.';
+    help.style.color = 'var(--accent)';
+
+    setTimeout(() => {
+      if (help.dataset.terrainHint) {
+        help.textContent = original;
+        help.style.color = '';
+        delete help.dataset.terrainHint;
+      }
+    }, 4200);
   }
 }
