@@ -34,7 +34,10 @@ export function renderLayerChips() {
         const chipId = layer.ui.chipId ? ` id="${esc(layer.ui.chipId)}"` : '';
         const style = layer.ui.hiddenUntilHelio ? ' style="display:none"' : '';
         const checked = layer.defaultVisible !== false ? ' checked' : '';
-        return `<label class="layer-chip"${chipId}${style} title="${esc(layer.ui.title)}"><input type="checkbox" id="${esc(layer.toggleId)}"${checked} /><span>${esc(layer.ui.chipLabel)}</span></label>`;
+        const badge = layer.ui.chipBadge
+          ? `<span class="chip-badge">${esc(layer.ui.chipBadge)}</span>`
+          : '';
+        return `<label class="layer-chip"${chipId}${style} title="${esc(layer.ui.title)}"><input type="checkbox" id="${esc(layer.toggleId)}"${checked} /><span>${esc(layer.ui.chipLabel)}${badge}</span></label>`;
       })
       .join('');
   }

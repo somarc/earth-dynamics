@@ -263,27 +263,40 @@ div.weatherly {
 .theme-rail {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.5rem 0.35rem;
+  gap: 0.3rem;
+  padding: 0.45rem 0.3rem;
   border-right: 1px solid var(--border);
   background: rgba(8, 12, 20, 0.55);
   min-height: 0;
+  /* Give the icon rail a little more presence */
+  min-width: 36px;
 }
 
 .theme-rail__btn {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transform: rotate(180deg);
-  font: 500 0.62rem/1.2 var(--font-sans);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  /* Icon-focused vertical rail buttons. Icons stay upright and centered. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--muted);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
-  padding: 0.55rem 0.3rem;
+  padding: 0.4rem;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.1s ease;
+  /* Square-ish tappable area for icons */
+  width: 32px;
+  height: 32px;
+}
+
+.theme-rail__btn svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  /* Ensure strokes pick up the button's current color */
+  stroke: currentColor;
+  color: inherit;
 }
 
 .theme-rail__btn:hover {
@@ -295,6 +308,10 @@ div.weatherly {
   color: var(--accent);
   border-color: rgba(77, 163, 255, 0.35);
   background: rgba(77, 163, 255, 0.08);
+}
+
+.theme-rail__btn:active {
+  transform: scale(0.94);
 }
 
 .experience-title {
@@ -1462,6 +1479,17 @@ div.weatherly {
   opacity: 0.55;
 }
 
+.chip-badge {
+  font-size: 0.55em;
+  padding: 0.05em 0.35em;
+  margin-left: 0.35em;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  opacity: 0.85;
+  vertical-align: middle;
+  line-height: 1;
+}
+
 .layer-chip--empty:has(input:checked) {
   color: var(--text-muted);
   border-color: var(--border);
@@ -1594,11 +1622,12 @@ select {
   }
 
   .theme-rail__btn {
+    /* Horizontal layout on narrow screens — icons remain compact */
     writing-mode: horizontal-tb;
     transform: none;
-    text-transform: none;
-    font-size: 0.72rem;
-    padding: 0.35rem 0.55rem;
+    width: 32px;
+    height: 32px;
+    padding: 0.3rem;
   }
 
   .panels {
