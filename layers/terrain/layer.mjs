@@ -29,7 +29,7 @@ export default {
       class: 'terrain',
       label: 'Terrain',
       title: 'Real topographic mesh (live DEM)',
-      help: 'Live 3D terrain mesh using real Earth elevation from AWS Terrain Tiles (Terrarium). Same data/technique as kaolti/monolith-terrain. Toggle + fly Home for best view.',
+      help: 'Live 3D terrain mesh (3D badge) using real Earth elevation from AWS Terrain Tiles. Toggle or use Home button for local view. Data from monolith-terrain source.',
     },
   },
 

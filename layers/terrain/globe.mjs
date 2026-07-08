@@ -26,7 +26,7 @@ async function resolveHomeCenter() {
 }
 const TILES_ACROSS = 3; // 768 px coverage — good balance
 const VERTICAL_EXAG = 3.2; // relief exaggeration for visibility at globe scale
-const PATCH_LIFT = 0.0015; // small radial lift so it sits cleanly above the base earth
+const PATCH_LIFT = 0.002; // small radial lift so the 3D topo sits visibly above the base earth shell
 
 /**
  * Build a local tangent frame at (lat, lon).
@@ -59,8 +59,8 @@ export function createTerrainMeshFromDem(dem, centerLat, centerLon, { exaggerati
   // We map the real extent (meters) to a small arc length on unit sphere.
   // For local patches this is close enough to a flat tangent plane.
   const physicalSize = (extentMeters / 1_000_000) * 1.15;
-  // Target a clearly visible regional patch on the globe (a bit larger so "terrain view" is obvious)
-  const targetSize = Math.min(0.32, Math.max(0.12, physicalSize));
+  // Target a clearly visible regional patch on the globe (larger so "terrain view" is obvious even at moderate zoom)
+  const targetSize = Math.min(0.38, Math.max(0.15, physicalSize));
   const half = targetSize * 0.5;
 
   const res = Math.min(320, Math.max(96, Math.floor(size / 2.6))); // vertex resolution
