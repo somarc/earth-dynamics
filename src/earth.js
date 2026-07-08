@@ -141,6 +141,9 @@ export class EarthScene {
     this.pinnedLocalTarget = null;
     this.pendingTerrainPin = null;
     this.lastInteraction = 0;
+
+    this.rotationLocked = false;
+    this.lockedRotation = 0;
     const polePick = new THREE.Mesh(
       new THREE.SphereGeometry(0.04, 8, 8),
       new THREE.MeshBasicMaterial({ visible: false }),
@@ -317,7 +320,13 @@ export class EarthScene {
     this.controls = new OrbitControls(this.camera, canvas);
     configureGlobeControls(this.controls);
 
-    const markInteraction = () => { this.lastInteraction = performance.now(); };
+    const markInteraction = () => {
+      this.lastInteraction = performance.now();
+      // Unlock rotation on user interaction so they can control freely again
+      if (this.rotationLocked) {
+        this.rotationLocked = false;
+      }
+    };
     this.controls.addEventListener('start', markInteraction);
     this.controls.addEventListener('change', markInteraction);
     this.controls.addEventListener('end', markInteraction);
@@ -540,7 +549,12 @@ export class EarthScene {
       this.updateSunLightingFromDir(sunDir, phase < 0.5 ? day : next);
     }
 
-    if (this.diurnalMode === 'sync') {
+    if (this.rotationLocked) {
+      this.surfaceGroup.rotation.y = this.lockedRotation;
+      if (this.fieldLinesGroup?.visible) {
+        this.fieldLinesGroup.rotation.y = this.lockedRotation;
+      }
+    } else if (this.diurnalMode === 'sync') {
       this.surfaceSpinY = phase * Math.PI * 2;
       this.surfaceGroup.rotation.y = this.surfaceSpinY;
       if (this.fieldLinesGroup?.visible) {
@@ -762,8 +776,14 @@ export class EarthScene {
       // UX polish: brief hint that real 3D topo is now active
       this._showTerrainHint();
 
-      // After camera fly completes, pin the geographic view so the terrain patch stays locked in frame as Earth spins
-      this.pendingTerrainPin = { lat: center.lat, lon: center.lon };
+      // Stop the Earth from rotating so the terrain patch stays in view
+      this.rotationLocked = true;
+      this.lockedRotation = this.surfaceGroup.rotation.y;
+
+      // Clear any pinning to avoid conflicts
+      this.pinnedLocalPos = null;
+      this.pinnedLocalTarget = null;
+      this.pendingTerrainPin = null;
     }
 
     const terrainActive = !!terrainCtrl?.group?.userData;
@@ -940,6 +960,8 @@ export class EarthScene {
     if (this.entryFromPos.distanceTo(this.defaultCameraPosition) < 0.05) {
       this.entryFromPos.copy(this.defaultCameraPosition).multiplyScalar(1.12);
     }
+    // Unlock rotation for new view entry
+    this.rotationLocked = false;
   }
 
   triggerDayPulse() {
@@ -1094,7 +1116,12 @@ export class EarthScene {
 
   render(delta) {
     const now = performance.now();
-    if (this.diurnalMode === 'free' || !this.showBodies) {
+    if (this.rotationLocked) {
+      this.surfaceGroup.rotation.y = this.lockedRotation;
+      if (this.fieldLinesGroup?.visible) {
+        this.fieldLinesGroup.rotation.y = this.lockedRotation;
+      }
+    } else if (this.diurnalMode === 'free' || !this.showBodies) {
       const spin = this.baseSpin + this.autoRotate * this.lodFactor;
       this.surfaceGroup.rotation.y += spin;
       if (this.fieldLinesGroup?.visible) {
