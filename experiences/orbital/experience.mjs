@@ -3,10 +3,11 @@ export default {
   id: 'orbital',
   title: 'Orbital Geometry',
   railLabel: 'Orbit',
-  tagline: 'True-scale Moon & Sun — ecliptic, tides, and syzygy',
+  tagline: 'True-scale Moon, ecliptic context, tides & syzygy',
   /**
-   * System geometry, not “you are here.” Distinct from Bald Earth (shell only)
-   * and Live orientation (local solar face).
+   * GEO-first system geometry (not Bald “shell only”, not Live “you are here”).
+   * Helio stays available as a manual switch — parked as a product surface until
+   * solar-domain ingest (CME / spots / corona) justifies real investment.
    */
   layers: {
     quakes: false,
@@ -26,20 +27,16 @@ export default {
   },
   panels: ['orbital-split', 'lunar'],
   hiddenPanels: ['polhode', 'rotation', 'space-weather', 'ocean-sst', 'inspect', 'events', 'citations'],
-  /** Primary story is Earth around the Sun at true AU scale. */
-  defaultView: 'heliocentric',
-  /** Do not re-lock the globe to GPS Live — that reads as Bald Earth. */
+  /** Product default is GEO; true-scale Moon orbit is the readable story today. */
+  defaultView: 'geocentric',
+  /** Do not re-lock to GPS Live face — that collapses Orbit into Bald/Live. */
   orientToUser: false,
-  /** Scrub moments / phase; Live “now face” is the other product. */
+  /** Scrub phases / distance / moments. */
   preferTimeMode: 'replay',
-  /**
-   * Per-view entry framing after ephemeris lands.
-   * helio-sun-earth = over-Earth shoulder toward true-scale Sun
-   * earth-moon = pull back to lunar orbit (~60 R⊕)
-   */
   entryFrames: {
-    heliocentric: 'helio-sun-earth',
     geocentric: 'earth-moon',
+    // Helio only if the user opts in via the view chip — no forced landing.
+    heliocentric: 'helio-sun-earth',
   },
   freshnessKeys: ['jplHorizons'],
   suggestedMoments: [

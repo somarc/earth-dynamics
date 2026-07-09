@@ -48,17 +48,17 @@ describe('applyExperiencePanels', () => {
 });
 
 describe('orbital vs bald earth entry frames', () => {
-  it('orbital defaults to helio framing, not live-user', () => {
-    expect(orbital.defaultView).toBe('heliocentric');
+  it('orbital is GEO-first with earth–moon frame, not live-user or forced helio', () => {
+    expect(orbital.defaultView).toBe('geocentric');
     expect(orbital.orientToUser).toBe(false);
-    expect(resolveEntryFrame(orbital, 'heliocentric')).toBe('helio-sun-earth');
     expect(resolveEntryFrame(orbital, 'geocentric')).toBe('earth-moon');
+    // Helio only when user switches views — not the product landing.
+    expect(resolveEntryFrame(orbital, 'heliocentric')).toBe('helio-sun-earth');
   });
 
-  it('bald earth stays live-user on geo and does not claim orbital frames', () => {
+  it('bald earth stays live-user on geo', () => {
     expect(baldEarth.bareGlobe).toBe(true);
     expect(baldEarth.defaultView).toBe('geocentric');
     expect(resolveEntryFrame(baldEarth, 'geocentric')).toBe('live-user');
-    expect(resolveEntryFrame(baldEarth, 'heliocentric')).toBe('helio-sun-earth');
   });
 });
