@@ -17,6 +17,7 @@ import {
   SURFACE_MODELS,
   isLitMap,
 } from './lib/bald-earth-params.js';
+import { surfaceYawToFaceLon } from './lib/earth-orientation.js';
 import { frameCameraForLatLon } from '../layers/home-region/globe.mjs';
 import {
   EARTH_RADIUS,
@@ -1080,6 +1081,68 @@ export class EarthScene {
 
   getAppearanceParams() {
     return this.appearanceParams ? { ...this.appearanceParams } : null;
+  }
+
+  /**
+   * Face `lon` toward the default camera (+Z), optionally reframe camera on lat/lon,
+   * and lock spin so the view holds. Sun/day-night stay on ephemeris (caller sets phase).
+   * @param {{ lat: number, lon: number, lock?: boolean, frameCamera?: boolean, camDistance?: number }} opts
+   */
+  orientToLocation({
+    lat,
+    lon,
+    lock = true,
+    frameCamera = true,
+    camDistance = 2.65,
+  } = {}) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !this.surfaceGroup) return false;
+
+    const yaw = surfaceYawToFaceLon(lon);
+    this.autoRotate = 0;
+    // Keep free mode so sync phase doesn't fight locked yaw; sun still updated separately.
+    this.diurnalMode = 'free';
+    this.rotationLocked = !!lock;
+    this.lockedRotation = yaw;
+    this.surfaceGroup.rotation.y = yaw;
+    if (this.fieldLinesGroup) this.fieldLinesGroup.rotation.y = yaw;
+    this.userOrientation = { lat, lon, yaw };
+
+    if (frameCamera && this.camera && this.controls) {
+      // Point after yaw is on +Z; lift camera slightly by latitude for a natural tilt.
+      const latRad = (lat * Math.PI) / 180;
+      const elev = Math.sin(latRad) * 0.35;
+      this.camera.position.set(0, elev, camDistance);
+      this.controls.target.set(0, 0, 0);
+      this.defaultCameraPosition.copy(this.camera.position);
+      this.controls.update();
+      this.cameraEntry = null;
+      this.cameraFly = null;
+    }
+    return true;
+  }
+
+  /** Apply sun/moon lighting for a day-fraction without spinning the surface (when locked). */
+  applySunPhase(phase, day, nextDay = null) {
+    if (day) {
+      this.diurnalDay = day;
+      this.diurnalNextDay = nextDay || day;
+    }
+    this.diurnalPhase = Math.max(0, Math.min(1, phase));
+    const d = this.diurnalDay;
+    const n = this.diurnalNextDay || d;
+    if (!d) return;
+    const sunDir = this.lerpBodyDirection(d.sun, n?.sun, this.diurnalPhase);
+    if (sunDir) this.updateSunLightingFromDir(sunDir, this.diurnalPhase < 0.5 ? d : n);
+    if (this.showBodies && this.bodiesGroup) {
+      this.bodiesGroup.visible = true;
+      const moonDir = this.lerpBodyDirection(d.moon, n?.moon, this.diurnalPhase);
+      if (moonDir) {
+        this.moonMesh.position.copy(moonDir.clone().multiplyScalar(2.8));
+      }
+      if (sunDir) {
+        this.sunMarker.position.copy(sunDir.clone().multiplyScalar(7.5));
+      }
+    }
   }
 
   setCyclones(storms, viewDate = this.viewDate) {

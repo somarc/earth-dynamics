@@ -231,6 +231,27 @@ npm run start</pre>
             </div>
 
             <div class="bes-section">
+              <h3 class="bes-section__title">Your place &amp; time</h3>
+              <p class="bes-hint">
+                Default for real users: face your location, scrub to today, light the globe from the sun at the current local hour (day vs night).
+              </p>
+              <label class="bes-check">
+                <input type="checkbox" id="bes-orient-user" checked />
+                <span>Orient to my location (GPS / timezone)</span>
+              </label>
+              <label class="bes-check">
+                <input type="checkbox" id="bes-use-local-now" checked />
+                <span>Use local today + current time for sun</span>
+              </label>
+              <p class="bes-status" id="bes-location-status" aria-live="polite">Location not resolved yet.</p>
+              <div class="bes-actions bes-actions--stack">
+                <button type="button" id="bes-locate" class="bes-btn bes-btn--primary">
+                  Locate me now
+                </button>
+              </div>
+            </div>
+
+            <div class="bes-section">
               <h3 class="bes-section__title">Guides</h3>
               <label class="bes-check">
                 <input type="checkbox" id="bes-stars" checked />

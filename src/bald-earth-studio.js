@@ -61,6 +61,8 @@ function readForm() {
   next.gridVisible = !!$id('bes-grid')?.checked;
   next.debugSun = !!$id('bes-debug-sun')?.checked;
   next.nightLights = !!$id('bes-night-lights')?.checked;
+  next.orientToUser = !!$id('bes-orient-user')?.checked;
+  next.useLocalNow = !!$id('bes-use-local-now')?.checked;
 
   const litRadio = $id('bes-model-lit');
   next.surfaceModel = litRadio?.checked ? SURFACE_MODELS.LIT_MAP : SURFACE_MODELS.INSTRUMENT;
@@ -99,6 +101,8 @@ function writeForm(p) {
   setCheck('bes-grid', p.gridVisible);
   setCheck('bes-debug-sun', p.debugSun);
   setCheck('bes-night-lights', p.nightLights);
+  setCheck('bes-orient-user', p.orientToUser !== false);
+  setCheck('bes-use-local-now', p.useLocalNow !== false);
   setCheck('bes-diurnal-sync', p.diurnalMode === 'sync');
   setCheck('bes-diurnal-free', p.diurnalMode === 'free');
 
@@ -253,6 +257,20 @@ export function mountBaldEarthStudio(options) {
     clearGlobeAppDefaults();
     updateAppDefaultsStatus();
     flashButton('bes-clear-app', 'Cleared');
+  });
+
+  $id('bes-locate')?.addEventListener('click', async () => {
+    applyAndPersist();
+    const btn = $id('bes-locate');
+    if (btn) btn.textContent = 'Locating…';
+    try {
+      await ctx?.onLocateMe?.();
+      flashButton('bes-locate', 'Oriented');
+    } catch {
+      flashButton('bes-locate', 'Failed');
+    } finally {
+      if (btn) setTimeout(() => { btn.textContent = 'Locate me now'; }, 1200);
+    }
   });
 }
 

@@ -53,6 +53,8 @@ import {
   setBaldEarthStudioActive,
   applyGlobeAppDefaultsToScene,
 } from './bald-earth-studio.js';
+import { applyViewerOrientation } from './viewer-orientation.js';
+import { locationStatusText } from './lib/user-location.js';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -456,6 +458,38 @@ async function updateUI() {
       });
 }
 
+function viewerOrientationCtx() {
+  return {
+    getScene: () => geocentricScene,
+    getDates: () => state.dates,
+    getCurrentIndex: () => state.currentIndex,
+    setCurrentIndex: (i) => {
+      state.currentIndex = i;
+      state.dayAccumulator = 0;
+      timelineSlider?.update(state.currentIndex);
+    },
+    refreshFrame: () => updateUI(),
+    setDiurnalMode,
+    getCatalog: () => state.catalog,
+    loadNextEphemeris,
+    getCachedFrame: () => state.cachedFrame,
+  };
+}
+
+async function runViewerOrientation({ force = false } = {}) {
+  try {
+    const result = await applyViewerOrientation(viewerOrientationCtx(), { force });
+    if (result?.status) {
+      const el = $id('bes-location-status');
+      if (el) el.textContent = `${result.status}${result.date ? ` · ${result.date}` : ''}`;
+    }
+    return result;
+  } catch (err) {
+    console.warn('Viewer orientation failed:', err);
+    return null;
+  }
+}
+
 function selectExperience(id) {
   state.experienceId = id || DEFAULT_EXPERIENCE_ID;
   const exp = getExperience(state.experienceId);
@@ -478,7 +512,7 @@ function selectExperience(id) {
   filters?.classList.toggle('controls__cluster--hidden', !!exp.bareGlobe);
   renderThemeRail(state.experienceId, selectExperience);
   renderStalenessChips(state.catalog?.manifest, { freshnessKeys: exp.freshnessKeys });
-  updateUI();
+  updateUI().then(() => runViewerOrientation({ force: false }));
 }
 
 function jumpToMoment(date) {
@@ -777,6 +811,7 @@ export default async function mountWeatherly(root) {
   mountBaldEarthStudio({
     getScene: () => geocentricScene,
     onDiurnalMode: (mode) => setDiurnalMode(mode),
+    onLocateMe: () => runViewerOrientation({ force: true }),
   });
   wireMoments({ onMoment: jumpToMoment });
   renderThemeRail(state.experienceId, selectExperience);

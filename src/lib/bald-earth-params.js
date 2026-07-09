@@ -40,6 +40,9 @@ export const BALD_EARTH_DEFAULTS = Object.freeze({
   // Motion
   diurnalMode: 'free',
   autoRotate: 0.002,
+  // Viewer orientation (GPS / timezone + local solar time)
+  orientToUser: true,
+  useLocalNow: true, // scrub to local today + sun phase from local clock
   // Visibility
   starsVisible: true,
   bodiesVisible: true,
@@ -108,6 +111,8 @@ export function normalizeBaldEarthParams(raw = {}) {
     exposure: clamp(Number(raw.exposure ?? d.exposure), 0.4, 2.5),
     diurnalMode: raw.diurnalMode === 'sync' ? 'sync' : 'free',
     autoRotate: clamp(Number(raw.autoRotate ?? d.autoRotate), 0, 0.05),
+    orientToUser: raw.orientToUser !== false,
+    useLocalNow: raw.useLocalNow !== false,
     starsVisible: raw.starsVisible !== false,
     bodiesVisible: raw.bodiesVisible !== false,
     gridVisible: !!raw.gridVisible,
@@ -156,6 +161,8 @@ export const GLOBE_APPEARANCE_KEYS = [
   'fillIntensity',
   'exposure',
   'starsVisible',
+  'orientToUser',
+  'useLocalNow',
 ];
 
 /** Slice studio params into app-wide appearance defaults. */
