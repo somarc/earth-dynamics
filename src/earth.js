@@ -68,6 +68,7 @@ export class EarthScene {
     this.radarSiteCount = 0;
     this.earthOpacity = 1;
     this.hemisphereCullEvents = false;
+    this.bareGlobeMode = false;
     this.viewDate = null;
     this.ready = this.init(canvas);
   }
@@ -370,6 +371,10 @@ export class EarthScene {
   }
 
   updateTrailGeometry(trailHistory = this.lastTrailHistory) {
+    if (this.bareGlobeMode) {
+      if (this.trailLine) this.trailLine.visible = false;
+      return;
+    }
     this.lastTrailHistory = trailHistory || [];
     if (!this.showTrail || !this.lastTrailHistory.length) {
       this.trailLine.visible = false;
@@ -403,7 +408,7 @@ export class EarthScene {
     );
     const pos = latLonToVector3(poleLat, poleLon, EARTH_RADIUS * 1.01);
     this.poleMarker.position.set(pos.x, pos.y, pos.z);
-    this.poleMarker.visible = this.showSpinPole;
+    this.poleMarker.visible = this.showSpinPole && !this.bareGlobeMode;
     this.spinPoleLatLon = { lat: poleLat, lon: poleLon };
     const spinPoleData = {
       pickType: 'spin-pole',
@@ -651,12 +656,36 @@ export class EarthScene {
 
   setSpinPoleVisible(visible) {
     this.showSpinPole = visible;
-    if (this.poleMarker) this.poleMarker.visible = visible;
+    if (this.poleMarker) this.poleMarker.visible = visible && !this.bareGlobeMode;
   }
 
   setTrailVisible(visible) {
     this.showTrail = visible;
     this.updateTrailGeometry();
+  }
+
+  /**
+   * Bald-earth authoring mode: hide non-layer instrument chrome
+   * (spin axis, pole marker, trail) so only the planetary body remains.
+   * Atmosphere, lighting, and textures stay — those *are* the body.
+   */
+  setBareGlobeMode(enabled) {
+    this.bareGlobeMode = !!enabled;
+    if (this.rotationAxis) this.rotationAxis.visible = !this.bareGlobeMode;
+    if (this.poleMarker) {
+      this.poleMarker.visible = !this.bareGlobeMode && this.showSpinPole;
+    }
+    if (this.trailLine) {
+      this.trailLine.visible =
+        !this.bareGlobeMode && this.showTrail && (this.trailCount > 0);
+    }
+    if (this.magneticPoleGroup) {
+      this.magneticPoleGroup.visible = !this.bareGlobeMode && this.showFieldLines;
+    }
+    if (this.grid) {
+      if (this.bareGlobeMode) this.grid.visible = false;
+      else this.grid.visible = this.earthOpacity < 0.88;
+    }
   }
 
   setCyclonesVisible(visible) {

@@ -4,6 +4,7 @@ const modules = import.meta.glob(
 );
 
 const ORDER = [
+  'bald-earth',
   'solid-earth',
   'ocean-climate',
   'magnetosphere',

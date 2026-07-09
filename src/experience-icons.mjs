@@ -7,6 +7,15 @@
  */
 
 export const EXPERIENCE_ICONS = {
+  /** Plain sphere — no terrain lines, poles, or field marks. */
+  'bald-earth': `
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.75"/>
+      <!-- faint equator only — reads as a bare globe, not a theme -->
+      <ellipse cx="12" cy="12" rx="9" ry="3.2" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.45"/>
+    </svg>
+  `,
+
   'solid-earth': `
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
       <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.75"/>

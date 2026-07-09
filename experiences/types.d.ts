@@ -21,6 +21,13 @@ export interface ExperienceManifest {
   hiddenPanels?: string[];
   showAllPanels?: boolean;
   showAllLayers?: boolean;
+  /** Hide every sidebar panel (Bald Earth authoring mode). */
+  hideAllPanels?: boolean;
+  /**
+   * Strip instrument chrome (spin axis, pole, trail) so only the planetary
+   * body remains. Data layers should also be off via `layers`.
+   */
+  bareGlobe?: boolean;
 
   defaultView: ExperienceView;
   /** 0–1 globe shell opacity when experience activates (1 = solid, no x-ray bleed) */

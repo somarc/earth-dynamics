@@ -30,9 +30,14 @@ export function experienceToPreset(exp) {
 
 export function applyExperiencePanels(exp) {
   const showAll = exp.showAllPanels;
+  const hideAll = exp.hideAllPanels;
   const allow = new Set(exp.panels ?? []);
   $$(PANEL_SELECTOR).forEach((el) => {
     const id = el.dataset.panel;
+    if (hideAll) {
+      el.classList.add('panel--experience-hidden');
+      return;
+    }
     if (showAll || !allow.size) {
       el.classList.remove('panel--experience-hidden');
       return;
@@ -168,6 +173,11 @@ export function applyExperience(exp, {
   }
   geocentricScene?.setHemisphereCullEvents?.(!!exp.hemisphereCull);
 
+  // Bare globe: hide instrument chrome (axis line, etc.) that is not a data layer chip.
+  const bare = !!exp.bareGlobe;
+  geocentricScene?.setBareGlobeMode?.(bare);
+  heliocentricScene?.setBareGlobeMode?.(bare);
+
   const title = $id('experience-title');
   const tagline = $id('experience-tagline');
   if (title) title.textContent = exp.title;
@@ -180,6 +190,13 @@ export function applyExperience(exp, {
     footerLayers.classList.toggle('controls__cluster--hidden', !exp.showAllLayers);
   }
 
-  renderMoments(exp);
+  // Bald Earth is for authoring the shell — hide moment chips and keep footer quiet.
+  const moments = $id('experience-moments');
+  if (bare && moments) {
+    moments.innerHTML = '';
+    moments.classList.add('experience-moments--hidden');
+  } else {
+    renderMoments(exp);
+  }
   syncExperienceUrl(exp.id, date);
 }

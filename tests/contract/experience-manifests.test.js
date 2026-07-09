@@ -9,6 +9,7 @@ import { allLayerUi } from '../../src/layers/ui-registry.mjs';
 import { experienceToPreset } from '../../src/experiences/controller.mjs';
 
 const REQUIRED_EXPERIENCE_IDS = [
+  'bald-earth',
   'solid-earth',
   'ocean-climate',
   'magnetosphere',
@@ -18,7 +19,7 @@ const REQUIRED_EXPERIENCE_IDS = [
 ];
 
 describe('experience manifests', () => {
-  it('discovers the six v1 experiences', async () => {
+  it('discovers all guided experiences including bald-earth', async () => {
     const list = await discoverExperiences();
     const ids = list.map((e) => e.id).sort();
     expect(ids).toEqual([...REQUIRED_EXPERIENCE_IDS].sort());
@@ -30,11 +31,11 @@ describe('experience manifests', () => {
       expect(exp.id).toBeTruthy();
       expect(exp.title).toBeTruthy();
       expect(exp.tagline).toBeTruthy();
-      if (!exp.showAllLayers) {
+      if (!exp.showAllLayers && !exp.bareGlobe) {
         expect(exp.layers).toBeTypeOf('object');
         expect(Object.keys(exp.layers).length).toBeGreaterThan(0);
       }
-      if (!exp.showAllPanels) {
+      if (!exp.showAllPanels && !exp.hideAllPanels) {
         expect(Array.isArray(exp.panels)).toBe(true);
       }
     }
@@ -73,5 +74,17 @@ describe('experience manifests', () => {
     // At least core lanes stay on in full mode
     expect(preset.quakes).toBe(true);
     expect(preset.volcanoes).toBe(true);
+  });
+
+  it('bald-earth forces every catalog layer off', async () => {
+    const list = await discoverExperiences();
+    const bald = list.find((e) => e.id === 'bald-earth');
+    expect(bald).toBeTruthy();
+    expect(bald.bareGlobe).toBe(true);
+    expect(bald.hideAllPanels).toBe(true);
+    const preset = experienceToPreset(bald);
+    for (const layer of allLayerUi()) {
+      expect(preset[layer.key], `bald-earth should hide ${layer.key}`).toBe(false);
+    }
   });
 });
