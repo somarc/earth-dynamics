@@ -12,7 +12,8 @@ export class FetchRetryError extends Error {
   }
 }
 
-function parseRetryAfterMs(header) {
+/** @param {string | null | undefined} header */
+export function parseRetryAfterMs(header) {
   if (!header) return null;
   const seconds = Number.parseInt(header, 10);
   if (Number.isFinite(seconds) && seconds > 0) return seconds * 1000;
@@ -24,7 +25,8 @@ function parseRetryAfterMs(header) {
   return null;
 }
 
-function backoffMs(attempt, baseMs) {
+/** Linear backoff: baseMs * (attempt + 1). attempt is 0-indexed. */
+export function backoffMs(attempt, baseMs) {
   return baseMs * (attempt + 1);
 }
 
