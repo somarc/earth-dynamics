@@ -78,6 +78,12 @@ const state = {
   cachedFrame: null,
   cachedDate: null,
   experienceId: DEFAULT_EXPERIENCE_ID,
+  /**
+   * live — now at user place (default product posture)
+   * replay — archive scrubber + playback for historical layers
+   */
+  timeMode: 'live',
+  liveLocationStatus: null,
 };
 
 const EARTH_OPACITY_KEY = 'wobblescope-earth-opacity';
@@ -476,16 +482,58 @@ function viewerOrientationCtx() {
   };
 }
 
+function updateLiveNowChrome(result = null) {
+  const meta = $id('live-now-meta');
+  const label = $id('live-now-label');
+  if (result?.status) {
+    state.liveLocationStatus = result.status;
+    if (meta) {
+      const time = new Date().toLocaleTimeString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+      meta.textContent = `${result.status} · ${time}${result.date ? ` · ${result.date}` : ''}`;
+    }
+    const bes = $id('bes-location-status');
+    if (bes) bes.textContent = `${result.status}${result.date ? ` · ${result.date}` : ''}`;
+  }
+  if (label) label.textContent = state.timeMode === 'live' ? 'Now' : 'Archive';
+}
+
+function setTimeMode(mode, { reorient = false } = {}) {
+  const next = mode === 'replay' ? 'replay' : 'live';
+  const prev = state.timeMode;
+  state.timeMode = next;
+
+  const root = $id('app-controls') || document.querySelector('.controls');
+  root?.classList.toggle('controls--time-live', next === 'live');
+  root?.classList.toggle('controls--time-replay', next === 'replay');
+
+  $$('[data-time-mode]').forEach((btn) => {
+    btn.classList.toggle('time-mode-btn--active', btn.dataset.timeMode === next);
+  });
+
+  if (next === 'live') {
+    state.playing = false;
+    const playBtn = $id('play-btn');
+    if (playBtn) playBtn.textContent = '▶';
+    if (reorient || prev === 'replay') {
+      runViewerOrientation({ force: true });
+    }
+  } else {
+    updateLiveNowChrome();
+  }
+}
+
 async function runViewerOrientation({ force = false } = {}) {
   try {
     const result = await applyViewerOrientation(viewerOrientationCtx(), { force });
-    if (result?.status) {
-      const el = $id('bes-location-status');
-      if (el) el.textContent = `${result.status}${result.date ? ` · ${result.date}` : ''}`;
-    }
+    updateLiveNowChrome(result);
     return result;
   } catch (err) {
     console.warn('Viewer orientation failed:', err);
+    const meta = $id('live-now-meta');
+    if (meta) meta.textContent = 'Location unavailable — timezone estimate';
     return null;
   }
 }
@@ -518,6 +566,8 @@ function selectExperience(id) {
 function jumpToMoment(date) {
   const idx = state.dates.indexOf(date);
   if (idx < 0) return;
+  // Moments are historical — enter Replay automatically.
+  setTimeMode('replay');
   state.currentIndex = idx;
   state.dayAccumulator = 0;
   geocentricScene?.setDiurnalPhase(0);
@@ -530,6 +580,15 @@ function setupControls() {
   const playBtn = $id('play-btn');
   const speedSelect = $id('speed-select');
   const dayLengthSelect = $id('day-length-select');
+
+  // Default product posture: Live (now). Scrubber is Replay.
+  setTimeMode('live');
+
+  $$('[data-time-mode]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      setTimeMode(btn.dataset.timeMode, { reorient: btn.dataset.timeMode === 'live' });
+    });
+  });
 
   slider.min = 0;
   slider.max = state.dates.length - 1;
@@ -549,6 +608,7 @@ function setupControls() {
   timelineSlider.update(state.currentIndex);
 
   slider.addEventListener('input', () => {
+    if (state.timeMode !== 'replay') setTimeMode('replay');
     state.currentIndex = parseInt(slider.value, 10);
     state.dayAccumulator = 0;
     geocentricScene?.setDiurnalPhase(0);
@@ -557,6 +617,7 @@ function setupControls() {
   });
 
   playBtn.addEventListener('click', () => {
+    if (state.timeMode !== 'replay') setTimeMode('replay');
     state.playing = !state.playing;
     playBtn.textContent = state.playing ? '⏸' : '▶';
     timelineSlider?.refreshMeta();

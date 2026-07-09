@@ -361,9 +361,22 @@ npm run start</pre>
         </aside>
       </main>
 
-      <footer class="controls">
-        <div class="controls__row controls__row--timeline">
-          <button id="play-btn" class="btn btn--play" aria-label="Play/pause">▶</button>
+      <footer class="controls controls--time-live" id="app-controls">
+        <div class="controls__row controls__row--time-mode" role="group" aria-label="Time mode">
+          <button type="button" class="time-mode-btn time-mode-btn--active" data-time-mode="live" id="time-mode-live" title="Now at your place — sun and orientation match local time">
+            Live
+          </button>
+          <button type="button" class="time-mode-btn" data-time-mode="replay" id="time-mode-replay" title="Scrub the archive and replay data layers through history">
+            Replay
+          </button>
+          <div class="live-now" id="live-now" aria-live="polite">
+            <span class="live-now__dot" aria-hidden="true"></span>
+            <span class="live-now__label" id="live-now-label">Now</span>
+            <span class="live-now__meta" id="live-now-meta">Locating…</span>
+          </div>
+        </div>
+        <div class="controls__row controls__row--timeline" id="timeline-row">
+          <button id="play-btn" class="btn btn--play" aria-label="Play/pause replay">▶</button>
           <div class="controls__scrub">
             <div class="timeline-readout" aria-live="polite">
               <span id="scrub-date" class="timeline-readout__date">—</span>
@@ -379,7 +392,7 @@ npm run start</pre>
                 min="0"
                 max="100"
                 value="0"
-                aria-label="Timeline scrubber"
+                aria-label="Replay timeline scrubber"
                 aria-valuemin="0"
                 aria-valuemax="100"
                 aria-valuenow="0"
@@ -393,8 +406,8 @@ npm run start</pre>
           </div>
         </div>
         <div class="controls__row controls__row--tools">
-          <div class="controls__group controls__group--playback" role="group" aria-label="Playback rate">
-            <span class="controls__group-label">Playback</span>
+          <div class="controls__group controls__group--playback" id="playback-group" role="group" aria-label="Replay rate">
+            <span class="controls__group-label">Replay</span>
             <div class="controls__field" title="How long one simulated day takes at 1× fast-forward">
               <span class="controls__field-label">Day</span>
               <select id="day-length-select" class="footer-select footer-select--day" aria-label="Simulated day length at 1×">

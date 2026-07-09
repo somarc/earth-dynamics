@@ -1144,6 +1144,7 @@ div.weatherly {
   position: relative; /* for absolute hints (e.g. terrain activation toast) */
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
   gap: 0.35rem 0.65rem;
   padding: 0.42rem 0.65rem 0.48rem;
   border-top: 1px solid var(--border);
@@ -1161,10 +1162,131 @@ div.weatherly {
   max-width: 100%;
 }
 
+.controls__row--time-mode {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  padding-bottom: 0.05rem;
+}
+
+.time-mode-btn {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.28rem 0.65rem;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: rgba(14, 22, 38, 0.55);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.time-mode-btn:hover {
+  color: var(--text);
+  border-color: rgba(77, 163, 255, 0.35);
+}
+
+.time-mode-btn--active {
+  color: var(--accent);
+  border-color: rgba(77, 163, 255, 0.5);
+  background: rgba(77, 163, 255, 0.14);
+}
+
+.controls--time-live .time-mode-btn--active[data-time-mode='live'] {
+  color: var(--accent-earth, #3ecf8e);
+  border-color: rgba(62, 207, 142, 0.5);
+  background: rgba(62, 207, 142, 0.12);
+}
+
+.live-now {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  flex: 1;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.live-now__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-earth, #3ecf8e);
+  box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.2);
+  flex-shrink: 0;
+}
+
+.controls--time-replay .live-now__dot {
+  background: var(--text-muted);
+  box-shadow: none;
+  opacity: 0.55;
+}
+
+.live-now__label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-earth, #3ecf8e);
+  flex-shrink: 0;
+}
+
+.controls--time-replay .live-now__label {
+  color: var(--text-muted);
+}
+
+.live-now__meta {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Live: archive scrubber is secondary — hidden until Replay */
+.controls--time-live .controls__row--timeline,
+.controls--time-live #playback-group {
+  display: none;
+}
+
+.controls--time-live {
+  grid-template-rows: auto;
+}
+
+.controls--time-live .controls__row--tools {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-content: flex-end;
+}
+
+.controls--time-live .controls__row--time-mode {
+  /* sit above tools on narrow; on wide share one row via tools spanning */
+  grid-row: 1;
+}
+
+.controls--time-replay .controls__row--timeline {
+  grid-column: 1 / 2;
+  grid-row: 2;
+}
+
+.controls--time-replay .controls__row--tools {
+  grid-column: 2 / 3;
+  grid-row: 2;
+}
+
 .controls__row--timeline {
   gap: 0.5rem;
   grid-column: 1 / 2;
-  grid-row: 1 / 3;
+  grid-row: 2;
   align-items: end;
 }
 
