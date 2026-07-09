@@ -64,7 +64,7 @@ export const LEGEND_GEO = [
     label: '◯ Moon',
     title: 'Moon',
     help:
-      'JPL DE441 geocentric Moon at true Earth-radii distance (~60 R⊕ mean; perigee/apogee from daily range). Zoom out to frame the orbit. Day=Sync advances earth rotation and moon together; Free keeps bodies on the scrub date.',
+      'JPL DE441 Moon and Sun at true Earth-radii scale (Moon ~60 R⊕, Sun ~1 AU ≈ 23k R⊕, R☉ ≈ 109 R⊕). Zoom out for lunar orbit, keep scrolling for the Sun (~0.5° disc from Earth). Day=Sync advances rotation with the timeline.',
   },
   {
     id: 'sun',

@@ -1,9 +1,15 @@
 export const EARTH_RADIUS = 1;
 export const EARTH_MEAN_RADIUS_KM = 6371;
+/** IAU astronomical unit (km). */
+export const AU_KM = 149_597_870.7;
 /** Mean lunar radius (km) — ~0.273 Earth radii. */
 export const MOON_MEAN_RADIUS_KM = 1737.4;
 /** Mean Earth–Moon center distance (km) — ~60.3 Earth radii. */
 export const MOON_MEAN_DIST_KM = 384_400;
+/** Mean solar radius (km) — ~109.2 Earth radii. */
+export const SUN_MEAN_RADIUS_KM = 695_700;
+/** Mean Earth–Sun distance (km) = 1 AU — ~23,481 Earth radii. */
+export const SUN_MEAN_DIST_KM = AU_KM;
 
 /** Scales hypocenter depth so foci are visible inside the globe while keeping true relative order. */
 export const QUAKE_DEPTH_EXAGGERATION = 28;
@@ -23,6 +29,25 @@ export function moonOrbitRadiusScene(distanceKm = MOON_MEAN_DIST_KM, earthRadius
 /** Moon body radius in scene units (true scale relative to Earth). */
 export function moonBodyRadiusScene(earthRadius = EARTH_RADIUS) {
   return sceneUnitsFromKm(MOON_MEAN_RADIUS_KM, earthRadius);
+}
+
+/** Earth–Sun distance in scene units (true Earth-radii scale; 1 AU mean). */
+export function sunOrbitRadiusScene(distanceKm = SUN_MEAN_DIST_KM, earthRadius = EARTH_RADIUS) {
+  const km = distanceKm > 0 ? distanceKm : SUN_MEAN_DIST_KM;
+  return sceneUnitsFromKm(km, earthRadius);
+}
+
+/** Sun body radius in scene units (true scale relative to Earth). */
+export function sunBodyRadiusScene(earthRadius = EARTH_RADIUS) {
+  return sceneUnitsFromKm(SUN_MEAN_RADIUS_KM, earthRadius);
+}
+
+/**
+ * Scene units per AU when 1 Earth radius = `earthRadius` scene units.
+ * Keeps heliocentric orbits on the same Earth-radii scale as geo bodies.
+ */
+export function auScaleForEarthRadius(earthRadius = EARTH_RADIUS) {
+  return sunOrbitRadiusScene(AU_KM, earthRadius);
 }
 
 export function quakeHypocenterRadius(

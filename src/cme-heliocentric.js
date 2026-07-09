@@ -1,7 +1,11 @@
 import * as THREE from 'three';
+import { auScaleForEarthRadius } from './utils.js';
 
-const AU_SCALE = 12;
+/** Must match HELIO_EARTH_RADIUS in heliocentric.js */
+const HELIO_EARTH_RADIUS = 0.28;
+const AU_SCALE = auScaleForEarthRadius(HELIO_EARTH_RADIUS);
 const DAY_SEC = 86400;
+const AU_KM = 149_597_870.7;
 
 function parseTime(iso) {
   return iso ? new Date(iso).getTime() : null;
@@ -27,14 +31,14 @@ export function buildCmeMarkers(cmes, viewDate, earthPos) {
     if (ageDays == null || ageDays > 5) continue;
 
     const speed = cme.speed || 500;
-    const travelAu = (speed * ageDays * DAY_SEC) / 149597870.7;
+    const travelAu = (speed * ageDays * DAY_SEC) / AU_KM;
     const dist = Math.min(travelAu * AU_SCALE, AU_SCALE * 1.15);
     const halfAngle = ((cme.halfAngle || 30) * Math.PI) / 180;
 
     const origin = new THREE.Vector3(0, 0, 0);
     const tip = sunToEarth.clone().multiplyScalar(dist);
     const coneGeo = new THREE.ConeGeometry(
-      Math.tan(halfAngle) * dist * 0.35 + 0.08,
+      Math.tan(halfAngle) * dist * 0.35 + AU_SCALE * 0.006,
       dist,
       16,
       1,

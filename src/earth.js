@@ -29,6 +29,9 @@ import {
   moonBodyRadiusScene,
   moonOrbitRadiusScene,
   MOON_MEAN_DIST_KM,
+  sunBodyRadiusScene,
+  sunOrbitRadiusScene,
+  SUN_MEAN_DIST_KM,
   poleOffsetToTilt,
   iersPoleGlobePosition,
   magToSize,
@@ -287,17 +290,31 @@ export class EarthScene {
     );
     this.bodiesGroup.add(this.moonMesh);
 
-    const sunGeo = new THREE.SphereGeometry(0.14, 16, 16);
+    // True scale: R_sun / R_earth ≈ 109; distance ~1 AU ≈ 23,481 R_earth (was decorative 7.5).
+    const sunR = sunBodyRadiusScene(EARTH_RADIUS);
+    const sunGeo = new THREE.SphereGeometry(sunR, 32, 32);
     this.sunMarker = new THREE.Mesh(
       sunGeo,
-      new THREE.MeshBasicMaterial({ color: 0xffd54a })
+      new THREE.MeshBasicMaterial({ color: 0xffe066 })
     );
     this.bodiesGroup.add(this.sunMarker);
+
+    // Soft corona (still tiny from Earth — ~0.5° disc with photosphere).
+    this.sunGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(sunR * 1.35, 32, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0xffb020,
+        transparent: true,
+        opacity: 0.28,
+        depthWrite: false,
+      }),
+    );
+    this.sunMarker.add(this.sunGlow);
 
     const sunLineGeo = new THREE.BufferGeometry();
     this.sunLine = new THREE.Line(
       sunLineGeo,
-      new THREE.LineBasicMaterial({ color: 0xffd54a, transparent: true, opacity: 0.35 })
+      new THREE.LineBasicMaterial({ color: 0xffd54a, transparent: true, opacity: 0.22 })
     );
     this.bodiesGroup.add(this.sunLine);
 
@@ -377,10 +394,12 @@ export class EarthScene {
   }
 
   createStars() {
-    const count = 1200;
+    const count = 1600;
     const positions = new Float32Array(count * 3);
+    // Beyond 1 AU so the true-scale Sun sits in front of the star field.
+    const sunDist = sunOrbitRadiusScene(SUN_MEAN_DIST_KM);
     for (let i = 0; i < count; i++) {
-      const r = 20 + Math.random() * 30;
+      const r = sunDist * (1.4 + Math.random() * 1.8);
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
@@ -391,7 +410,7 @@ export class EarthScene {
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     return new THREE.Points(
       geo,
-      new THREE.PointsMaterial({ color: 0x8899aa, size: 0.03, sizeAttenuation: true })
+      new THREE.PointsMaterial({ color: 0x8899aa, size: 0.8, sizeAttenuation: true })
     );
   }
 
@@ -558,6 +577,20 @@ export class EarthScene {
     return moonOrbitRadiusScene(km, EARTH_RADIUS);
   }
 
+  /**
+   * Earth–Sun distance in scene units (true AU / Earth-radii scale).
+   * Prefer daily Horizons range when present.
+   */
+  sunDistanceScene(ephemerisDay = this.diurnalDay) {
+    const km =
+      ephemerisDay?.sun?.distKm
+      ?? (ephemerisDay?.sun?.distAu != null
+        ? ephemerisDay.sun.distAu * SUN_MEAN_DIST_KM
+        : null)
+      ?? SUN_MEAN_DIST_KM;
+    return sunOrbitRadiusScene(km, EARTH_RADIUS);
+  }
+
   placeMoon(direction, ephemerisDay = this.diurnalDay) {
     if (!direction || !this.moonMesh) return;
     const dist = this.moonDistanceScene(ephemerisDay);
@@ -569,9 +602,28 @@ export class EarthScene {
     }
   }
 
+  placeSun(direction, ephemerisDay = this.diurnalDay) {
+    if (!direction || !this.sunMarker) return;
+    const dist = this.sunDistanceScene(ephemerisDay);
+    const dir = direction.clone().normalize();
+    this.sunMarker.position.copy(dir.clone().multiplyScalar(dist));
+    if (this.sunLine) {
+      // Short hint near Earth — full AU line is unreadable and swamps the buffer.
+      const tip = Math.min(dist * 0.04, 80);
+      const pts = [
+        dir.clone().multiplyScalar(EARTH_RADIUS * 1.05),
+        dir.clone().multiplyScalar(tip),
+      ];
+      this.sunLine.geometry.dispose();
+      this.sunLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+    }
+  }
+
   updateSunLightingFromDir(sunDir, ephemerisDay = null) {
     const dir = sunDir?.lengthSq() ? sunDir.clone().normalize() : this.defaultSunDirection;
-    const sunDistance = 9;
+    // DirectionalLight is parallel — keep a modest offset for numerical stability.
+    // Visual disc uses placeSun() at true AU.
+    const sunDistance = 12;
     this.sunLight.position.copy(dir).multiplyScalar(sunDistance);
     this.fillLight.position.copy(dir).multiplyScalar(-sunDistance * 0.7);
     const appearance = this.studioParams || (this.appearanceActive ? this.appearanceParams : null);
@@ -615,16 +667,25 @@ export class EarthScene {
       return;
     }
 
-    const sunDist = 7.5;
-
     const moonDir = this.lerpBodyDirection(day.moon, next?.moon, phase);
     const sunDir = this.lerpBodyDirection(day.sun, next?.sun, phase);
 
     if (sunDir) {
-      this.sunMarker.position.copy(sunDir.clone().multiplyScalar(sunDist));
-      const pts = [new THREE.Vector3(0, 0, 0), sunDir.clone().multiplyScalar(sunDist * 0.95)];
-      this.sunLine.geometry.dispose();
-      this.sunLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+      // Lerp AU distance across the day when both samples have range.
+      const d0 = this.sunDistanceScene(day);
+      const d1 = this.sunDistanceScene(next);
+      const dist = d0 + (d1 - d0) * phase;
+      const dir = sunDir.clone().normalize();
+      this.sunMarker.position.copy(dir.clone().multiplyScalar(dist));
+      if (this.sunLine) {
+        const tip = Math.min(dist * 0.04, 80);
+        const pts = [
+          dir.clone().multiplyScalar(EARTH_RADIUS * 1.05),
+          dir.clone().multiplyScalar(tip),
+        ];
+        this.sunLine.geometry.dispose();
+        this.sunLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+      }
       this.updateSunLightingFromDir(sunDir, phase < 0.5 ? day : next);
     }
 
@@ -691,7 +752,6 @@ export class EarthScene {
     }
 
     this.bodiesGroup.visible = true;
-    const sunDist = 7.5;
 
     if (ephemerisDay.moon) {
       const m = this.geoVectorFromEphemeris(ephemerisDay.moon);
@@ -706,17 +766,10 @@ export class EarthScene {
       }
     }
 
-    // Sun marker: clock-based when locked; otherwise daily ephemeris direction.
-    if (this.rotationLocked || this.liveSunClock) {
-      // applyLiveSunFromClock already placed the marker
-    } else if (ephemerisDay.sun) {
+    // Sun disc at true AU. Live clock path already placed it via applyLiveSunFromClock.
+    if (!(this.rotationLocked || this.liveSunClock) && ephemerisDay.sun) {
       const s = this.geoVectorFromEphemeris(ephemerisDay.sun);
-      if (s) {
-        this.sunMarker.position.copy(s.clone().multiplyScalar(sunDist));
-        const pts = [new THREE.Vector3(0, 0, 0), s.clone().multiplyScalar(sunDist * 0.95)];
-        this.sunLine.geometry.dispose();
-        this.sunLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
-      }
+      if (s) this.placeSun(s, ephemerisDay);
     }
   }
 
@@ -1209,16 +1262,7 @@ export class EarthScene {
     dir.normalize();
 
     this.updateSunLightingFromDir(dir, day);
-
-    const sunDist = 7.5;
-    if (this.sunMarker) {
-      this.sunMarker.position.copy(dir.clone().multiplyScalar(sunDist));
-    }
-    if (this.sunLine) {
-      const pts = [new THREE.Vector3(0, 0, 0), dir.clone().multiplyScalar(sunDist * 0.95)];
-      this.sunLine.geometry.dispose();
-      this.sunLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
-    }
+    this.placeSun(dir, day);
     return true;
   }
 
@@ -1258,9 +1302,7 @@ export class EarthScene {
       this.bodiesGroup.visible = true;
       const moonDir = this.lerpBodyDirection(d.moon, n?.moon, this.diurnalPhase);
       if (moonDir) this.placeMoon(moonDir, d);
-      if (sunDir) {
-        this.sunMarker.position.copy(sunDir.clone().multiplyScalar(7.5));
-      }
+      if (sunDir) this.placeSun(sunDir, d);
     }
   }
 

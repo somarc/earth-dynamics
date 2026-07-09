@@ -10,6 +10,9 @@ import {
   moonBodyRadiusScene,
   moonOrbitRadiusScene,
   MOON_MEAN_DIST_KM,
+  sunBodyRadiusScene,
+  sunOrbitRadiusScene,
+  SUN_MEAN_DIST_KM,
   quakeMarkerRadius,
   quakeHypocenterRadius,
 } from '../../src/utils.js';
@@ -110,5 +113,25 @@ describe('globe math', () => {
     const apogee = moonOrbitRadiusScene(405_500);
     expect(apogee).toBeGreaterThan(perigee);
     expect(perigee).toBeGreaterThan(50);
+  });
+
+  it('sun orbit is ~23k Earth radii at 1 AU', () => {
+    const r = sunOrbitRadiusScene(SUN_MEAN_DIST_KM);
+    expect(r).toBeGreaterThan(20_000);
+    expect(r).toBeLessThan(25_000);
+  });
+
+  it('sun body radius is ~109 Earth radii', () => {
+    const r = sunBodyRadiusScene(1);
+    expect(r).toBeGreaterThan(100);
+    expect(r).toBeLessThan(120);
+  });
+
+  it('sun angular size from Earth is about half a degree', () => {
+    const dist = sunOrbitRadiusScene(SUN_MEAN_DIST_KM);
+    const rad = sunBodyRadiusScene(1);
+    const deg = (2 * Math.atan(rad / dist) * 180) / Math.PI;
+    expect(deg).toBeGreaterThan(0.45);
+    expect(deg).toBeLessThan(0.6);
   });
 });

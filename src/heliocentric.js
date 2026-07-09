@@ -5,9 +5,13 @@ import { createLabelRenderer, makeLabel, resizeLabelRenderer } from './labels.js
 import {
   EARTH_RADIUS,
   EARTH_MEAN_RADIUS_KM,
+  auScaleForEarthRadius,
   latLonToVector3,
   moonBodyRadiusScene,
   MOON_MEAN_DIST_KM,
+  sunBodyRadiusScene,
+  sunOrbitRadiusScene,
+  SUN_MEAN_DIST_KM,
   poleOffsetToTilt,
   iersPoleGlobePosition,
   magToSize,
@@ -23,9 +27,13 @@ import {
 } from './event-markers.js';
 
 const OBLIQUITY = (23.4367 * Math.PI) / 180;
-const AU_SCALE = 12;
-/** Large enough to read continents when the default camera sits just outside Earth. */
+/**
+ * Helio Earth is oversized for continent readability, but all orbits/sizes stay on
+ * the same Earth-radii scale: 1 AU ≈ 23,481 × HELIO_EARTH_RADIUS scene units.
+ */
 const HELIO_EARTH_RADIUS = 0.28;
+/** Scene units per AU (true Earth-radii scale relative to HELIO_EARTH_RADIUS). */
+export const AU_SCALE = auScaleForEarthRadius(HELIO_EARTH_RADIUS);
 
 function eclipticToScene(x, y, z) {
   return new THREE.Vector3(x * AU_SCALE, z * AU_SCALE, -y * AU_SCALE);
@@ -33,15 +41,14 @@ function eclipticToScene(x, y, z) {
 
 /**
  * Default Helio posture: over Earth's shoulder, Sun-focused, Earth large in the foreground.
- * Camera sits outside Earth's orbit looking sunward with a lateral/vertical offset so the
- * planet does not occult the star — same "you are here" energy as geo Live orientation.
+ * Camera stays a few Earth radii outside the surface (not a fraction of 1 AU), looking
+ * sunward so the true-scale Sun reads as a small disc in the distance.
  * @param {THREE.Vector3} earthPos Scene-space Earth position (Sun at origin).
  * @param {{ earthRadius?: number }} [opts]
  * @returns {{ position: THREE.Vector3, target: THREE.Vector3 }}
  */
 export function frameHelioSunEarth(earthPos, opts = {}) {
   const earthR = opts.earthRadius ?? HELIO_EARTH_RADIUS;
-  const dist = Math.max(earthPos.length(), 0.01);
   const radial = earthPos.clone().normalize();
   const worldUp = new THREE.Vector3(0, 1, 0);
   let side = new THREE.Vector3().crossVectors(worldUp, radial);
@@ -49,15 +56,15 @@ export function frameHelioSunEarth(earthPos, opts = {}) {
   else side.normalize();
   const up = new THREE.Vector3().crossVectors(radial, side).normalize();
 
-  // ~4–5 Earth radii outside the surface — globe fills the near field, not a distant speck.
-  const back = Math.max(earthR * 4.6, dist * 0.09);
+  // Fixed Earth-radii standoff — independent of AU so 1 AU scale still fills the near field.
+  const back = earthR * 4.6;
   const position = earthPos.clone()
     .add(radial.clone().multiplyScalar(back))
     .add(up.clone().multiplyScalar(back * 0.48))
     .add(side.clone().multiplyScalar(back * 1.05));
 
-  // Look at the Sun (slight Earth bias keeps the planet in the lower frame).
-  const target = earthPos.clone().multiplyScalar(0.05);
+  // Look at the Sun (origin); tiny Earth bias keeps composition stable.
+  const target = earthPos.clone().multiplyScalar(0.02);
 
   return { position, target };
 }
@@ -86,22 +93,24 @@ export class HeliocentricScene {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     this.scene = new THREE.Scene();
-    // Slightly wider FOV so close Earth + distant Sun both read in one frame.
-    this.camera = new THREE.PerspectiveCamera(48, 1, 0.04, 500);
+    // Far plane beyond 1 AU; near plane small enough for Earth foreground.
+    this.camera = new THREE.PerspectiveCamera(48, 1, 0.02, AU_SCALE * 4);
     // Placeholder until first ephemeris frame; framing uses Earth position.
-    this.camera.position.set(0, 6, 16);
+    this.camera.position.set(AU_SCALE * 1.05, AU_SCALE * 0.08, AU_SCALE * 0.12);
     this.camera.lookAt(0, 0, 0);
 
-    const sunGeo = new THREE.SphereGeometry(0.42, 32, 32);
+    // True scale: R_sun / R_earth ≈ 109 on the helio Earth unit.
+    const sunR = sunBodyRadiusScene(HELIO_EARTH_RADIUS);
+    const sunGeo = new THREE.SphereGeometry(sunR, 48, 48);
     this.sunMesh = new THREE.Mesh(
       sunGeo,
       new THREE.MeshBasicMaterial({ color: 0xffe066 })
     );
     this.scene.add(this.sunMesh);
 
-    // Soft corona so the Sun remains a clear focus from Earth's shoulder.
+    // Soft corona (still ~0.5° from Earth orbit at true scale).
     this.sunGlow = new THREE.Mesh(
-      new THREE.SphereGeometry(0.95, 32, 32),
+      new THREE.SphereGeometry(sunR * 1.4, 32, 32),
       new THREE.MeshBasicMaterial({
         color: 0xffb020,
         transparent: true,
@@ -112,11 +121,11 @@ export class HeliocentricScene {
     this.scene.add(this.sunGlow);
 
     this.sunLabel = makeLabel('Sun', 'body-label body-label--sun');
-    this.sunLabel.position.set(0, 0.85, 0);
+    this.sunLabel.position.set(0, sunR * 1.15, 0);
     this.sunMesh.add(this.sunLabel);
 
-    // Strong sun light for lit-map Phong Earth (same lesson as geo navy-ambient fix).
-    this.sunPointLight = new THREE.PointLight(0xfff4dd, 28, 80, 1.1);
+    // Light reaches Earth at ~1 AU; intensity tuned for Phong lit-map at that range.
+    this.sunPointLight = new THREE.PointLight(0xfff4dd, AU_SCALE * 2.2, AU_SCALE * 2.5, 1);
     this.sunPointLight.position.set(0, 0, 0);
     this.scene.add(this.sunPointLight);
 
@@ -246,7 +255,7 @@ export class HeliocentricScene {
     this.quakeMeshes = new Map();
     this.volcanoMeshes = new Map();
     this.eventPulses = new EventPulseController();
-    this.defaultCameraPosition = new THREE.Vector3(0, 6, 16);
+    this.defaultCameraPosition = new THREE.Vector3(AU_SCALE * 1.05, AU_SCALE * 0.08, AU_SCALE * 0.12);
     this.defaultLookTarget = new THREE.Vector3(0, 0, 0);
     this.cameraEntry = null;
 
@@ -257,9 +266,10 @@ export class HeliocentricScene {
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.06;
-    // Allow close inspection of Earth; still let users pull back to full orbit.
-    this.controls.minDistance = 0.9;
-    this.controls.maxDistance = 56;
+    // Close on Earth; pull back past 1 AU to see the whole orbit.
+    this.controls.minDistance = HELIO_EARTH_RADIUS * 2.5;
+    this.controls.maxDistance = AU_SCALE * 2.4;
+    this.controls.zoomSpeed = 1.2;
     this.controls.target.set(0, 0, 0);
     this.controls.addEventListener('start', () => {
       this.userMovedCamera = true;
@@ -275,7 +285,7 @@ export class HeliocentricScene {
     const count = 2000;
     const positions = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      const r = 60 + Math.random() * 80;
+      const r = AU_SCALE * (1.5 + Math.random() * 2.2);
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
@@ -286,7 +296,7 @@ export class HeliocentricScene {
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     return new THREE.Points(
       geo,
-      new THREE.PointsMaterial({ color: 0x8899aa, size: 0.08, sizeAttenuation: true })
+      new THREE.PointsMaterial({ color: 0x8899aa, size: AU_SCALE * 0.004, sizeAttenuation: true })
     );
   }
 
