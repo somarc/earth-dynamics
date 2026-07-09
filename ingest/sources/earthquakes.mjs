@@ -1,34 +1,12 @@
 import { getDb, logIngest } from '../db.mjs';
-
-const MIN_MAG = 5;
-const OVERLAP_DAYS = 14;
-
-function addDays(dateStr, days) {
-  const d = new Date(`${dateStr}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-function parseFeature(f) {
-  const [lon, lat, depth] = f.geometry.coordinates;
-  return {
-    id: f.id,
-    time: f.properties.time,
-    date: new Date(f.properties.time).toISOString().slice(0, 10),
-    mag: f.properties.mag,
-    place: f.properties.place,
-    lat,
-    lon,
-    depth,
-    url: f.properties.url,
-    tsunami: f.properties.tsunami === 1 ? 1 : 0,
-  };
-}
+import {
+  EARTHQUAKE_MIN_MAG,
+  earthquakeIncrementalWindow,
+  parseUsgsGeoJson,
+} from '../lib/parse-earthquakes.mjs';
 
 export async function ingestEarthquakes({ force = false } = {}) {
   const db = getDb();
-  const today = new Date().toISOString().slice(0, 10);
-  const endDate = addDays(today, 1);
   const count = db.prepare('SELECT COUNT(*) AS c FROM earthquakes').get().c;
 
   if (force) {
@@ -42,13 +20,13 @@ export async function ingestEarthquakes({ force = false } = {}) {
   }
 
   const { maxDate } = db.prepare('SELECT MAX(date) AS maxDate FROM earthquakes').get();
-  const startDate = addDays(maxDate, -OVERLAP_DAYS);
+  const { startDate, endDate, today, minMagnitude } = earthquakeIncrementalWindow(maxDate);
 
   const url = new URL('https://earthquake.usgs.gov/fdsnws/event/1/query');
   url.searchParams.set('format', 'geojson');
   url.searchParams.set('starttime', startDate);
   url.searchParams.set('endtime', endDate);
-  url.searchParams.set('minmagnitude', String(MIN_MAG));
+  url.searchParams.set('minmagnitude', String(minMagnitude ?? EARTHQUAKE_MIN_MAG));
   url.searchParams.set('orderby', 'time-asc');
   url.searchParams.set('limit', '20000');
 
@@ -57,7 +35,7 @@ export async function ingestEarthquakes({ force = false } = {}) {
   if (!res.ok) throw new Error(`USGS ${res.status}`);
 
   const data = await res.json();
-  const rows = (data.features || []).map(parseFeature);
+  const rows = parseUsgsGeoJson(data);
   const ins = db.prepare(`
     INSERT OR REPLACE INTO earthquakes VALUES (
       @id, @time, @date, @mag, @place, @lat, @lon, @depth, @url, @tsunami
