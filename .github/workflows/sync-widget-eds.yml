@@ -1,22 +1,40 @@
 name: Sync Weatherly widget to EDS
 
+# Pushes a PR into somarc/earth-dynamics-eds with the built widget bundle.
+# Requires repo secret EDS_SYNC_TOKEN (PAT or GitHub App) with write access to
+# earth-dynamics-eds — GITHUB_TOKEN only works on this repo and will 403.
+
 on:
   push:
     branches: [main]
     paths:
       - 'src/**'
       - 'layers/**'
+      - 'experiences/**'
       - 'widget/**'
       - 'public/**'
       - 'vite.config.widget.js'
       - 'package.json'
       - 'package-lock.json'
+      - '.github/workflows/sync-widget-eds.yml'
   workflow_dispatch:
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      - name: Require EDS_SYNC_TOKEN
+        env:
+          EDS_SYNC_TOKEN: ${{ secrets.EDS_SYNC_TOKEN }}
+        run: |
+          if [ -z "$EDS_SYNC_TOKEN" ]; then
+            echo "::error::Secret EDS_SYNC_TOKEN is not set on this repository."
+            echo "Create a fine-grained PAT (or classic PAT) with Contents + Pull requests"
+            echo "write on somarc/earth-dynamics-eds, then add it as repository secret EDS_SYNC_TOKEN."
+            echo "Do not use github.token — it cannot push to a different repository."
+            exit 1
+          fi
+
       - name: Checkout earth-dynamics
         uses: actions/checkout@v4
 
@@ -35,7 +53,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: somarc/earth-dynamics-eds
-          token: ${{ secrets.EDS_SYNC_TOKEN || github.token }}
+          token: ${{ secrets.EDS_SYNC_TOKEN }}
           path: eds
 
       - name: Copy widget bundle
@@ -47,7 +65,7 @@ jobs:
       - name: Commit and push to sync branch
         working-directory: eds
         env:
-          GH_TOKEN: ${{ secrets.EDS_SYNC_TOKEN || github.token }}
+          GH_TOKEN: ${{ secrets.EDS_SYNC_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -59,8 +77,12 @@ jobs:
             exit 0
           fi
           git commit -m "chore(widget): sync Weatherly bundle from earth-dynamics@${GITHUB_SHA::7}"
-          git push origin "$BRANCH"
+          git push -u origin "$BRANCH"
           gh pr create \
+            --repo somarc/earth-dynamics-eds \
+            --head "$BRANCH" \
             --title "Sync Weatherly widget (${GITHUB_SHA::7})" \
-            --body "Automated widget bundle from [earth-dynamics@${GITHUB_SHA}](https://github.com/somarc/earth-dynamics/commit/${GITHUB_SHA}). Preview: https://${BRANCH//\//-}--earth-dynamics-eds--somarc.aem.page/drafts/weatherly" \
-            --base main || echo "PR may already exist or token lacks permission — push branch manually."
+            --body "Automated widget bundle from [earth-dynamics@${GITHUB_SHA}](https://github.com/somarc/earth-dynamics/commit/${GITHUB_SHA}).
+
+Preview (after merge / branch publish): \`widgets/weatherly\` on the EDS site." \
+            --base main || echo "PR may already exist — branch was pushed."

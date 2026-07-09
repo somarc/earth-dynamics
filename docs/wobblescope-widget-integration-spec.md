@@ -123,9 +123,32 @@ Nav, footer, hero, trust pages — ordinary DA blocks.
 
 ## 5. Sync mechanism
 
-**(A) CI job copies build output across repos** (recommended). On merge to `earth-dynamics` `main`, run `npm run build:widget` and open a PR into `earth-dynamics-eds` `widgets/wobblescope/`.
+**(A) CI job copies build output across repos** (recommended). Workflow: [`.github/workflows/sync-widget-eds.yml`](../.github/workflows/sync-widget-eds.yml).
 
-Target feature branch + PR per EDS `AGENTS.md` publishing process.
+On push to `earth-dynamics` `main` (widget-relevant paths) or `workflow_dispatch`:
+
+1. `npm run build:widget`
+2. Copy `dist-widget/` → `earth-dynamics-eds/widgets/weatherly/`
+3. Push branch `sync-weatherly-widget-<sha>` and open a PR
+
+### Auth (required)
+
+`GITHUB_TOKEN` **cannot** push to another repository → **403** if used.
+
+| Secret | Where | Scope |
+|--------|--------|--------|
+| `EDS_SYNC_TOKEN` | `somarc/earth-dynamics` → Settings → Secrets | PAT (or GitHub App) with **Contents: write** + **Pull requests: write** on `somarc/earth-dynamics-eds` |
+
+**Setup once:**
+
+1. GitHub → Settings → Developer settings → Fine-grained personal access token  
+   - Resource owner: `somarc` (or your account if personal)  
+   - Repository access: only `earth-dynamics-eds`  
+   - Permissions: Contents (Read and write), Pull requests (Read and write), Metadata (Read)
+2. Add the token as repository secret **`EDS_SYNC_TOKEN`** on `somarc/earth-dynamics`
+3. Re-run **Sync Weatherly widget to EDS** (Actions → workflow_dispatch) or push a widget-path change
+
+Local alternative: `EDS_REPO=/path/to/earth-dynamics-eds npm run sync:widget` (see `scripts/sync-widget-to-eds.mjs`).
 
 ---
 
