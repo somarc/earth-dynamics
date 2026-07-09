@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   BALD_EARTH_DEFAULTS,
+  SURFACE_MODELS,
+  isLitMap,
   normalizeBaldEarthParams,
   surfaceLiftFromOpacity,
 } from '../../src/lib/bald-earth-params.js';
@@ -11,6 +13,21 @@ describe('bald-earth params', () => {
     expect(p.surfaceOpacity).toBe(BALD_EARTH_DEFAULTS.surfaceOpacity);
     expect(p.atmosphereIntensity).toBe(1.2);
     expect(p.diurnalMode).toBe('free');
+    expect(p.surfaceModel).toBe(SURFACE_MODELS.INSTRUMENT);
+  });
+
+  it('accepts lit-map surface model and lit knobs', () => {
+    const p = normalizeBaldEarthParams({
+      surfaceModel: 'lit-map',
+      litRoughness: 0.5,
+      nightLights: false,
+      nightEmissive: 1.2,
+    });
+    expect(p.surfaceModel).toBe(SURFACE_MODELS.LIT_MAP);
+    expect(isLitMap(p)).toBe(true);
+    expect(p.litRoughness).toBe(0.5);
+    expect(p.nightLights).toBe(false);
+    expect(p.nightEmissive).toBe(1.2);
   });
 
   it('clamps out-of-range values', () => {
@@ -31,3 +48,4 @@ describe('bald-earth params', () => {
     expect(surfaceLiftFromOpacity(0.65)).toBeCloseTo(0.46 + 0.26 * 0.65, 5);
   });
 });
+

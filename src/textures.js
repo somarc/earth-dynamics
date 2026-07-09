@@ -122,6 +122,58 @@ void main() {
 }
 `;
 
+/**
+ * GE-like lit day map — real Three.js lighting (Standard).
+ * Sun DirectionalLight drives the limb; optional night lights as emissive.
+ */
+export function createLitMapEarthMaterial(textures, {
+  roughness = 0.88,
+  metalness = 0,
+  nightLights = true,
+  nightEmissiveIntensity = 0.35,
+} = {}) {
+  const { day, night } = textures;
+  const mat = new THREE.MeshStandardMaterial({
+    map: day,
+    roughness,
+    metalness,
+    transparent: false,
+    depthWrite: true,
+    depthTest: true,
+  });
+  if (nightLights && night) {
+    mat.emissiveMap = night;
+    mat.emissive = new THREE.Color(0xffffff);
+    mat.emissiveIntensity = nightEmissiveIntensity;
+  }
+  mat.userData.surfaceModel = 'lit-map';
+  return mat;
+}
+
+/** Update lit-map material knobs from studio. */
+export function updateLitMapMaterial(material, {
+  roughness,
+  nightLights,
+  nightEmissiveIntensity,
+  nightMap,
+} = {}) {
+  if (!material || material.userData?.surfaceModel !== 'lit-map') return;
+  if (roughness != null) material.roughness = Math.max(0.05, Math.min(1, roughness));
+  if (nightLights != null) {
+    if (nightLights && nightMap) {
+      material.emissiveMap = nightMap;
+      material.emissive = new THREE.Color(0xffffff);
+      material.emissiveIntensity = nightEmissiveIntensity ?? 0.35;
+    } else {
+      material.emissiveMap = null;
+      material.emissiveIntensity = 0;
+    }
+    material.needsUpdate = true;
+  } else if (nightEmissiveIntensity != null && material.emissiveMap) {
+    material.emissiveIntensity = Math.max(0, Math.min(2, nightEmissiveIntensity));
+  }
+}
+
 /** Day/night surface blend driven by ephemeris sun direction (earthGroup frame). */
 export function createTerminatorEarthMaterial(textures) {
   const { day, night, mask } = textures;
@@ -130,7 +182,7 @@ export function createTerminatorEarthMaterial(textures) {
   const debugSun =
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).has('debugSun');
-  return new THREE.ShaderMaterial({
+  const mat = new THREE.ShaderMaterial({
     uniforms: {
       uDayMap: { value: day },
       uNightMap: { value: nightTex },
@@ -149,6 +201,8 @@ export function createTerminatorEarthMaterial(textures) {
     depthWrite: true,
     depthTest: true,
   });
+  mat.userData.surfaceModel = 'instrument';
+  return mat;
 }
 
 export function updateEarthOpacity(material, opacity) {

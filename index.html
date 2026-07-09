@@ -94,7 +94,24 @@ npm run start</pre>
             </p>
 
             <div class="bes-section">
-              <h3 class="bes-section__title">Surface</h3>
+              <h3 class="bes-section__title">Surface model</h3>
+              <p class="bes-hint">
+                Instrument = current day/night terminator shader. Lit map = Google-Earth-like day albedo with real sun lighting.
+              </p>
+              <div class="bes-diurnal bes-model" role="radiogroup" aria-label="Surface model">
+                <label class="bes-check">
+                  <input type="radio" name="bes-surface-model" id="bes-model-instrument" value="instrument" checked />
+                  <span>Instrument terminator</span>
+                </label>
+                <label class="bes-check">
+                  <input type="radio" name="bes-surface-model" id="bes-model-lit" value="lit-map" />
+                  <span>Lit map (GE-like)</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="bes-section" id="bes-section-instrument">
+              <h3 class="bes-section__title">Instrument surface</h3>
               <label class="bes-row">
                 <span class="bes-row__label">Readability</span>
                 <input type="range" id="bes-surface-opacity" min="0.3" max="1" step="0.01" value="1" />
@@ -122,6 +139,25 @@ npm run start</pre>
               <label class="bes-check">
                 <input type="checkbox" id="bes-debug-sun" />
                 <span>Debug sun (greyscale facing)</span>
+              </label>
+            </div>
+
+            <div class="bes-section" id="bes-section-lit">
+              <h3 class="bes-section__title">Lit map surface</h3>
+              <p class="bes-hint">Sun / ambient / fill / exposure knobs below drive this model. Night side darkens from lighting, not the terminator shader.</p>
+              <label class="bes-row">
+                <span class="bes-row__label">Roughness</span>
+                <input type="range" id="bes-lit-roughness" min="0.05" max="1" step="0.01" value="0.88" />
+                <span class="bes-row__out" id="bes-lit-roughness-out">0.88</span>
+              </label>
+              <label class="bes-check">
+                <input type="checkbox" id="bes-night-lights" checked />
+                <span>City lights (emissive night map)</span>
+              </label>
+              <label class="bes-row">
+                <span class="bes-row__label">Lights glow</span>
+                <input type="range" id="bes-night-emissive" min="0" max="2" step="0.05" value="0.35" />
+                <span class="bes-row__out" id="bes-night-emissive-out">0.35</span>
               </label>
             </div>
 

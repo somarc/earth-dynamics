@@ -5,32 +5,53 @@
 
 export const BALD_EARTH_STORAGE_KEY = 'wobblescope-bald-earth-studio';
 
+/** Surface shading modes on the same sphere mesh. */
+export const SURFACE_MODELS = Object.freeze({
+  INSTRUMENT: 'instrument',
+  LIT_MAP: 'lit-map',
+});
+
 /** Production-ish defaults matching current EarthScene init. */
 export const BALD_EARTH_DEFAULTS = Object.freeze({
-  // Surface (shader)
-  surfaceOpacity: 1, // drives uSurfaceLift via existing mapping; studio allows full 0.3–1
-  surfaceLift: null, // null = derive from surfaceOpacity; number = direct override
+  /** instrument = terminator shader; lit-map = GE-like Standard lighting */
+  surfaceModel: SURFACE_MODELS.INSTRUMENT,
+  // Surface (instrument shader)
+  surfaceOpacity: 1,
+  surfaceLift: null,
   contextDim: 1,
-  nightBoost: 0.55, // multiplier on night map sample path (uniform if present)
+  nightBoost: 0.55,
+  // Lit-map material
+  litRoughness: 0.88,
+  nightLights: true,
+  nightEmissive: 0.35,
   // Atmosphere
   atmosphereVisible: true,
   atmosphereIntensity: 1.2,
-  atmosphereScale: 1.0, // multiplier on shell (1 = authored R×1.055)
+  atmosphereScale: 1.0,
   // Lights / post
   ambient: 0.22,
   sunIntensity: 1.35,
   fillIntensity: 0.12,
   exposure: 1.05,
   // Motion
-  diurnalMode: 'free', // free is better for inspecting the shell
+  diurnalMode: 'free',
   autoRotate: 0.002,
-  // Visibility toggles (still within framework)
+  // Visibility
   starsVisible: true,
-  bodiesVisible: true, // sun/moon markers help judge lighting direction
+  bodiesVisible: true,
   gridVisible: false,
   gridOpacity: 0.15,
   // Debug
   debugSun: false,
+});
+
+/** Brighter defaults suggested when switching to lit-map (GE-like). */
+export const LIT_MAP_SUGGESTED = Object.freeze({
+  ambient: 0.28,
+  sunIntensity: 1.85,
+  fillIntensity: 0.08,
+  exposure: 1.15,
+  atmosphereIntensity: 0.95,
 });
 
 export function clamp(n, lo, hi) {
@@ -39,7 +60,6 @@ export function clamp(n, lo, hi) {
 
 /**
  * @param {Partial<typeof BALD_EARTH_DEFAULTS>} raw
- * @returns {typeof BALD_EARTH_DEFAULTS}
  */
 export function normalizeBaldEarthParams(raw = {}) {
   const d = BALD_EARTH_DEFAULTS;
@@ -54,11 +74,20 @@ export function normalizeBaldEarthParams(raw = {}) {
   } else {
     surfaceLift = null;
   }
+  const surfaceModel =
+    raw.surfaceModel === SURFACE_MODELS.LIT_MAP
+      ? SURFACE_MODELS.LIT_MAP
+      : SURFACE_MODELS.INSTRUMENT;
+
   return {
+    surfaceModel,
     surfaceOpacity,
     surfaceLift,
     contextDim: clamp(Number(raw.contextDim ?? d.contextDim), 0.08, 1),
     nightBoost: clamp(Number(raw.nightBoost ?? d.nightBoost), 0.05, 1.5),
+    litRoughness: clamp(Number(raw.litRoughness ?? d.litRoughness), 0.05, 1),
+    nightLights: raw.nightLights !== false,
+    nightEmissive: clamp(Number(raw.nightEmissive ?? d.nightEmissive), 0, 2),
     atmosphereVisible: raw.atmosphereVisible !== false,
     atmosphereIntensity: clamp(Number(raw.atmosphereIntensity ?? d.atmosphereIntensity), 0, 3),
     atmosphereScale: clamp(Number(raw.atmosphereScale ?? d.atmosphereScale), 0.98, 1.12),
@@ -98,4 +127,8 @@ export function saveBaldEarthParams(params) {
 export function surfaceLiftFromOpacity(opacity) {
   const t = clamp(opacity, 0.3, 1);
   return 0.46 + 0.26 * t;
+}
+
+export function isLitMap(params) {
+  return (params?.surfaceModel ?? SURFACE_MODELS.INSTRUMENT) === SURFACE_MODELS.LIT_MAP;
 }

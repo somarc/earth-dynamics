@@ -2,16 +2,20 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import {
   createTerminatorEarthMaterial,
+  createLitMapEarthMaterial,
   loadEarthTextures,
   updateEarthContextDim,
   updateEarthOpacity,
   updateEarthSurfaceLift,
   updateEarthNightBoost,
   updateEarthSunDirection,
+  updateLitMapMaterial,
 } from './textures.js';
 import {
   normalizeBaldEarthParams,
   surfaceLiftFromOpacity,
+  SURFACE_MODELS,
+  isLitMap,
 } from './lib/bald-earth-params.js';
 import { frameCameraForLatLon } from '../layers/home-region/globe.mjs';
 import {
@@ -104,10 +108,13 @@ export class EarthScene {
     this.earthGroup.add(this.surfaceGroup);
 
     const earthTextures = await loadEarthTextures(this.renderer);
+    this.earthTextures = earthTextures;
     const earthGeo = new THREE.SphereGeometry(EARTH_RADIUS, 96, 96);
-    const earthMat = createTerminatorEarthMaterial(earthTextures);
-    this.earthMaterial = earthMat;
-    this.earth = new THREE.Mesh(earthGeo, earthMat);
+    this.instrumentMaterial = createTerminatorEarthMaterial(earthTextures);
+    this.litMapMaterial = createLitMapEarthMaterial(earthTextures);
+    this.earthMaterial = this.instrumentMaterial;
+    this.surfaceModel = SURFACE_MODELS.INSTRUMENT;
+    this.earth = new THREE.Mesh(earthGeo, this.earthMaterial);
     this.surfaceGroup.add(this.earth);
 
     // Inertial shell — does not spin with surfaceGroup so limb tracks ephemeris sun.
@@ -538,7 +545,10 @@ export class EarthScene {
         this.showBodies && this.diurnalMode === 'sync' ? 0.06 : 0.22;
     }
     updateAtmosphereSun(this.atmosphere, dir);
-    updateEarthSunDirection(this.earthMaterial, dir);
+    // Instrument terminator only — lit-map uses DirectionalLight.
+    if (this.surfaceModel === SURFACE_MODELS.INSTRUMENT) {
+      updateEarthSunDirection(this.instrumentMaterial ?? this.earthMaterial, dir);
+    }
     this.layerControllers.get('home-region')?.updateSun(dir);
   }
 
@@ -901,23 +911,56 @@ export class EarthScene {
   }
 
   /**
+   * Swap Earth surface shading between instrument terminator and lit GE-like map.
+   * Same mesh; materials share the day texture.
+   */
+  setSurfaceModel(mode) {
+    const next = mode === SURFACE_MODELS.LIT_MAP
+      ? SURFACE_MODELS.LIT_MAP
+      : SURFACE_MODELS.INSTRUMENT;
+    this.surfaceModel = next;
+    if (!this.earth) return next;
+
+    if (next === SURFACE_MODELS.LIT_MAP) {
+      if (!this.litMapMaterial && this.earthTextures) {
+        this.litMapMaterial = createLitMapEarthMaterial(this.earthTextures);
+      }
+      this.earth.material = this.litMapMaterial;
+      this.earthMaterial = this.litMapMaterial;
+    } else {
+      this.earth.material = this.instrumentMaterial;
+      this.earthMaterial = this.instrumentMaterial;
+    }
+    return next;
+  }
+
+  /**
    * Apply Bald Earth studio knobs (decoupled surface / atmosphere / lights / motion).
-   * @param {import('./lib/bald-earth-params.js').BALD_EARTH_DEFAULTS | object} raw
+   * @param {object} raw
    */
   applyBareGlobeStudio(raw) {
     const p = normalizeBaldEarthParams(raw);
     this.studioActive = true;
     this.studioParams = p;
     this.setBareGlobeMode(true);
+    this.setSurfaceModel(p.surfaceModel);
 
-    // Surface
-    this.earthOpacity = p.surfaceOpacity;
-    const lift = p.surfaceLift != null ? p.surfaceLift : surfaceLiftFromOpacity(p.surfaceOpacity);
-    updateEarthSurfaceLift(this.earthMaterial, lift);
-    updateEarthContextDim(this.earthMaterial, p.contextDim);
-    updateEarthNightBoost(this.earthMaterial, p.nightBoost);
-    if (this.earthMaterial?.uniforms?.uDebugSun) {
-      this.earthMaterial.uniforms.uDebugSun.value = p.debugSun ? 1 : 0;
+    if (isLitMap(p)) {
+      updateLitMapMaterial(this.litMapMaterial, {
+        roughness: p.litRoughness,
+        nightLights: p.nightLights,
+        nightEmissiveIntensity: p.nightEmissive,
+        nightMap: this.earthTextures?.night,
+      });
+    } else {
+      this.earthOpacity = p.surfaceOpacity;
+      const lift = p.surfaceLift != null ? p.surfaceLift : surfaceLiftFromOpacity(p.surfaceOpacity);
+      updateEarthSurfaceLift(this.instrumentMaterial, lift);
+      updateEarthContextDim(this.instrumentMaterial, p.contextDim);
+      updateEarthNightBoost(this.instrumentMaterial, p.nightBoost);
+      if (this.instrumentMaterial?.uniforms?.uDebugSun) {
+        this.instrumentMaterial.uniforms.uDebugSun.value = p.debugSun ? 1 : 0;
+      }
     }
 
     // Atmosphere
@@ -929,7 +972,7 @@ export class EarthScene {
       this.atmosphere.scale.setScalar(p.atmosphereScale);
     }
 
-    // Lights / exposure
+    // Lights / exposure — critical for lit-map
     if (this.ambientLight) this.ambientLight.intensity = p.ambient;
     if (this.sunLight) this.sunLight.intensity = p.sunIntensity;
     if (this.fillLight) this.fillLight.intensity = p.fillIntensity;
@@ -951,26 +994,26 @@ export class EarthScene {
       }
     }
 
-    // Re-assert chrome off after trail/pole updates
     this.setBareGlobeMode(true);
     return p;
   }
 
-  /** Leave studio; restore production coupling defaults for non-bald experiences. */
+  /** Leave studio; restore production instrument material + defaults. */
   clearBareGlobeStudio() {
     this.studioActive = false;
     this.studioParams = null;
     this.setBareGlobeMode(false);
+    this.setSurfaceModel(SURFACE_MODELS.INSTRUMENT);
     if (this.atmosphere) {
       this.atmosphere.visible = true;
       this.atmosphere.scale.setScalar(1);
     }
     if (this.stars) this.stars.visible = true;
-    if (this.earthMaterial?.uniforms?.uDebugSun) {
-      this.earthMaterial.uniforms.uDebugSun.value = 0;
+    if (this.instrumentMaterial?.uniforms?.uDebugSun) {
+      this.instrumentMaterial.uniforms.uDebugSun.value = 0;
     }
-    updateEarthNightBoost(this.earthMaterial, 0.55);
-    updateEarthContextDim(this.earthMaterial, 1);
+    updateEarthNightBoost(this.instrumentMaterial, 0.55);
+    updateEarthContextDim(this.instrumentMaterial, 1);
     if (this.renderer) this.renderer.toneMappingExposure = 1.05;
     this.autoRotate = 0.002;
   }
