@@ -459,7 +459,14 @@ npm run start</pre>
               <span id="earth-opacity-label" class="earth-opacity__label">Solid</span>
             </label>
           </div>
-          <div class="controls__cluster controls__cluster--layers controls__cluster--hidden" id="footer-layers" aria-label="Layer toggles (Full Instrument)">
+        </div>
+        <!-- Own row: Full Instrument layer chips (not crammed into tools column) -->
+        <div
+          class="controls__row controls__row--layers controls__row--layers-hidden"
+          id="footer-layers-row"
+          aria-label="Layer toggles"
+        >
+          <div class="controls__cluster controls__cluster--layers" id="footer-layers">
             <div class="layer-group" role="group" aria-label="Solid Earth layers">
               <span class="layer-group__label">Solid</span>
               <div class="layer-group__chips" data-layer-chips="solid"></div>

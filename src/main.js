@@ -550,11 +550,20 @@ function selectExperience(id) {
   });
   if (exp.bareGlobe) {
     setBaldEarthStudioActive(true);
+    // Bare shell authoring stays Live-first.
+    if (state.timeMode !== 'live') setTimeMode('live');
   } else {
     setBaldEarthStudioActive(false);
     // Re-apply app-wide globe look (lit-map / lights / atmosphere) under layered themes.
     applyGlobeAppDefaultsToScene(geocentricScene);
   }
+
+  // Full Instrument is the archive power-user surface — default to Replay so
+  // the scrubber is present and the layer tray isn't fighting a Live-only chrome.
+  if (exp.showAllLayers && state.timeMode === 'live') {
+    setTimeMode('replay');
+  }
+
   // Hide event filters when authoring the shell — they don't apply.
   const filters = document.querySelector('.controls__cluster--filters');
   filters?.classList.toggle('controls__cluster--hidden', !!exp.bareGlobe);

@@ -188,9 +188,19 @@ export function applyExperience(exp, {
 
   if (setView && exp.defaultView) setView(exp.defaultView);
 
+  // Full Instrument: dedicated layers row (not jammed into tools column).
+  const layersRow = $id('footer-layers-row');
+  if (layersRow) {
+    layersRow.classList.toggle('controls__row--layers-hidden', !exp.showAllLayers);
+  }
   const footerLayers = $id('footer-layers');
   if (footerLayers) {
     footerLayers.classList.toggle('controls__cluster--hidden', !exp.showAllLayers);
+  }
+  const appControls = $id('app-controls');
+  if (appControls) {
+    appControls.classList.toggle('controls--full-instrument', !!exp.showAllLayers);
+    appControls.classList.toggle('controls--bare-experience', !!exp.bareGlobe);
   }
 
   // Bald Earth is for authoring the shell — hide moment chips.
