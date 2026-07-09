@@ -38,6 +38,11 @@ import {
   wireMoments,
   parseExperienceUrl,
 } from './experiences/controller.mjs';
+import {
+  clampEarthOpacity,
+  formatEarthOpacityLabel,
+  formatPlaybackRate,
+} from './lib/playback-format.js';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -65,15 +70,8 @@ const state = {
 
 const EARTH_OPACITY_KEY = 'wobblescope-earth-opacity';
 
-function formatEarthOpacityLabel(opacity) {
-  const pct = Math.round(opacity * 100);
-  if (pct >= 98) return 'Solid';
-  if (pct <= 70) return `Depth ${pct}%`;
-  return `Readable ${pct}%`;
-}
-
 function applyEarthOpacity(opacity, { persist = true } = {}) {
-  const clamped = Math.max(0.65, Math.min(1, opacity));
+  const clamped = clampEarthOpacity(opacity);
   state.earthOpacity = clamped;
   geocentricScene?.setEarthOpacity(clamped);
 
@@ -97,24 +95,6 @@ let geocentricScene = null;
 let heliocentricScene = null;
 let viewTransition = null;
 let timelineSlider = null;
-
-function formatPlaybackRate(dayLengthMs, speed) {
-  const ms = dayLengthMs / speed;
-  if (ms >= 86_400_000) {
-    const days = ms / 86_400_000;
-    return days >= 10 ? `${Math.round(days)}d/sim day` : `${days.toFixed(1)}d/sim day`;
-  }
-  if (ms >= 3_600_000) {
-    const hours = ms / 3_600_000;
-    return hours >= 10 ? `${Math.round(hours)}h/sim day` : `${hours.toFixed(1)}h/sim day`;
-  }
-  if (ms >= 60_000) {
-    const minutes = ms / 60_000;
-    return minutes >= 10 ? `${Math.round(minutes)}m/sim day` : `${minutes.toFixed(1)}m/sim day`;
-  }
-  if (ms >= 1000) return `${Math.round(ms / 1000)}s/sim day`;
-  return `${Math.round(ms)}ms/sim day`;
-}
 
 function playbackMetaSuffix() {
   if (!state.playing) return '';

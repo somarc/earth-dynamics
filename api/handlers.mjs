@@ -4,6 +4,12 @@ import { composeLayerSnapshots } from '../layers/api-compose.mjs';
 import { matchLayerRoute } from '../layers/api-routes.mjs';
 import { getHomeAsset, getHomeRegionConfig, listHomeAssetKeys } from '../ingest/home-store.mjs';
 import { igrfDipPoles, igrfFieldAt } from './igrf.mjs';
+import {
+  extensionMaxDate,
+  lagDays,
+  resolveDailyRow,
+  visibleTimelineEnd,
+} from './lib/daily-resolve.mjs';
 
 function rowToEop(r) {
   if (!r) return null;
@@ -59,46 +65,6 @@ function rowToEphemeris(r) {
     },
     alignments: JSON.parse(r.alignments_json || '[]'),
   };
-}
-
-function lagDays(fromDate, toDate) {
-  if (!fromDate || !toDate || toDate <= fromDate) return 0;
-  return Math.round(
-    (Date.parse(`${toDate}T12:00:00Z`) - Date.parse(`${fromDate}T12:00:00Z`)) / 86_400_000,
-  );
-}
-
-function extensionMaxDate(db) {
-  const { maxDate } = db.prepare(`
-    SELECT MAX(d) AS maxDate FROM (
-      SELECT MAX(date) AS d FROM earthquakes
-      UNION ALL SELECT MAX(start_date) AS d FROM eruptions
-      UNION ALL SELECT MAX(date) AS d FROM ephemeris_daily
-    )
-  `).get();
-  return maxDate ?? null;
-}
-
-function visibleTimelineEnd(db) {
-  const lastEop = db.prepare('SELECT MAX(date) AS end FROM eop_daily').get()?.end ?? null;
-  if (!lastEop) return null;
-  const maxDate = extensionMaxDate(db);
-  if (!maxDate || maxDate <= lastEop) return lastEop;
-  return maxDate;
-}
-
-function resolveDailyRow(db, table, date) {
-  let row = db.prepare(`SELECT * FROM ${table} WHERE date = ?`).get(date);
-  if (row) {
-    return { row, asOf: row.date, coverage: 'exact' };
-  }
-  row = db.prepare(
-    `SELECT * FROM ${table} WHERE date <= ? ORDER BY date DESC LIMIT 1`,
-  ).get(date);
-  if (row) {
-    return { row, asOf: row.date, coverage: 'fallback' };
-  }
-  return { row: null, asOf: null, coverage: 'missing' };
 }
 
 export function createHandlers(db) {
