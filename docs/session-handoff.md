@@ -11,14 +11,14 @@
 
 | Item | What |
 |------|------|
-| `npm test` | vitest — **93** unit/contract tests, no network |
+| `npm test` | vitest — **108** unit/contract tests, no network |
 | Fixture DB | `tests/fixtures/create-fixture-db.mjs` in-memory seed |
 | Day-frame contract | Golden keys for `2024-05-11` (G5) + Katrina cyclones |
 | CI | `.github/workflows/test.yml` — test + `npm run build` |
 | Pure extracts | daily-resolve, playback-format, event-list, experience URL, ephWindowToChart |
-| Ingest parsers | ocean-sst, solar, AAM, USGS quakes + fetchWithRetry / upsert / incremental |
+| Ingest parsers | ocean-sst, solar, AAM, USGS quakes, OMNI, IBTrACS + fetchWithRetry / upsert / incremental |
 
-Next: more source parsers (OMNI, IBTrACS), DayFrame cache in conductor, GlobeCore peel, Playwright smokes.
+Next: DayFrame cache in conductor, remaining space-weather parsers, GlobeCore peel, Playwright smokes.
 
 **Phase F (trust layer)** shipped:
 
