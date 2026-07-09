@@ -1,82 +1,13 @@
 import { getDb, logIngest } from '../db.mjs';
+import { aggregateDaily, parseOmniLine } from '../lib/parse-omni.mjs';
 
 const OMNI_BASE = 'https://spdf.gsfc.nasa.gov/pub/data/omni/low_res_omni';
-const FILL = new Set([999, 9999, 99999, 999999, 9999999, 999999.99, 99999.99]);
-
-function isFill(val) {
-  if (val == null || Number.isNaN(val)) return true;
-  return FILL.has(val) || FILL.has(Math.round(val));
-}
-
-function parseOmniLine(line) {
-  const parts = line.trim().split(/\s+/);
-  if (parts.length < 42) return null;
-
-  const year = parseInt(parts[0], 10);
-  const doy = parseInt(parts[1], 10);
-  const hour = parseInt(parts[2], 10);
-  if (!year || !doy || hour > 23) return null;
-
-  const bz = parseFloat(parts[16]);
-  const density = parseFloat(parts[23]);
-  const speed = parseFloat(parts[24]);
-  const dst = parseInt(parts[40], 10);
-
-  return {
-    year,
-    doy,
-    hour,
-    bz: isFill(bz) ? null : bz,
-    density: isFill(density) ? null : density,
-    speed: isFill(speed) ? null : speed,
-    dst: isFill(dst) ? null : dst,
-  };
-}
-
-function doyToDate(year, doy) {
-  const d = new Date(Date.UTC(year, 0, 1, 12));
-  d.setUTCDate(doy);
-  return d.toISOString().slice(0, 10);
-}
 
 async function fetchOmniYear(year) {
   const url = `${OMNI_BASE}/omni2_${year}.dat`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`OMNI ${year} ${res.status}`);
   return res.text();
-}
-
-function aggregateDaily(hourlyRows) {
-  const byDate = new Map();
-
-  for (const row of hourlyRows) {
-    const date = doyToDate(row.year, row.doy);
-    let agg = byDate.get(date);
-    if (!agg) {
-      agg = { dstVals: [], speeds: [], bzs: [], densities: [] };
-      byDate.set(date, agg);
-    }
-    if (row.dst != null) agg.dstVals.push(row.dst);
-    if (row.speed != null) agg.speeds.push(row.speed);
-    if (row.bz != null) agg.bzs.push(row.bz);
-    if (row.density != null) agg.densities.push(row.density);
-  }
-
-  const out = [];
-  for (const [date, agg] of byDate) {
-    out.push({
-      date,
-      dstMin: agg.dstVals.length ? Math.min(...agg.dstVals) : null,
-      speed: agg.speeds.length
-        ? agg.speeds.reduce((a, b) => a + b, 0) / agg.speeds.length
-        : null,
-      bzMin: agg.bzs.length ? Math.min(...agg.bzs) : null,
-      density: agg.densities.length
-        ? agg.densities.reduce((a, b) => a + b, 0) / agg.densities.length
-        : null,
-    });
-  }
-  return out;
 }
 
 function mergeGeomagnetic(db, { date, dstMin, speed, bzMin, density }) {

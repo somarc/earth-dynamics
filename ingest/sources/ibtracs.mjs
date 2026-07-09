@@ -5,6 +5,7 @@ import { createInterface } from 'node:readline';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getDb, logIngest, wasIngested } from '../db.mjs';
+import { finalizeStorm, parseHeaderCols, parseRow } from '../lib/parse-ibtracs.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = join(__dirname, '..', '..', 'data');
@@ -12,77 +13,6 @@ const CACHE_FILE = join(CACHE_DIR, 'ibtracs-since1980.csv');
 
 const IBTRACS_URL =
   'https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv/ibtracs.since1980.list.v04r01.csv';
-
-function parseNum(val) {
-  if (val == null || val === '' || val === ' ') return null;
-  const n = parseFloat(val);
-  return Number.isFinite(n) ? n : null;
-}
-
-function parseRow(line, cols) {
-  const parts = line.split(',');
-  if (parts.length < 15) return null;
-
-  const trackType = parts[cols.TRACK_TYPE]?.trim();
-  if (trackType && trackType !== 'main') return null;
-
-  const iso = parts[cols.ISO_TIME]?.trim();
-  const lat = parseNum(parts[cols.LAT]);
-  const lon = parseNum(parts[cols.LON]);
-  if (!iso || lat == null || lon == null) return null;
-
-  const wind =
-    parseNum(parts[cols.USA_WIND]) ??
-    parseNum(parts[cols.WMO_WIND]) ??
-    parseNum(parts[cols.TOKYO_WIND]);
-  const sshs = parseNum(parts[cols.USA_SSHS]);
-
-  return {
-    sid: parts[cols.SID]?.trim(),
-    season: parseInt(parts[cols.SEASON], 10) || null,
-    name: (parts[cols.NAME]?.trim() || 'UNNAMED').replace(/^UNNAMED$/i, 'Unnamed'),
-    basin: parts[cols.BASIN]?.trim() || '',
-    isoTime: iso,
-    date: iso.slice(0, 10),
-    lat,
-    lon,
-    windKts: wind,
-    sshs: sshs != null ? Math.round(sshs) : null,
-  };
-}
-
-function finalizeStorm(sid, points) {
-  if (!points.length) return null;
-  points.sort((a, b) => a.date.localeCompare(b.date) || a.isoTime.localeCompare(b.isoTime));
-
-  let maxWind = null;
-  let maxSshs = null;
-  for (const p of points) {
-    if (p.windKts != null) maxWind = maxWind == null ? p.windKts : Math.max(maxWind, p.windKts);
-    if (p.sshs != null) maxSshs = maxSshs == null ? p.sshs : Math.max(maxSshs, p.sshs);
-  }
-
-  const head = points[0];
-  return {
-    sid,
-    name: head.name,
-    basin: head.basin,
-    season: head.season,
-    start_date: points[0].date,
-    end_date: points.at(-1).date,
-    max_wind_kts: maxWind,
-    max_sshs: maxSshs,
-    track_json: JSON.stringify(
-      points.map(({ date, lat, lon, windKts, sshs }) => ({
-        date,
-        lat,
-        lon,
-        windKts,
-        sshs,
-      })),
-    ),
-  };
-}
 
 async function ensureCache({ force = false } = {}) {
   mkdirSync(CACHE_DIR, { recursive: true });
@@ -115,9 +45,7 @@ async function parseCsvFile(path) {
 
   for await (const line of rl) {
     if (!cols) {
-      if (line.startsWith('SID,')) {
-        cols = Object.fromEntries(line.split(',').map((h, i) => [h.trim(), i]));
-      }
+      cols = parseHeaderCols(line);
       continue;
     }
     if (!line.trim() || line.startsWith(' ,')) continue;
