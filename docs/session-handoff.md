@@ -7,17 +7,18 @@
 
 ## Where we are
 
-**Phase A test harness** shipped (2026-07-08):
+**Test spine** (iterating, 2026-07-08):
 
 | Item | What |
 |------|------|
-| `npm test` | vitest — 39 unit/contract tests, no network |
+| `npm test` | vitest — **93** unit/contract tests, no network |
 | Fixture DB | `tests/fixtures/create-fixture-db.mjs` in-memory seed |
 | Day-frame contract | Golden keys for `2024-05-11` (G5) + Katrina cyclones |
 | CI | `.github/workflows/test.yml` — test + `npm run build` |
-| Extracts | `api/lib/daily-resolve.mjs`, `src/lib/playback-format.js` |
+| Pure extracts | daily-resolve, playback-format, event-list, experience URL, ephWindowToChart |
+| Ingest parsers | ocean-sst, solar, AAM, USGS quakes + fetchWithRetry / upsert / incremental |
 
-Next deconstruct tiers: Lane pack migrations with fixtures, GlobeCore peel, Playwright smokes.
+Next: more source parsers (OMNI, IBTrACS), DayFrame cache in conductor, GlobeCore peel, Playwright smokes.
 
 **Phase F (trust layer)** shipped:
 
