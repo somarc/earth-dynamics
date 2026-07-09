@@ -1912,6 +1912,31 @@ select {
   border-top: 1px solid rgba(80, 110, 150, 0.22);
 }
 
+.bes-actions--stack {
+  flex-direction: column;
+  border-top: none;
+  padding-top: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.bes-actions--stack .bes-btn {
+  width: 100%;
+  text-align: center;
+}
+
+.bes-status {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--accent-earth, #3ecf8e);
+  line-height: 1.35;
+}
+
+.bes-status--empty {
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
 .bes-btn {
   font-family: var(--font-mono);
   font-size: 0.62rem;

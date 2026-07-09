@@ -1,16 +1,22 @@
 /**
  * Bald Earth studio — sidebar dials for naked-globe authoring.
+ * Can also save appearance as app-wide defaults for other experiences.
  */
 import { $id } from './dom-scope.js';
 import {
   BALD_EARTH_DEFAULTS,
   LIT_MAP_SUGGESTED,
   SURFACE_MODELS,
+  clearGlobeAppDefaults,
+  hasGlobeAppDefaults,
   isLitMap,
   loadBaldEarthParams,
+  loadGlobeAppDefaults,
   normalizeBaldEarthParams,
   saveBaldEarthParams,
+  saveGlobeAppDefaults,
   surfaceLiftFromOpacity,
+  toGlobeAppDefaults,
 } from './lib/bald-earth-params.js';
 
 const FIELD_META = [
@@ -105,6 +111,7 @@ function writeForm(p) {
   if (liftLock) liftLock.checked = liftManual || p.surfaceLift != null;
 
   updateSectionVisibility(p);
+  updateAppDefaultsStatus();
 }
 
 function updateSectionVisibility(p) {
@@ -115,9 +122,21 @@ function updateSectionVisibility(p) {
   if (litSec) litSec.hidden = !lit;
 }
 
+function updateAppDefaultsStatus() {
+  const el = $id('bes-app-defaults-status');
+  if (!el) return;
+  const saved = loadGlobeAppDefaults();
+  if (!saved) {
+    el.textContent = 'No app defaults saved — other themes use factory globe.';
+    el.classList.add('bes-status--empty');
+    return;
+  }
+  const mode = saved.surfaceModel === SURFACE_MODELS.LIT_MAP ? 'Lit map' : 'Instrument';
+  el.textContent = `App defaults active: ${mode} · ambient ${saved.ambient.toFixed(2)} · sun ${saved.sunIntensity.toFixed(2)}`;
+  el.classList.remove('bes-status--empty');
+}
+
 function maybeSuggestLitDefaults(next) {
-  // First time user flips to lit-map in this session: nudge lighting toward GE-like.
-  // Also re-apply if stored params still look like the old broken “navy ambient” preset.
   const switchingToLit =
     next.surfaceModel === SURFACE_MODELS.LIT_MAP
     && prevModel !== SURFACE_MODELS.LIT_MAP;
@@ -159,6 +178,14 @@ function applyAndPersist() {
   if (footLabel) footLabel.textContent = `${Math.round(params.surfaceOpacity * 100)}%`;
 }
 
+function flashButton(id, label, ms = 1400) {
+  const btn = $id(id);
+  if (!btn) return;
+  const prev = btn.textContent;
+  btn.textContent = label;
+  setTimeout(() => { btn.textContent = prev; }, ms);
+}
+
 export function mountBaldEarthStudio(options) {
   ctx = options;
   params = loadBaldEarthParams();
@@ -193,7 +220,6 @@ export function mountBaldEarthStudio(options) {
   });
 
   panel.addEventListener('change', (e) => {
-    // radios fire change; keep in sync
     if (e.target?.name === 'bes-surface-model') applyAndPersist();
   });
 
@@ -209,36 +235,80 @@ export function mountBaldEarthStudio(options) {
     const text = JSON.stringify(params, null, 2);
     try {
       await navigator.clipboard.writeText(text);
-      const btn = $id('bes-copy');
-      if (btn) {
-        const prev = btn.textContent;
-        btn.textContent = 'Copied';
-        setTimeout(() => { btn.textContent = prev; }, 1200);
-      }
+      flashButton('bes-copy', 'Copied');
     } catch {
       console.info('[bald-earth studio]', text);
     }
   });
+
+  $id('bes-save-app')?.addEventListener('click', () => {
+    // Capture latest form (and persist studio session too)
+    applyAndPersist();
+    const saved = saveGlobeAppDefaults(params);
+    updateAppDefaultsStatus();
+    flashButton('bes-save-app', `Saved · ${saved.surfaceModel === 'lit-map' ? 'Lit map' : 'Instrument'}`);
+  });
+
+  $id('bes-clear-app')?.addEventListener('click', () => {
+    clearGlobeAppDefaults();
+    updateAppDefaultsStatus();
+    flashButton('bes-clear-app', 'Cleared');
+  });
 }
 
-/** Activate/deactivate studio when experience changes. */
+/**
+ * Activate Bald studio, or leave it and apply app-wide globe defaults if any.
+ */
 export function setBaldEarthStudioActive(active) {
   const panel = document.querySelector('[data-panel="bald-studio"]');
   const scene = ctx?.getScene?.();
   if (active) {
     params = loadBaldEarthParams();
+    // Prefer app defaults as starting point if user saved them and studio is factory-ish
+    const app = loadGlobeAppDefaults();
+    if (app && !hasStudioCustomization(params)) {
+      params = normalizeBaldEarthParams({ ...params, ...app });
+    }
     prevModel = params.surfaceModel;
     liftManual = params.surfaceLift != null;
     writeForm(params);
     scene?.applyBareGlobeStudio?.(params);
     panel?.classList.remove('panel--experience-hidden');
   } else {
-    scene?.clearBareGlobeStudio?.();
+    const app = loadGlobeAppDefaults();
+    scene?.clearBareGlobeStudio?.(app);
     const foot = $id('earth-opacity');
     if (foot) foot.min = '65';
   }
 }
 
+function hasStudioCustomization(p) {
+  // Heuristic: if user already moved off factory instrument defaults, keep studio session.
+  if (p.surfaceModel === SURFACE_MODELS.LIT_MAP) return true;
+  if (p.ambient !== BALD_EARTH_DEFAULTS.ambient) return true;
+  if (p.sunIntensity !== BALD_EARTH_DEFAULTS.sunIntensity) return true;
+  if (p.atmosphereIntensity !== BALD_EARTH_DEFAULTS.atmosphereIntensity) return true;
+  return false;
+}
+
+/** Apply saved app defaults to the live scene (for non-bald experiences). */
+export function applyGlobeAppDefaultsToScene(scene) {
+  if (!scene) return null;
+  const app = loadGlobeAppDefaults();
+  if (!app) {
+    scene.clearBareGlobeStudio?.(null);
+    return null;
+  }
+  scene.applyGlobeAppearance?.(app, { bare: false, motion: false, guides: false });
+  return app;
+}
+
 export function getBaldEarthStudioParams() {
   return { ...params };
 }
+
+export function getGlobeAppDefaultsSnapshot() {
+  return loadGlobeAppDefaults();
+}
+
+export { hasGlobeAppDefaults, toGlobeAppDefaults };

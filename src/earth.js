@@ -530,11 +530,11 @@ export class EarthScene {
     const sunDistance = 9;
     this.sunLight.position.copy(dir).multiplyScalar(sunDistance);
     this.fillLight.position.copy(dir).multiplyScalar(-sunDistance * 0.7);
-    if (this.studioActive && this.studioParams) {
-      this.applyStudioLights(this.studioParams);
-      if (this.atmosphere?.material?.uniforms?.uIntensity) {
-        this.atmosphere.material.uniforms.uIntensity.value =
-          this.studioParams.atmosphereIntensity;
+    const appearance = this.studioParams || (this.appearanceActive ? this.appearanceParams : null);
+    if (appearance) {
+      this.applyStudioLights(appearance);
+      if (this.atmosphere?.material?.uniforms?.uIntensity && appearance.atmosphereIntensity != null) {
+        this.atmosphere.material.uniforms.uIntensity.value = appearance.atmosphereIntensity;
       }
     } else {
       // Instrument aesthetic: cool, low ambient (does not light the terminator shader).
@@ -958,18 +958,25 @@ export class EarthScene {
   }
 
   /**
-   * Apply Bald Earth studio knobs (decoupled surface / atmosphere / lights / motion).
+   * Apply planetary-body appearance (surface model, atmosphere, lights).
+   * Used by Bald Earth studio and by app-wide defaults on other experiences.
    * @param {object} raw
+   * @param {{ bare?: boolean, motion?: boolean, guides?: boolean }} [opts]
+   *   bare — strip instrument chrome (Bald Earth only)
+   *   motion — apply free/sync spin (studio only)
+   *   guides — apply bodies/grid/stars visibility (studio only for bodies/grid)
    */
-  applyBareGlobeStudio(raw) {
+  applyGlobeAppearance(raw, { bare = false, motion = false, guides = false } = {}) {
     const p = normalizeBaldEarthParams(raw);
-    this.studioActive = true;
-    this.studioParams = p;
-    this.setBareGlobeMode(true);
+    this.appearanceParams = p;
+    this.appearanceActive = true;
+    this.studioActive = !!bare;
+    this.studioParams = bare ? p : null;
+
+    this.setBareGlobeMode(bare);
     this.setSurfaceModel(p.surfaceModel);
 
     if (isLitMap(p)) {
-      // Recreate if we still have a stale Standard material from an older session build.
       if (!this.litMapMaterial || this.litMapMaterial.type !== 'MeshPhongMaterial') {
         this.litMapMaterial = createLitMapEarthMaterial(this.earthTextures);
         if (this.surfaceModel === SURFACE_MODELS.LIT_MAP) {
@@ -995,7 +1002,6 @@ export class EarthScene {
       }
     }
 
-    // Atmosphere
     if (this.atmosphere) {
       this.atmosphere.visible = p.atmosphereVisible;
       if (this.atmosphere.material?.uniforms?.uIntensity) {
@@ -1004,34 +1010,52 @@ export class EarthScene {
       this.atmosphere.scale.setScalar(p.atmosphereScale);
     }
 
-    // Lights / exposure — critical for lit-map
     this.applyStudioLights(p);
 
-    // Motion
-    this.autoRotate = p.autoRotate;
-    this.setDiurnalMode(p.diurnalMode);
+    if (motion) {
+      this.autoRotate = p.autoRotate;
+      this.setDiurnalMode(p.diurnalMode);
+    }
 
-    // Visibility
-    if (this.stars) this.stars.visible = p.starsVisible;
-    this.showBodies = p.bodiesVisible;
-    if (this.bodiesGroup) this.bodiesGroup.visible = p.bodiesVisible;
-    if (this.grid) {
-      this.grid.visible = p.gridVisible;
-      if (this.grid.material) {
-        this.grid.material.opacity = p.gridOpacity;
-        this.grid.material.transparent = true;
+    if (this.stars) this.stars.visible = p.starsVisible !== false;
+
+    if (guides) {
+      this.showBodies = p.bodiesVisible;
+      if (this.bodiesGroup) this.bodiesGroup.visible = p.bodiesVisible;
+      if (this.grid) {
+        this.grid.visible = p.gridVisible;
+        if (this.grid.material) {
+          this.grid.material.opacity = p.gridOpacity;
+          this.grid.material.transparent = true;
+        }
       }
     }
 
-    this.setBareGlobeMode(true);
+    if (bare) this.setBareGlobeMode(true);
     return p;
   }
 
-  /** Leave studio; restore production instrument material + defaults. */
-  clearBareGlobeStudio() {
+  /** Full Bald Earth studio (bare chrome + motion + guide toggles). */
+  applyBareGlobeStudio(raw) {
+    return this.applyGlobeAppearance(raw, { bare: true, motion: true, guides: true });
+  }
+
+  /**
+   * Leave studio. If `appDefaults` provided, keep that look for layered experiences;
+   * otherwise restore factory instrument defaults.
+   */
+  clearBareGlobeStudio(appDefaults = null) {
     this.studioActive = false;
     this.studioParams = null;
     this.setBareGlobeMode(false);
+
+    if (appDefaults) {
+      this.applyGlobeAppearance(appDefaults, { bare: false, motion: false, guides: false });
+      return;
+    }
+
+    this.appearanceActive = false;
+    this.appearanceParams = null;
     this.setSurfaceModel(SURFACE_MODELS.INSTRUMENT);
     if (this.atmosphere) {
       this.atmosphere.visible = true;
@@ -1052,6 +1076,10 @@ export class EarthScene {
 
   getBareGlobeStudioParams() {
     return this.studioParams ? { ...this.studioParams } : null;
+  }
+
+  getAppearanceParams() {
+    return this.appearanceParams ? { ...this.appearanceParams } : null;
   }
 
   setCyclones(storms, viewDate = this.viewDate) {

@@ -251,9 +251,25 @@ npm run start</pre>
               </label>
             </div>
 
+            <div class="bes-section">
+              <h3 class="bes-section__title">App defaults</h3>
+              <p class="bes-hint">
+                Save the current look (surface model, lights, atmosphere) so Solid Earth, Ocean, Magnetosphere, and other themes use it — not just Bald Earth.
+              </p>
+              <p class="bes-status" id="bes-app-defaults-status" aria-live="polite">No app defaults saved.</p>
+              <div class="bes-actions bes-actions--stack">
+                <button type="button" id="bes-save-app" class="bes-btn bes-btn--primary" title="Apply this planetary body look to every experience">
+                  Save as app defaults
+                </button>
+                <button type="button" id="bes-clear-app" class="bes-btn" title="Remove saved app defaults; themes use factory globe again">
+                  Clear app defaults
+                </button>
+              </div>
+            </div>
+
             <div class="bes-actions">
-              <button type="button" id="bes-reset" class="bes-btn">Reset defaults</button>
-              <button type="button" id="bes-copy" class="bes-btn bes-btn--primary">Copy JSON</button>
+              <button type="button" id="bes-reset" class="bes-btn">Reset studio</button>
+              <button type="button" id="bes-copy" class="bes-btn">Copy JSON</button>
             </div>
           </div>
 

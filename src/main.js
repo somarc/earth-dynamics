@@ -51,6 +51,7 @@ import {
 import {
   mountBaldEarthStudio,
   setBaldEarthStudioActive,
+  applyGlobeAppDefaultsToScene,
 } from './bald-earth-studio.js';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
@@ -465,7 +466,13 @@ function selectExperience(id) {
     date: state.dates[state.currentIndex],
     applyEarthOpacity,
   });
-  setBaldEarthStudioActive(!!exp.bareGlobe);
+  if (exp.bareGlobe) {
+    setBaldEarthStudioActive(true);
+  } else {
+    setBaldEarthStudioActive(false);
+    // Re-apply app-wide globe look (lit-map / lights / atmosphere) under layered themes.
+    applyGlobeAppDefaultsToScene(geocentricScene);
+  }
   // Hide event filters when authoring the shell — they don't apply.
   const filters = document.querySelector('.controls__cluster--filters');
   filters?.classList.toggle('controls__cluster--hidden', !!exp.bareGlobe);

@@ -5,6 +5,7 @@ import {
   isLitMap,
   normalizeBaldEarthParams,
   surfaceLiftFromOpacity,
+  toGlobeAppDefaults,
 } from '../../src/lib/bald-earth-params.js';
 
 describe('bald-earth params', () => {
@@ -48,6 +49,24 @@ describe('bald-earth params', () => {
   it('maps opacity to surface lift like production', () => {
     expect(surfaceLiftFromOpacity(1)).toBeCloseTo(0.72, 5);
     expect(surfaceLiftFromOpacity(0.65)).toBeCloseTo(0.46 + 0.26 * 0.65, 5);
+  });
+
+  it('toGlobeAppDefaults keeps appearance keys and drops motion-only fields to defaults', () => {
+    const full = normalizeBaldEarthParams({
+      surfaceModel: 'lit-map',
+      ambient: 0.6,
+      sunIntensity: 2.2,
+      autoRotate: 0.04,
+      gridVisible: true,
+      diurnalMode: 'sync',
+    });
+    const app = toGlobeAppDefaults(full);
+    expect(app.surfaceModel).toBe(SURFACE_MODELS.LIT_MAP);
+    expect(app.ambient).toBe(0.6);
+    expect(app.sunIntensity).toBe(2.2);
+    // Motion/guides are not part of app defaults slice — normalized back to defaults
+    expect(app.autoRotate).toBe(BALD_EARTH_DEFAULTS.autoRotate);
+    expect(app.gridVisible).toBe(false);
   });
 });
 

@@ -5,6 +5,9 @@
 
 export const BALD_EARTH_STORAGE_KEY = 'wobblescope-bald-earth-studio';
 
+/** App-wide globe look applied to all experiences (Solid, Ocean, …). */
+export const GLOBE_APP_DEFAULTS_KEY = 'wobblescope-globe-app-defaults';
+
 /** Surface shading modes on the same sphere mesh. */
 export const SURFACE_MODELS = Object.freeze({
   INSTRUMENT: 'instrument',
@@ -128,6 +131,76 @@ export function saveBaldEarthParams(params) {
     localStorage.setItem(BALD_EARTH_STORAGE_KEY, JSON.stringify(normalizeBaldEarthParams(params)));
   } catch {
     /* ignore */
+  }
+}
+
+/**
+ * Keys that define the planetary body look shared across experiences.
+ * Excludes studio-only motion/guides that would fight layer experiences.
+ */
+export const GLOBE_APPEARANCE_KEYS = [
+  'surfaceModel',
+  'surfaceOpacity',
+  'surfaceLift',
+  'contextDim',
+  'nightBoost',
+  'litRoughness',
+  'nightLights',
+  'nightEmissive',
+  'albedoBoost',
+  'atmosphereVisible',
+  'atmosphereIntensity',
+  'atmosphereScale',
+  'ambient',
+  'sunIntensity',
+  'fillIntensity',
+  'exposure',
+  'starsVisible',
+];
+
+/** Slice studio params into app-wide appearance defaults. */
+export function toGlobeAppDefaults(params) {
+  const p = normalizeBaldEarthParams(params);
+  const out = {};
+  for (const k of GLOBE_APPEARANCE_KEYS) {
+    out[k] = p[k];
+  }
+  return normalizeBaldEarthParams(out);
+}
+
+export function loadGlobeAppDefaults() {
+  try {
+    const raw = localStorage.getItem(GLOBE_APP_DEFAULTS_KEY);
+    if (!raw) return null;
+    return toGlobeAppDefaults(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+export function saveGlobeAppDefaults(params) {
+  const sliced = toGlobeAppDefaults(params);
+  try {
+    localStorage.setItem(GLOBE_APP_DEFAULTS_KEY, JSON.stringify(sliced));
+  } catch {
+    /* ignore */
+  }
+  return sliced;
+}
+
+export function clearGlobeAppDefaults() {
+  try {
+    localStorage.removeItem(GLOBE_APP_DEFAULTS_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function hasGlobeAppDefaults() {
+  try {
+    return !!localStorage.getItem(GLOBE_APP_DEFAULTS_KEY);
+  } catch {
+    return false;
   }
 }
 
