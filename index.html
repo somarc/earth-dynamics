@@ -433,11 +433,15 @@ npm run start</pre>
             </div>
           </div>
           <div class="controls__cluster controls__cluster--filters" role="group" aria-label="Event filters">
-            <span class="controls__cluster-label">Events</span>
-            <label class="filter-chip filter-label" title="Limit events to the 7 days before the selected date">
-              <input type="checkbox" id="recent-only" checked />
-              <span id="recent-only-label">7d</span>
-            </label>
+            <span class="controls__cluster-label">Lens</span>
+            <select
+              id="time-lens"
+              class="footer-select footer-select--lens"
+              title="How far back from the selected date event layers look (trailing window). Default: week — what's happened lately."
+              aria-label="Time lens for event layers"
+            >
+              <!-- options filled by main.js from TIME_LENSES -->
+            </select>
             <select
               id="quake-min-mag"
               class="footer-select footer-select--mag"

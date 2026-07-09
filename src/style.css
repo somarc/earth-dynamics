@@ -1778,6 +1778,10 @@ select {
   width: 3.1rem;
 }
 
+.footer-select--lens {
+  width: 3.4rem;
+}
+
 @media (max-width: 1180px) {
   .layout {
     grid-template-columns: 2.5rem minmax(0, 1fr) minmax(300px, 32vw);

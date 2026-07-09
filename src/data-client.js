@@ -67,9 +67,16 @@ export function ephWindowToChart(ephWindow, selectedDate, ephemerisDay) {
   return { dates, byDate };
 }
 
-export async function loadFrame(catalog, date, currentIndex, { recentOnly = false } = {}) {
+export async function loadFrame(catalog, date, currentIndex, {
+  recentOnly = true,
+  pastDays = null,
+} = {}) {
   if (catalog.mode === 'api') {
-    const dayPath = recentOnly ? `/api/day/${date}?past=7` : `/api/day/${date}`;
+    // Trailing window: product default week. pastDays wins when set (time lens).
+    const past = pastDays != null
+      ? pastDays
+      : (recentOnly === false ? 30 : 7);
+    const dayPath = `/api/day/${date}?past=${encodeURIComponent(past)}`;
     const [day, eopWindow, ephWindow, ephOrbit, geoWindow, aamWindow, oceanWindow, oceanTempGrid] = await Promise.all([
       api(dayPath),
       api(`/api/eop/window?end=${date}&days=400`),
@@ -113,8 +120,9 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
   const eopWindow = catalog.eop.slice(trailStart, currentIndex + 1);
   const ephemerisDay = catalog.ephemeris?.byDate?.[date] ?? null;
 
+  const windowDays = pastDays != null ? pastDays : (recentOnly === false ? 30 : 7);
   const { quakes, volcs } = eventsOnDate(
-    date, catalog.earthquakes, catalog.eruptions, 7, recentOnly,
+    date, catalog.earthquakes, catalog.eruptions, windowDays, true,
   );
 
   return {
@@ -127,5 +135,6 @@ export async function loadFrame(catalog, date, currentIndex, { recentOnly = fals
     storms: [],
     weather: [],
     solar: null,
+    timeWindow: { mode: 'trailing', pastDays: windowDays },
   };
 }

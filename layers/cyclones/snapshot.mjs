@@ -1,28 +1,20 @@
 /**
  * Cyclone slice for /api/day/:date — owned by the cyclones layer.
+ * Trailing overlap window: storm active in [T-past, T].
  */
 export function contributeCyclonesToDay(db, date, { pastDays = null } = {}) {
   const past = Number.isFinite(pastDays) && pastDays > 0
-    ? Math.min(30, Math.floor(pastDays))
-    : null;
+    ? Math.min(3650, Math.floor(pastDays))
+    : 7;
 
-  const cycloneRows = past
-    ? db.prepare(`
+  const cycloneRows = db.prepare(`
         SELECT sid, name, basin, season, start_date AS startDate, end_date AS endDate,
                max_wind_kts AS maxWindKts, max_sshs AS maxSshs, track_json AS trackJson
         FROM cyclone_storms
         WHERE start_date <= date(?) AND end_date >= date(?, ?)
         ORDER BY max_wind_kts DESC
         LIMIT 20
-      `).all(date, date, `-${past} days`)
-    : db.prepare(`
-        SELECT sid, name, basin, season, start_date AS startDate, end_date AS endDate,
-               max_wind_kts AS maxWindKts, max_sshs AS maxSshs, track_json AS trackJson
-        FROM cyclone_storms
-        WHERE start_date <= date(?, '+7 days') AND end_date >= date(?, '-7 days')
-        ORDER BY max_wind_kts DESC
-        LIMIT 20
-      `).all(date, date);
+      `).all(date, date, `-${past} days`);
 
   return cycloneRows.map((row) => {
     const track = JSON.parse(row.trackJson || '[]').filter((p) => p.date <= date);

@@ -53,12 +53,21 @@ describe('DayFrame contract (fixture DB)', () => {
     );
   });
 
-  it('past=7 window excludes quakes older than the trailing week', () => {
+  it('trailing week excludes quakes older than the lens (default product window)', () => {
     db = createFixtureDb();
     const day = createHandlers(db).getDay('2024-05-11', { pastDays: 7 });
     const ids = day.earthquakes.map((q) => q.id);
     expect(ids).toContain('us-fixture-g5');
     expect(ids).not.toContain('us-fixture-old');
+    expect(day.timeWindow?.mode).toBe('trailing');
+    expect(day.timeWindow?.pastDays).toBe(7);
+  });
+
+  it('default getDay uses trailing week when past omitted', () => {
+    db = createFixtureDb();
+    const day = createHandlers(db).getDay('2024-05-11');
+    expect(day.timeWindow?.pastDays).toBe(7);
+    expect(day.earthquakes.map((q) => q.id)).not.toContain('us-fixture-old');
   });
 
   it('includes cyclones on Katrina date via layer snapshot compose', () => {

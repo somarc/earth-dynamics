@@ -133,9 +133,11 @@ export function createHandlers(db) {
   };
 
   const getDay = (date, { pastDays = null } = {}) => {
+    // Product default: trailing week ending at T ("what's happened lately").
+    // Never dump all-time history; decade cap for Full Instrument archive.
     const past = Number.isFinite(pastDays) && pastDays > 0
-      ? Math.min(30, Math.floor(pastDays))
-      : null;
+      ? Math.min(3650, Math.floor(pastDays))
+      : 7;
 
     const eopResolved = resolveDailyRow(db, 'eop_daily', date);
     const ephResolved = resolveDailyRow(db, 'ephemeris_daily', date);
@@ -144,53 +146,31 @@ export function createHandlers(db) {
     const eop = rowToEop(eopResolved.row);
     const eph = rowToEphemeris(ephResolved.row);
 
-    const quakes = past
-      ? db.prepare(`
+    const quakes = db.prepare(`
           SELECT id, time, date, mag, place, lat, lon, depth, url, tsunami
           FROM earthquakes
           WHERE date BETWEEN date(?, ?) AND date(?)
           ORDER BY mag DESC LIMIT 50
-        `).all(date, `-${past} days`, date)
-      : db.prepare(`
-          SELECT id, time, date, mag, place, lat, lon, depth, url, tsunami
-          FROM earthquakes
-          WHERE date BETWEEN date(?, '-7 days') AND date(?, '+7 days')
-          ORDER BY mag DESC LIMIT 50
-        `).all(date, date);
+        `).all(date, `-${past} days`, date);
     const quakeRows = quakes.map((q) => ({ ...q, tsunami: !!q.tsunami }));
 
-    const volcs = past
-      ? db.prepare(`
+    // Episodes: must overlap [T-past, T] — not "started anytime before T".
+    const volcs = db.prepare(`
           SELECT id, volcano_number AS volcanoNumber, name, vei, start_date AS startDate,
                  end_date AS endDate, continuing, lat, lon
           FROM eruptions
           WHERE start_date <= date(?)
             AND (end_date IS NULL OR end_date >= date(?, ?))
           LIMIT 20
-        `).all(date, date, `-${past} days`)
-      : db.prepare(`
-          SELECT id, volcano_number AS volcanoNumber, name, vei, start_date AS startDate,
-                 end_date AS endDate, continuing, lat, lon
-          FROM eruptions
-          WHERE start_date <= date(?, '+7 days')
-            AND (end_date IS NULL OR end_date >= date(?, '-7 days'))
-          LIMIT 20
-        `).all(date, date);
+        `).all(date, date, `-${past} days`);
     const volcRows = volcs.map((v) => ({ ...v, continuing: !!v.continuing }));
 
-    const storms = past
-      ? db.prepare(`
+    const storms = db.prepare(`
           SELECT id, date, event_type AS eventType, state, lat, lon, magnitude, deaths, narrative
           FROM storm_events
           WHERE date BETWEEN date(?, ?) AND date(?)
           ORDER BY deaths DESC, event_type LIMIT 30
-        `).all(date, `-${past} days`, date)
-      : db.prepare(`
-          SELECT id, date, event_type AS eventType, state, lat, lon, magnitude, deaths, narrative
-          FROM storm_events
-          WHERE date BETWEEN date(?, '-3 days') AND date(?, '+3 days')
-          ORDER BY deaths DESC, event_type LIMIT 30
-        `).all(date, date);
+        `).all(date, `-${past} days`, date);
 
     const weather = db.prepare(`
       SELECT w.grid_id AS gridId, g.label, g.lat, g.lon,
@@ -210,8 +190,7 @@ export function createHandlers(db) {
       FROM geomagnetic_daily WHERE date = ?
     `).get(date);
 
-    const spaceEvents = past
-      ? db.prepare(`
+    const spaceEvents = db.prepare(`
           SELECT id, event_type AS eventType, start_time AS startTime, date,
                  end_time AS endTime, speed, magnitude, kp_peak AS kpPeak,
                  half_angle AS halfAngle, source_location AS sourceLocation,
@@ -222,19 +201,7 @@ export function createHandlers(db) {
             CASE event_type WHEN 'GST' THEN 0 WHEN 'CME' THEN 1 WHEN 'FLR' THEN 2 ELSE 3 END,
             kp_peak DESC, speed DESC
           LIMIT 40
-        `).all(date, `-${past} days`, date)
-      : db.prepare(`
-          SELECT id, event_type AS eventType, start_time AS startTime, date,
-                 end_time AS endTime, speed, magnitude, kp_peak AS kpPeak,
-                 half_angle AS halfAngle, source_location AS sourceLocation,
-                 description, source_url AS sourceUrl
-          FROM space_weather_events
-          WHERE date BETWEEN date(?, '-5 days') AND date(?, '+5 days')
-          ORDER BY
-            CASE event_type WHEN 'GST' THEN 0 WHEN 'CME' THEN 1 WHEN 'FLR' THEN 2 ELSE 3 END,
-            kp_peak DESC, speed DESC
-          LIMIT 40
-        `).all(date, date);
+        `).all(date, `-${past} days`, date);
 
     const aam = aamResolved.row
       ? {
@@ -266,6 +233,11 @@ export function createHandlers(db) {
       spaceWeather: spaceEvents,
       magnetometers,
       magneticPoles,
+      timeWindow: {
+        mode: 'trailing',
+        pastDays: past,
+        start: null, // client can derive; SQL uses date(?, -past days)
+      },
       asOf: {
         eop: eopResolved.asOf,
         ephemeris: ephResolved.asOf,

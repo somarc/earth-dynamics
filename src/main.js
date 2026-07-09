@@ -13,6 +13,14 @@ import { fetchOvation, isOvationCurrent, ovationEquatorwardEdge } from './ovatio
 import { renderEventInspect } from './event-inspect.js';
 import { getGlobeInspectContext, renderGlobeTooltip } from './globe-inspect.js';
 import { formatDate, addDays, filterQuakesByMinMag } from './utils.js';
+import {
+  DEFAULT_TIME_LENS,
+  TIME_LENSES,
+  eventsTitleForLens,
+  formatLensRange,
+  getTimeLens,
+  lensToPastDays,
+} from './lib/time-lens.js';
 import { hasGeomagContext } from './geomag-globe.js';
 import { loadCatalog, loadFrame } from './data-client.js';
 import {
@@ -45,9 +53,9 @@ import {
 } from './lib/playback-format.js';
 import {
   buildEventListItems,
-  emptyEventListMessage,
   formatGlobeTally,
 } from './lib/event-list.js';
+import { emptyEventsMessage as emptyEventListMessage } from './lib/time-lens.js';
 import {
   mountBaldEarthStudio,
   setBaldEarthStudioActive,
@@ -72,7 +80,10 @@ const state = {
   view: 'geocentric',
   eopSeries: [],
   ovationData: null,
+  /** @deprecated use timeLens — kept in sync for any residual call sites */
   recentOnly: true,
+  /** day | week | month | season | year | decade — trailing window ending at T */
+  timeLens: DEFAULT_TIME_LENS,
   quakeMinMag: 5,
   earthOpacity: 1,
   cachedFrame: null,
@@ -138,18 +149,14 @@ function activeScene() {
 function updateEventsPanelMeta(date, counts = null) {
   const eventsTitle = $id('events-panel-title');
   const eventsDesc = $id('events-panel-desc');
-  const recentEl = $id('recent-only');
-  const recentLabel = $id('recent-only-label');
-  const filterLabel = $('.filter-label');
+  const lensSelect = $id('time-lens');
+  const lens = getTimeLens(state.timeLens);
 
-  if (recentEl) recentEl.checked = state.recentOnly;
-  filterLabel?.classList.toggle('filter-label--active', state.recentOnly);
-
-  const tally = formatGlobeTally(counts);
-  if (recentLabel) {
-    recentLabel.textContent = state.recentOnly ? '7d' : '±7d';
+  if (lensSelect && lensSelect.value !== state.timeLens) {
+    lensSelect.value = state.timeLens;
   }
 
+  const tally = formatGlobeTally(counts);
   const footerTally = $id('footer-tally');
   if (footerTally) {
     footerTally.textContent = tally || '';
@@ -158,18 +165,13 @@ function updateEventsPanelMeta(date, counts = null) {
 
   if (!eventsTitle || !eventsDesc) return;
 
-  if (state.recentOnly) {
-    eventsTitle.textContent = 'Events (past 7 days)';
-    const range = date ? `${addDays(date, -7)} → ${date}` : 'past 7 days';
-    const globeTally = counts ? formatGlobeTally(counts) : null;
-    const onGlobe = globeTally ? `${globeTally} on globe` : 'loading…';
-    eventsDesc.textContent = `${range} — ${onGlobe}. ▲ = GVP eruption episodes active in window. Uncheck footer for ±7d.`;
-  } else {
-    eventsTitle.textContent = 'Events at Date';
-    const globeTally = counts ? formatGlobeTally(counts) : null;
-    const onGlobe = globeTally ? `${globeTally} on globe (±7d)` : '±7 day windows around selected date';
-    eventsDesc.textContent = `${onGlobe}. ▲ = one GVP episode overlapping this date. Check “Past week only” to trim older markers.`;
-  }
+  eventsTitle.textContent = eventsTitleForLens(state.timeLens);
+  const range = formatLensRange(date, state.timeLens, { addDaysFn: addDays });
+  const globeTally = counts ? formatGlobeTally(counts) : null;
+  const onGlobe = globeTally ? `${globeTally} on globe` : 'loading…';
+  eventsDesc.textContent =
+    `${range} — ${onGlobe}. Trailing ${lens.label.toLowerCase()} ending at the selected date. `
+    + '▲ = GVP eruption episodes that overlap this window (not Holocene history).';
 }
 
 function visibleEarthquakes(quakes) {
@@ -328,7 +330,8 @@ async function updateUI() {
   updateEventsPanelMeta(date);
 
   const frame = await loadFrame(state.catalog, date, state.currentIndex, {
-    recentOnly: state.recentOnly,
+    pastDays: lensToPastDays(state.timeLens),
+    recentOnly: state.timeLens === 'week' || state.timeLens === 'day',
   });
   const { record, eopWindow, ephemerisDay, ephemerisForChart } = frame;
 
@@ -458,10 +461,9 @@ async function updateUI() {
   });
   list.innerHTML = items.length
     ? items.join('')
-    : emptyEventListMessage({
-        recentOnly: state.recentOnly,
+    : `<li class="empty">${emptyEventListMessage(state.timeLens, {
         quakeMinMag: state.quakeMinMag,
-      });
+      })}</li>`;
 }
 
 function viewerOrientationCtx() {
@@ -563,6 +565,17 @@ function selectExperience(id) {
   if (exp.showAllLayers && state.timeMode === 'live') {
     setTimeMode('replay');
   }
+  // Wider default lens for Full; short lens for Live-first themes.
+  if (exp.showAllLayers) {
+    state.timeLens = 'month';
+  } else if (exp.bareGlobe) {
+    state.timeLens = DEFAULT_TIME_LENS;
+  } else if (!state.timeLens) {
+    state.timeLens = DEFAULT_TIME_LENS;
+  }
+  state.recentOnly = state.timeLens === 'day' || state.timeLens === 'week';
+  const lensSelect = $id('time-lens');
+  if (lensSelect) lensSelect.value = state.timeLens;
 
   // Hide event filters when authoring the shell — they don't apply.
   const filters = document.querySelector('.controls__cluster--filters');
@@ -649,11 +662,22 @@ function setupControls() {
     btn.addEventListener('click', () => setView(btn.dataset.view));
   });
 
-  const recentOnlyEl = $id('recent-only');
-  if (recentOnlyEl) {
-    recentOnlyEl.checked = state.recentOnly;
-    recentOnlyEl.addEventListener('change', (e) => {
-      state.recentOnly = e.target.checked;
+  const lensSelect = $id('time-lens');
+  if (lensSelect) {
+    // Populate options once
+    if (!lensSelect.options.length) {
+      for (const lens of TIME_LENSES) {
+        const opt = document.createElement('option');
+        opt.value = lens.id;
+        opt.textContent = lens.short;
+        opt.title = `Past ${lens.label.toLowerCase()} ending at selected date`;
+        lensSelect.appendChild(opt);
+      }
+    }
+    lensSelect.value = state.timeLens;
+    lensSelect.addEventListener('change', (e) => {
+      state.timeLens = e.target.value || DEFAULT_TIME_LENS;
+      state.recentOnly = state.timeLens === 'day' || state.timeLens === 'week';
       updateEventsPanelMeta(state.dates[state.currentIndex]);
       updateUI();
     });
