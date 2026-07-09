@@ -5,8 +5,14 @@ import {
   loadEarthTextures,
   updateEarthContextDim,
   updateEarthOpacity,
+  updateEarthSurfaceLift,
+  updateEarthNightBoost,
   updateEarthSunDirection,
 } from './textures.js';
+import {
+  normalizeBaldEarthParams,
+  surfaceLiftFromOpacity,
+} from './lib/bald-earth-params.js';
 import { frameCameraForLatLon } from '../layers/home-region/globe.mjs';
 import {
   EARTH_RADIUS,
@@ -516,11 +522,21 @@ export class EarthScene {
     const dir = sunDir?.lengthSq() ? sunDir.clone().normalize() : this.defaultSunDirection;
     const sunDistance = 9;
     this.sunLight.position.copy(dir).multiplyScalar(sunDistance);
-    this.sunLight.intensity = ephemerisDay?.sun ? 1.35 : 1.0;
     this.fillLight.position.copy(dir).multiplyScalar(-sunDistance * 0.7);
-    this.fillLight.intensity = 0.04 + (ephemerisDay?.lunar?.illumination ?? 0.25) * 0.05;
-    this.ambientLight.intensity =
-      this.showBodies && this.diurnalMode === 'sync' ? 0.06 : 0.22;
+    if (this.studioActive && this.studioParams) {
+      this.sunLight.intensity = this.studioParams.sunIntensity;
+      this.fillLight.intensity = this.studioParams.fillIntensity;
+      this.ambientLight.intensity = this.studioParams.ambient;
+      if (this.atmosphere?.material?.uniforms?.uIntensity) {
+        this.atmosphere.material.uniforms.uIntensity.value =
+          this.studioParams.atmosphereIntensity;
+      }
+    } else {
+      this.sunLight.intensity = ephemerisDay?.sun ? 1.35 : 1.0;
+      this.fillLight.intensity = 0.04 + (ephemerisDay?.lunar?.illumination ?? 0.25) * 0.05;
+      this.ambientLight.intensity =
+        this.showBodies && this.diurnalMode === 'sync' ? 0.06 : 0.22;
+    }
     updateAtmosphereSun(this.atmosphere, dir);
     updateEarthSunDirection(this.earthMaterial, dir);
     this.layerControllers.get('home-region')?.updateSun(dir);
@@ -863,6 +879,15 @@ export class EarthScene {
   }
 
   setEarthOpacity(opacity) {
+    // When Bald Earth studio is driving knobs independently, don't recouple atmosphere.
+    if (this.studioActive) {
+      this.earthOpacity = Math.max(0.3, Math.min(1, opacity));
+      updateEarthOpacity(this.earthMaterial, Math.max(0.65, this.earthOpacity));
+      if (this.earthMaterial?.uniforms?.uSurfaceLift) {
+        updateEarthSurfaceLift(this.earthMaterial, surfaceLiftFromOpacity(this.earthOpacity));
+      }
+      return;
+    }
     this.earthOpacity = Math.max(0.65, Math.min(1, opacity));
     updateEarthOpacity(this.earthMaterial, this.earthOpacity);
     if (this.grid?.material) {
@@ -873,6 +898,85 @@ export class EarthScene {
       this.atmosphere.material.uniforms.uIntensity.value =
         0.55 + 0.75 * Math.min(1, this.earthOpacity + 0.25);
     }
+  }
+
+  /**
+   * Apply Bald Earth studio knobs (decoupled surface / atmosphere / lights / motion).
+   * @param {import('./lib/bald-earth-params.js').BALD_EARTH_DEFAULTS | object} raw
+   */
+  applyBareGlobeStudio(raw) {
+    const p = normalizeBaldEarthParams(raw);
+    this.studioActive = true;
+    this.studioParams = p;
+    this.setBareGlobeMode(true);
+
+    // Surface
+    this.earthOpacity = p.surfaceOpacity;
+    const lift = p.surfaceLift != null ? p.surfaceLift : surfaceLiftFromOpacity(p.surfaceOpacity);
+    updateEarthSurfaceLift(this.earthMaterial, lift);
+    updateEarthContextDim(this.earthMaterial, p.contextDim);
+    updateEarthNightBoost(this.earthMaterial, p.nightBoost);
+    if (this.earthMaterial?.uniforms?.uDebugSun) {
+      this.earthMaterial.uniforms.uDebugSun.value = p.debugSun ? 1 : 0;
+    }
+
+    // Atmosphere
+    if (this.atmosphere) {
+      this.atmosphere.visible = p.atmosphereVisible;
+      if (this.atmosphere.material?.uniforms?.uIntensity) {
+        this.atmosphere.material.uniforms.uIntensity.value = p.atmosphereIntensity;
+      }
+      this.atmosphere.scale.setScalar(p.atmosphereScale);
+    }
+
+    // Lights / exposure
+    if (this.ambientLight) this.ambientLight.intensity = p.ambient;
+    if (this.sunLight) this.sunLight.intensity = p.sunIntensity;
+    if (this.fillLight) this.fillLight.intensity = p.fillIntensity;
+    if (this.renderer) this.renderer.toneMappingExposure = p.exposure;
+
+    // Motion
+    this.autoRotate = p.autoRotate;
+    this.setDiurnalMode(p.diurnalMode);
+
+    // Visibility
+    if (this.stars) this.stars.visible = p.starsVisible;
+    this.showBodies = p.bodiesVisible;
+    if (this.bodiesGroup) this.bodiesGroup.visible = p.bodiesVisible;
+    if (this.grid) {
+      this.grid.visible = p.gridVisible;
+      if (this.grid.material) {
+        this.grid.material.opacity = p.gridOpacity;
+        this.grid.material.transparent = true;
+      }
+    }
+
+    // Re-assert chrome off after trail/pole updates
+    this.setBareGlobeMode(true);
+    return p;
+  }
+
+  /** Leave studio; restore production coupling defaults for non-bald experiences. */
+  clearBareGlobeStudio() {
+    this.studioActive = false;
+    this.studioParams = null;
+    this.setBareGlobeMode(false);
+    if (this.atmosphere) {
+      this.atmosphere.visible = true;
+      this.atmosphere.scale.setScalar(1);
+    }
+    if (this.stars) this.stars.visible = true;
+    if (this.earthMaterial?.uniforms?.uDebugSun) {
+      this.earthMaterial.uniforms.uDebugSun.value = 0;
+    }
+    updateEarthNightBoost(this.earthMaterial, 0.55);
+    updateEarthContextDim(this.earthMaterial, 1);
+    if (this.renderer) this.renderer.toneMappingExposure = 1.05;
+    this.autoRotate = 0.002;
+  }
+
+  getBareGlobeStudioParams() {
+    return this.studioParams ? { ...this.studioParams } : null;
   }
 
   setCyclones(storms, viewDate = this.viewDate) {

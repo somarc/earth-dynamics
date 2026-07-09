@@ -9,8 +9,9 @@ export default {
    * Use this experience to author the base planetary body without overlay noise.
    */
   layers: {},
-  panels: [],
-  hideAllPanels: true,
+  /** Only the studio panel — every other sidebar panel is hidden. */
+  panels: ['bald-studio'],
+  hideAllPanels: false,
   showAllPanels: false,
   showAllLayers: false,
   /** Strip spin-axis chrome, trail, and pole so only the body remains. */

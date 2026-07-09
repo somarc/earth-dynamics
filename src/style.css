@@ -1820,3 +1820,116 @@ select {
     padding-bottom: 0.35rem;
   }
 }
+
+/* —— Bald Earth studio —— */
+.panel--bald-studio {
+  border-color: rgba(77, 163, 255, 0.28);
+  background: linear-gradient(180deg, rgba(20, 36, 58, 0.55), rgba(12, 18, 30, 0.4));
+}
+
+.bes-section {
+  margin: 0.75rem 0 0.9rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(80, 110, 150, 0.22);
+}
+
+.bes-section__title {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.45rem;
+  font-weight: 600;
+}
+
+.bes-row {
+  display: grid;
+  grid-template-columns: 5.2rem 1fr 2.6rem;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.28rem 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.bes-row__label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+.bes-row input[type='range'] {
+  width: 100%;
+  height: 4px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.bes-row__out {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  text-align: right;
+  color: var(--text);
+  tabular-nums: true;
+  font-variant-numeric: tabular-nums;
+}
+
+.bes-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.28rem 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.bes-check input {
+  accent-color: var(--accent);
+}
+
+.bes-diurnal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 0.25rem;
+}
+
+.bes-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.62rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+.bes-actions {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(80, 110, 150, 0.22);
+}
+
+.bes-btn {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: rgba(20, 30, 50, 0.55);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.bes-btn:hover {
+  color: var(--text);
+  border-color: rgba(77, 163, 255, 0.4);
+}
+
+.bes-btn--primary {
+  color: var(--accent);
+  border-color: rgba(77, 163, 255, 0.4);
+  background: rgba(77, 163, 255, 0.12);
+}

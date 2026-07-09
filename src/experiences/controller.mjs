@@ -174,9 +174,12 @@ export function applyExperience(exp, {
   geocentricScene?.setHemisphereCullEvents?.(!!exp.hemisphereCull);
 
   // Bare globe: hide instrument chrome (axis line, etc.) that is not a data layer chip.
+  // Studio module applies full knobs when active; here we only ensure chrome baseline.
   const bare = !!exp.bareGlobe;
-  geocentricScene?.setBareGlobeMode?.(bare);
-  heliocentricScene?.setBareGlobeMode?.(bare);
+  if (!bare) {
+    geocentricScene?.setBareGlobeMode?.(false);
+    heliocentricScene?.setBareGlobeMode?.(false);
+  }
 
   const title = $id('experience-title');
   const tagline = $id('experience-tagline');
@@ -190,7 +193,7 @@ export function applyExperience(exp, {
     footerLayers.classList.toggle('controls__cluster--hidden', !exp.showAllLayers);
   }
 
-  // Bald Earth is for authoring the shell — hide moment chips and keep footer quiet.
+  // Bald Earth is for authoring the shell — hide moment chips.
   const moments = $id('experience-moments');
   if (bare && moments) {
     moments.innerHTML = '';

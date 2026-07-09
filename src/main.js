@@ -48,6 +48,10 @@ import {
   emptyEventListMessage,
   formatGlobeTally,
 } from './lib/event-list.js';
+import {
+  mountBaldEarthStudio,
+  setBaldEarthStudioActive,
+} from './bald-earth-studio.js';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -461,6 +465,10 @@ function selectExperience(id) {
     date: state.dates[state.currentIndex],
     applyEarthOpacity,
   });
+  setBaldEarthStudioActive(!!exp.bareGlobe);
+  // Hide event filters when authoring the shell — they don't apply.
+  const filters = document.querySelector('.controls__cluster--filters');
+  filters?.classList.toggle('controls__cluster--hidden', !!exp.bareGlobe);
   renderThemeRail(state.experienceId, selectExperience);
   renderStalenessChips(state.catalog?.manifest, { freshnessKeys: exp.freshnessKeys });
   updateUI();
@@ -759,6 +767,10 @@ export default async function mountWeatherly(root) {
   );
   setupControls();
   setupGlobePick();
+  mountBaldEarthStudio({
+    getScene: () => geocentricScene,
+    onDiurnalMode: (mode) => setDiurnalMode(mode),
+  });
   wireMoments({ onMoment: jumpToMoment });
   renderThemeRail(state.experienceId, selectExperience);
   selectExperience(state.experienceId);

@@ -85,6 +85,135 @@ npm run start</pre>
 
         <aside class="panels">
           <div id="experience-moments" class="experience-moments experience-moments--hidden" aria-label="Suggested moments"></div>
+
+          <div class="panel panel--bald-studio" id="bald-earth-studio" data-panel="bald-studio">
+            <h2>Bald Earth Studio</h2>
+            <p class="panel__desc">
+              Naked globe knobs — surface, atmosphere, lights, spin. Values persist in localStorage.
+              Use this experience to decide what the planetary body should look like before layers return.
+            </p>
+
+            <div class="bes-section">
+              <h3 class="bes-section__title">Surface</h3>
+              <label class="bes-row">
+                <span class="bes-row__label">Readability</span>
+                <input type="range" id="bes-surface-opacity" min="0.3" max="1" step="0.01" value="1" />
+                <span class="bes-row__out" id="bes-surface-opacity-out">100%</span>
+              </label>
+              <label class="bes-row">
+                <span class="bes-row__label">Lift override</span>
+                <input type="range" id="bes-surface-lift" min="0.2" max="1.2" step="0.01" value="0.72" />
+                <span class="bes-row__out" id="bes-surface-lift-out">auto</span>
+              </label>
+              <label class="bes-check">
+                <input type="checkbox" id="bes-lift-manual" />
+                <span>Manual lift (unlock from readability)</span>
+              </label>
+              <label class="bes-row">
+                <span class="bes-row__label">Context dim</span>
+                <input type="range" id="bes-context-dim" min="0.08" max="1" step="0.01" value="1" />
+                <span class="bes-row__out" id="bes-context-dim-out">1.00</span>
+              </label>
+              <label class="bes-row">
+                <span class="bes-row__label">Night map</span>
+                <input type="range" id="bes-night-boost" min="0.05" max="1.5" step="0.01" value="0.55" />
+                <span class="bes-row__out" id="bes-night-boost-out">0.55</span>
+              </label>
+              <label class="bes-check">
+                <input type="checkbox" id="bes-debug-sun" />
+                <span>Debug sun (greyscale facing)</span>
+              </label>
+            </div>
+
+            <div class="bes-section">
+              <h3 class="bes-section__title">Atmosphere</h3>
+              <label class="bes-check">
+                <input type="checkbox" id="bes-atm-visible" checked />
+                <span>Shell visible</span>
+              </label>
+              <label class="bes-row">
+                <span class="bes-row__label">Intensity</span>
+                <input type="range" id="bes-atm-intensity" min="0" max="3" step="0.05" value="1.2" />
+                <span class="bes-row__out" id="bes-atm-intensity-out">1.20</span>
+              </label>
+              <label class="bes-row">
+                <span class="bes-row__label">Scale</span>
+                <input type="range" id="bes-atm-scale" min="0.98" max="1.12" step="0.001" value="1" />
+                <span class="bes-row__out" id="bes-atm-scale-out">1.000</span>
+              </label>
+            </div>
+
+            <div class="bes-section">
+              <h3 class="bes-section__title">Lights &amp; exposure</h3>
+              <label class="bes-row">
+                <span class="bes-row__label">Ambient</span>
+                <input type="range" id="bes-ambient" min="0" max="1.5" step="0.01" value="0.22" />
+                <span class="bes-row__out" id="bes-ambient-out">0.22</span>
+              </label>
+              <label class="bes-row">
+                <span class="bes-row__label">Sun</span>
+                <input type="range" id="bes-sun" min="0" max="4" step="0.05" value="1.35" />
+                <span class="bes-row__out" id="bes-sun-out">1.35</span>
+              </label>
+              <label class="bes-row">
+                <span class="bes-row__label">Fill</span>
+                <input type="range" id="bes-fill" min="0" max="1" step="0.01" value="0.12" />
+                <span class="bes-row__out" id="bes-fill-out">0.12</span>
+              </label>
+              <label class="bes-row">
+                <span class="bes-row__label">ACES exposure</span>
+                <input type="range" id="bes-exposure" min="0.4" max="2.5" step="0.05" value="1.05" />
+                <span class="bes-row__out" id="bes-exposure-out">1.05</span>
+              </label>
+            </div>
+
+            <div class="bes-section">
+              <h3 class="bes-section__title">Motion</h3>
+              <div class="bes-diurnal" role="group" aria-label="Diurnal mode">
+                <label class="bes-check">
+                  <input type="checkbox" id="bes-diurnal-free" checked />
+                  <span>Free spin</span>
+                </label>
+                <label class="bes-check">
+                  <input type="checkbox" id="bes-diurnal-sync" />
+                  <span>Sync (day phase)</span>
+                </label>
+              </div>
+              <label class="bes-row">
+                <span class="bes-row__label">Spin rate</span>
+                <input type="range" id="bes-spin" min="0" max="0.05" step="0.0005" value="0.002" />
+                <span class="bes-row__out" id="bes-spin-out">0.0020</span>
+              </label>
+              <p class="bes-hint">Play the timeline to see Sync day-phase spin; Free uses spin rate continuously.</p>
+            </div>
+
+            <div class="bes-section">
+              <h3 class="bes-section__title">Guides</h3>
+              <label class="bes-check">
+                <input type="checkbox" id="bes-stars" checked />
+                <span>Stars</span>
+              </label>
+              <label class="bes-check">
+                <input type="checkbox" id="bes-bodies" checked />
+                <span>Sun / moon markers</span>
+              </label>
+              <label class="bes-check">
+                <input type="checkbox" id="bes-grid" />
+                <span>Wire grid</span>
+              </label>
+              <label class="bes-row">
+                <span class="bes-row__label">Grid opacity</span>
+                <input type="range" id="bes-grid-opacity" min="0.02" max="0.5" step="0.01" value="0.15" />
+                <span class="bes-row__out" id="bes-grid-opacity-out">0.15</span>
+              </label>
+            </div>
+
+            <div class="bes-actions">
+              <button type="button" id="bes-reset" class="bes-btn">Reset defaults</button>
+              <button type="button" id="bes-copy" class="bes-btn bes-btn--primary">Copy JSON</button>
+            </div>
+          </div>
+
           <div class="panel" data-panel="polhode">
             <h2>Polhode</h2>
             <p class="panel__desc">Spin-pole wander in the Earth-fixed frame (IERS x, −y) — not magnetic north (◆ on globe)</p>

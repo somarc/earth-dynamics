@@ -69,6 +69,7 @@ uniform float uHasNightMap;
 uniform float uHasMaskMap;
 uniform float uContextDim;
 uniform float uSurfaceLift;
+uniform float uNightBoost;
 uniform float uDebugSun;
 
 varying vec2 vUv;
@@ -90,10 +91,23 @@ float surfaceLandMask(vec3 dayColor) {
 }
 
 void main() {
-${TERMINATOR_DAYNIGHT_BLEND}
+  vec3 sunDir = normalize(uSunDirection);
+  vec3 normal = normalize(vWorldNormal);
+  float sunDot = dot(normal, sunDir);
+
+  float dayMix = smoothstep(-0.12, 0.42, sunDot);
+  float twilight = smoothstep(-0.38, 0.08, sunDot) * (1.0 - dayMix);
+
+  vec3 dayColor = texture2D(uDayMap, vUv).rgb;
+  vec3 nightColor = uHasNightMap > 0.5
+    ? texture2D(uNightMap, vUv).rgb * uNightBoost
+    : dayColor * 0.08;
+
+  vec3 twilightTint = vec3(1.0, 0.52, 0.28);
+  vec3 color = mix(nightColor, dayColor, dayMix);
+  color = mix(color, color * twilightTint + nightColor * 0.15, twilight * 0.65);
 
   if (uDebugSun > 0.5) {
-    float sunDot = dot(normalize(vWorldNormal), normalize(uSunDirection));
     float vis = clamp(sunDot * 0.5 + 0.5, 0.0, 1.0);
     gl_FragColor = vec4(vec3(vis), 1.0);
     return;
@@ -126,6 +140,7 @@ export function createTerminatorEarthMaterial(textures) {
       uHasMaskMap: { value: mask ? 1 : 0 },
       uContextDim: { value: 1 },
       uSurfaceLift: { value: 0.72 },
+      uNightBoost: { value: 0.55 },
       uDebugSun: { value: debugSun ? 1 : 0 },
     },
     vertexShader: TERMINATOR_VERTEX_SHADER,
@@ -143,6 +158,20 @@ export function updateEarthOpacity(material, opacity) {
   material.transparent = false;
   material.depthWrite = true;
   material.depthTest = true;
+}
+
+/** Studio: set surface lift directly (or via wide opacity range). */
+export function updateEarthSurfaceLift(material, lift) {
+  if (!material?.uniforms?.uSurfaceLift) return;
+  material.uniforms.uSurfaceLift.value = Math.max(0.2, Math.min(1.2, lift));
+  material.transparent = false;
+  material.depthWrite = true;
+  material.depthTest = true;
+}
+
+export function updateEarthNightBoost(material, boost) {
+  if (!material?.uniforms?.uNightBoost) return;
+  material.uniforms.uNightBoost.value = Math.max(0.05, Math.min(1.5, boost));
 }
 
 /** Dim the coarse global shell when a regional detail patch is active. */

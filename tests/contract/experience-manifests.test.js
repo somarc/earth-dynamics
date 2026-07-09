@@ -76,15 +76,16 @@ describe('experience manifests', () => {
     expect(preset.volcanoes).toBe(true);
   });
 
-  it('bald-earth forces every catalog layer off', async () => {
+  it('bald-earth forces every catalog layer off and keeps studio panel', async () => {
     const list = await discoverExperiences();
     const bald = list.find((e) => e.id === 'bald-earth');
     expect(bald).toBeTruthy();
     expect(bald.bareGlobe).toBe(true);
-    expect(bald.hideAllPanels).toBe(true);
+    expect(bald.panels).toContain('bald-studio');
     const preset = experienceToPreset(bald);
     for (const layer of allLayerUi()) {
       expect(preset[layer.key], `bald-earth should hide ${layer.key}`).toBe(false);
     }
   });
 });
+
