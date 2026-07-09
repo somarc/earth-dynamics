@@ -123,20 +123,22 @@ void main() {
 `;
 
 /**
- * GE-like lit day map — real Three.js lighting (Standard).
- * Sun DirectionalLight drives the limb; optional night lights as emissive.
+ * GE-like lit day map — Phong so directional + ambient actually paint the albedo
+ * (Standard + navy ambient was reading as pure night + city lights only).
+ * Optional night-lights texture as emissive.
  */
 export function createLitMapEarthMaterial(textures, {
-  roughness = 0.88,
-  metalness = 0,
+  shininess = 14,
   nightLights = true,
-  nightEmissiveIntensity = 0.35,
+  nightEmissiveIntensity = 0.22,
+  albedoBoost = 1.35,
 } = {}) {
   const { day, night } = textures;
-  const mat = new THREE.MeshStandardMaterial({
+  const mat = new THREE.MeshPhongMaterial({
     map: day,
-    roughness,
-    metalness,
+    color: new THREE.Color(albedoBoost, albedoBoost, albedoBoost),
+    shininess,
+    specular: new THREE.Color(0x1a1a22),
     transparent: false,
     depthWrite: true,
     depthTest: true,
@@ -145,6 +147,8 @@ export function createLitMapEarthMaterial(textures, {
     mat.emissiveMap = night;
     mat.emissive = new THREE.Color(0xffffff);
     mat.emissiveIntensity = nightEmissiveIntensity;
+  } else {
+    mat.emissiveIntensity = 0;
   }
   mat.userData.surfaceModel = 'lit-map';
   return mat;
@@ -152,18 +156,29 @@ export function createLitMapEarthMaterial(textures, {
 
 /** Update lit-map material knobs from studio. */
 export function updateLitMapMaterial(material, {
-  roughness,
+  shininess,
+  roughness, // accepted for API compat; maps inversely toward shininess if shininess omitted
   nightLights,
   nightEmissiveIntensity,
   nightMap,
+  albedoBoost,
 } = {}) {
   if (!material || material.userData?.surfaceModel !== 'lit-map') return;
-  if (roughness != null) material.roughness = Math.max(0.05, Math.min(1, roughness));
+  if (shininess != null) {
+    material.shininess = Math.max(1, Math.min(80, shininess));
+  } else if (roughness != null) {
+    // UI roughness 0.05–1 → shininess ~40–2
+    material.shininess = Math.max(2, Math.min(40, (1 - roughness) * 42));
+  }
+  if (albedoBoost != null) {
+    const b = Math.max(0.5, Math.min(2.5, albedoBoost));
+    material.color.setRGB(b, b, b);
+  }
   if (nightLights != null) {
     if (nightLights && nightMap) {
       material.emissiveMap = nightMap;
       material.emissive = new THREE.Color(0xffffff);
-      material.emissiveIntensity = nightEmissiveIntensity ?? 0.35;
+      material.emissiveIntensity = nightEmissiveIntensity ?? 0.22;
     } else {
       material.emissiveMap = null;
       material.emissiveIntensity = 0;

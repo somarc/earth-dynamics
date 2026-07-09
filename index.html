@@ -144,11 +144,18 @@ npm run start</pre>
 
             <div class="bes-section" id="bes-section-lit">
               <h3 class="bes-section__title">Lit map surface</h3>
-              <p class="bes-hint">Sun / ambient / fill / exposure knobs below drive this model. Night side darkens from lighting, not the terminator shader.</p>
+              <p class="bes-hint">
+                Day albedo is Phong-lit by sun + white ambient. If the disk looks all black, raise Ambient / Sun / Albedo boost — city lights alone mean you’re only seeing the emissive night map.
+              </p>
               <label class="bes-row">
-                <span class="bes-row__label">Roughness</span>
-                <input type="range" id="bes-lit-roughness" min="0.05" max="1" step="0.01" value="0.88" />
-                <span class="bes-row__out" id="bes-lit-roughness-out">0.88</span>
+                <span class="bes-row__label">Albedo boost</span>
+                <input type="range" id="bes-albedo-boost" min="0.5" max="2.5" step="0.05" value="1.4" />
+                <span class="bes-row__out" id="bes-albedo-boost-out">1.40</span>
+              </label>
+              <label class="bes-row">
+                <span class="bes-row__label">Shininess</span>
+                <input type="range" id="bes-lit-roughness" min="0.05" max="1" step="0.01" value="0.55" title="Lower = shinier specular" />
+                <span class="bes-row__out" id="bes-lit-roughness-out">0.55</span>
               </label>
               <label class="bes-check">
                 <input type="checkbox" id="bes-night-lights" checked />
@@ -156,8 +163,8 @@ npm run start</pre>
               </label>
               <label class="bes-row">
                 <span class="bes-row__label">Lights glow</span>
-                <input type="range" id="bes-night-emissive" min="0" max="2" step="0.05" value="0.35" />
-                <span class="bes-row__out" id="bes-night-emissive-out">0.35</span>
+                <input type="range" id="bes-night-emissive" min="0" max="2" step="0.05" value="0.2" />
+                <span class="bes-row__out" id="bes-night-emissive-out">0.20</span>
               </label>
             </div>
 

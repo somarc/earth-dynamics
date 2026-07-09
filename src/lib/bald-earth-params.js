@@ -20,10 +20,11 @@ export const BALD_EARTH_DEFAULTS = Object.freeze({
   surfaceLift: null,
   contextDim: 1,
   nightBoost: 0.55,
-  // Lit-map material
-  litRoughness: 0.88,
+  // Lit-map material (Phong)
+  litRoughness: 0.55, // UI: lower = shinier water/land highlights
   nightLights: true,
-  nightEmissive: 0.35,
+  nightEmissive: 0.2,
+  albedoBoost: 1.4, // multiplies day map color so land reads on dark basemap
   // Atmosphere
   atmosphereVisible: true,
   atmosphereIntensity: 1.2,
@@ -45,13 +46,19 @@ export const BALD_EARTH_DEFAULTS = Object.freeze({
   debugSun: false,
 });
 
-/** Brighter defaults suggested when switching to lit-map (GE-like). */
+/**
+ * Defaults when switching to lit-map (GE-like).
+ * Ambient must be strong + white (see EarthScene) — navy ambient was washing to black.
+ */
 export const LIT_MAP_SUGGESTED = Object.freeze({
-  ambient: 0.28,
-  sunIntensity: 1.85,
-  fillIntensity: 0.08,
-  exposure: 1.15,
-  atmosphereIntensity: 0.95,
+  ambient: 0.55,
+  sunIntensity: 2.4,
+  fillIntensity: 0.25,
+  exposure: 1.25,
+  atmosphereIntensity: 0.85,
+  albedoBoost: 1.45,
+  nightEmissive: 0.18,
+  litRoughness: 0.55,
 });
 
 export function clamp(n, lo, hi) {
@@ -88,6 +95,7 @@ export function normalizeBaldEarthParams(raw = {}) {
     litRoughness: clamp(Number(raw.litRoughness ?? d.litRoughness), 0.05, 1),
     nightLights: raw.nightLights !== false,
     nightEmissive: clamp(Number(raw.nightEmissive ?? d.nightEmissive), 0, 2),
+    albedoBoost: clamp(Number(raw.albedoBoost ?? d.albedoBoost), 0.5, 2.5),
     atmosphereVisible: raw.atmosphereVisible !== false,
     atmosphereIntensity: clamp(Number(raw.atmosphereIntensity ?? d.atmosphereIntensity), 0, 3),
     atmosphereScale: clamp(Number(raw.atmosphereScale ?? d.atmosphereScale), 0.98, 1.12),

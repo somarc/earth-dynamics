@@ -22,12 +22,14 @@ describe('bald-earth params', () => {
       litRoughness: 0.5,
       nightLights: false,
       nightEmissive: 1.2,
+      albedoBoost: 1.6,
     });
     expect(p.surfaceModel).toBe(SURFACE_MODELS.LIT_MAP);
     expect(isLitMap(p)).toBe(true);
     expect(p.litRoughness).toBe(0.5);
     expect(p.nightLights).toBe(false);
     expect(p.nightEmissive).toBe(1.2);
+    expect(p.albedoBoost).toBe(1.6);
   });
 
   it('clamps out-of-range values', () => {

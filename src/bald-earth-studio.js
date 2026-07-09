@@ -18,6 +18,7 @@ const FIELD_META = [
   { key: 'surfaceLift', el: 'bes-surface-lift', out: 'bes-surface-lift-out', fmt: (v) => (v == null ? 'auto' : v.toFixed(2)), optional: true },
   { key: 'contextDim', el: 'bes-context-dim', out: 'bes-context-dim-out', fmt: (v) => v.toFixed(2) },
   { key: 'nightBoost', el: 'bes-night-boost', out: 'bes-night-boost-out', fmt: (v) => v.toFixed(2) },
+  { key: 'albedoBoost', el: 'bes-albedo-boost', out: 'bes-albedo-boost-out', fmt: (v) => v.toFixed(2) },
   { key: 'litRoughness', el: 'bes-lit-roughness', out: 'bes-lit-roughness-out', fmt: (v) => v.toFixed(2) },
   { key: 'nightEmissive', el: 'bes-night-emissive', out: 'bes-night-emissive-out', fmt: (v) => v.toFixed(2) },
   { key: 'atmosphereIntensity', el: 'bes-atm-intensity', out: 'bes-atm-intensity-out', fmt: (v) => v.toFixed(2) },
@@ -116,10 +117,17 @@ function updateSectionVisibility(p) {
 
 function maybeSuggestLitDefaults(next) {
   // First time user flips to lit-map in this session: nudge lighting toward GE-like.
-  if (
+  // Also re-apply if stored params still look like the old broken “navy ambient” preset.
+  const switchingToLit =
     next.surfaceModel === SURFACE_MODELS.LIT_MAP
-    && prevModel !== SURFACE_MODELS.LIT_MAP
-  ) {
+    && prevModel !== SURFACE_MODELS.LIT_MAP;
+  const staleLitPreset =
+    next.surfaceModel === SURFACE_MODELS.LIT_MAP
+    && next.ambient <= 0.35
+    && next.sunIntensity <= 2.0
+    && (next.albedoBoost == null || next.albedoBoost <= 1.05);
+
+  if (switchingToLit || staleLitPreset) {
     return normalizeBaldEarthParams({
       ...next,
       ...LIT_MAP_SUGGESTED,

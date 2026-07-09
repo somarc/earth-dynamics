@@ -531,14 +531,16 @@ export class EarthScene {
     this.sunLight.position.copy(dir).multiplyScalar(sunDistance);
     this.fillLight.position.copy(dir).multiplyScalar(-sunDistance * 0.7);
     if (this.studioActive && this.studioParams) {
-      this.sunLight.intensity = this.studioParams.sunIntensity;
-      this.fillLight.intensity = this.studioParams.fillIntensity;
-      this.ambientLight.intensity = this.studioParams.ambient;
+      this.applyStudioLights(this.studioParams);
       if (this.atmosphere?.material?.uniforms?.uIntensity) {
         this.atmosphere.material.uniforms.uIntensity.value =
           this.studioParams.atmosphereIntensity;
       }
     } else {
+      // Instrument aesthetic: cool, low ambient (does not light the terminator shader).
+      this.ambientLight.color.setHex(0x223344);
+      this.sunLight.color.setHex(0xfff8ee);
+      this.fillLight.color.setHex(0x4da3ff);
       this.sunLight.intensity = ephemerisDay?.sun ? 1.35 : 1.0;
       this.fillLight.intensity = 0.04 + (ephemerisDay?.lunar?.illumination ?? 0.25) * 0.05;
       this.ambientLight.intensity =
@@ -911,6 +913,27 @@ export class EarthScene {
   }
 
   /**
+   * Lit-map needs white/neutral lights. Instrument keeps cool navy ambient for mood
+   * (shader ignores scene lights anyway).
+   */
+  applyStudioLights(p) {
+    if (!p) return;
+    if (isLitMap(p)) {
+      this.ambientLight.color.setHex(0xffffff);
+      this.sunLight.color.setHex(0xfff4e0);
+      this.fillLight.color.setHex(0xa8c4e8);
+    } else {
+      this.ambientLight.color.setHex(0x223344);
+      this.sunLight.color.setHex(0xfff8ee);
+      this.fillLight.color.setHex(0x4da3ff);
+    }
+    this.ambientLight.intensity = p.ambient;
+    this.sunLight.intensity = p.sunIntensity;
+    this.fillLight.intensity = p.fillIntensity;
+    if (this.renderer) this.renderer.toneMappingExposure = p.exposure;
+  }
+
+  /**
    * Swap Earth surface shading between instrument terminator and lit GE-like map.
    * Same mesh; materials share the day texture.
    */
@@ -946,11 +969,20 @@ export class EarthScene {
     this.setSurfaceModel(p.surfaceModel);
 
     if (isLitMap(p)) {
+      // Recreate if we still have a stale Standard material from an older session build.
+      if (!this.litMapMaterial || this.litMapMaterial.type !== 'MeshPhongMaterial') {
+        this.litMapMaterial = createLitMapEarthMaterial(this.earthTextures);
+        if (this.surfaceModel === SURFACE_MODELS.LIT_MAP) {
+          this.earth.material = this.litMapMaterial;
+          this.earthMaterial = this.litMapMaterial;
+        }
+      }
       updateLitMapMaterial(this.litMapMaterial, {
         roughness: p.litRoughness,
         nightLights: p.nightLights,
         nightEmissiveIntensity: p.nightEmissive,
         nightMap: this.earthTextures?.night,
+        albedoBoost: p.albedoBoost,
       });
     } else {
       this.earthOpacity = p.surfaceOpacity;
@@ -973,10 +1005,7 @@ export class EarthScene {
     }
 
     // Lights / exposure — critical for lit-map
-    if (this.ambientLight) this.ambientLight.intensity = p.ambient;
-    if (this.sunLight) this.sunLight.intensity = p.sunIntensity;
-    if (this.fillLight) this.fillLight.intensity = p.fillIntensity;
-    if (this.renderer) this.renderer.toneMappingExposure = p.exposure;
+    this.applyStudioLights(p);
 
     // Motion
     this.autoRotate = p.autoRotate;
@@ -1014,6 +1043,9 @@ export class EarthScene {
     }
     updateEarthNightBoost(this.instrumentMaterial, 0.55);
     updateEarthContextDim(this.instrumentMaterial, 1);
+    this.ambientLight.color.setHex(0x223344);
+    this.sunLight.color.setHex(0xfff8ee);
+    this.fillLight.color.setHex(0x4da3ff);
     if (this.renderer) this.renderer.toneMappingExposure = 1.05;
     this.autoRotate = 0.002;
   }
