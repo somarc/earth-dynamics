@@ -47,7 +47,8 @@ export async function loadCatalog() {
   }
 }
 
-function ephWindowToChart(ephWindow, selectedDate, ephemerisDay) {
+/** Exported for unit tests — chart path when scrub date is past eph window end. */
+export function ephWindowToChart(ephWindow, selectedDate, ephemerisDay) {
   const dates = ephWindow.map((e) => e.date);
   const byDate = Object.fromEntries(ephWindow.map((e) => [e.date, e]));
 
