@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { createEarthMaterial, loadEarthTextures } from './textures.js';
+import { createLitMapEarthMaterial, loadEarthTextures } from './textures.js';
 import { createLabelRenderer, makeLabel, resizeLabelRenderer } from './labels.js';
 import {
   EARTH_RADIUS,
@@ -21,11 +21,43 @@ import {
 
 const OBLIQUITY = (23.4367 * Math.PI) / 180;
 const AU_SCALE = 12;
-const HELIO_EARTH_RADIUS = 0.14;
+/** Large enough to read continents when the default camera sits just outside Earth. */
+const HELIO_EARTH_RADIUS = 0.28;
 const MOON_GEO_SCALE = 140;
 
 function eclipticToScene(x, y, z) {
   return new THREE.Vector3(x * AU_SCALE, z * AU_SCALE, -y * AU_SCALE);
+}
+
+/**
+ * Default Helio posture: over Earth's shoulder, Sun-focused, Earth large in the foreground.
+ * Camera sits outside Earth's orbit looking sunward with a lateral/vertical offset so the
+ * planet does not occult the star — same "you are here" energy as geo Live orientation.
+ * @param {THREE.Vector3} earthPos Scene-space Earth position (Sun at origin).
+ * @param {{ earthRadius?: number }} [opts]
+ * @returns {{ position: THREE.Vector3, target: THREE.Vector3 }}
+ */
+export function frameHelioSunEarth(earthPos, opts = {}) {
+  const earthR = opts.earthRadius ?? HELIO_EARTH_RADIUS;
+  const dist = Math.max(earthPos.length(), 0.01);
+  const radial = earthPos.clone().normalize();
+  const worldUp = new THREE.Vector3(0, 1, 0);
+  let side = new THREE.Vector3().crossVectors(worldUp, radial);
+  if (side.lengthSq() < 1e-8) side.set(1, 0, 0);
+  else side.normalize();
+  const up = new THREE.Vector3().crossVectors(radial, side).normalize();
+
+  // ~4–5 Earth radii outside the surface — globe fills the near field, not a distant speck.
+  const back = Math.max(earthR * 4.6, dist * 0.09);
+  const position = earthPos.clone()
+    .add(radial.clone().multiplyScalar(back))
+    .add(up.clone().multiplyScalar(back * 0.48))
+    .add(side.clone().multiplyScalar(back * 1.05));
+
+  // Look at the Sun (slight Earth bias keeps the planet in the lower frame).
+  const target = earthPos.clone().multiplyScalar(0.05);
+
+  return { position, target };
 }
 
 export class HeliocentricScene {
@@ -37,6 +69,9 @@ export class HeliocentricScene {
     this.showSpinPole = true;
     this.showMoon = true;
     this.showCme = true;
+    /** When true, camera re-frames to Sun–Earth on ephemeris updates until user orbits. */
+    this.autoFrame = true;
+    this.userMovedCamera = false;
     this.ready = this.init(canvas);
   }
 
@@ -44,41 +79,65 @@ export class HeliocentricScene {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setClearColor(0x060a12, 1);
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 500);
-    this.camera.position.set(0, 8, 18);
+    // Slightly wider FOV so close Earth + distant Sun both read in one frame.
+    this.camera = new THREE.PerspectiveCamera(48, 1, 0.04, 500);
+    // Placeholder until first ephemeris frame; framing uses Earth position.
+    this.camera.position.set(0, 6, 16);
     this.camera.lookAt(0, 0, 0);
 
-    const sunGeo = new THREE.SphereGeometry(0.55, 32, 32);
+    const sunGeo = new THREE.SphereGeometry(0.42, 32, 32);
     this.sunMesh = new THREE.Mesh(
       sunGeo,
-      new THREE.MeshBasicMaterial({ color: 0xffd54a })
+      new THREE.MeshBasicMaterial({ color: 0xffe066 })
     );
     this.scene.add(this.sunMesh);
+
+    // Soft corona so the Sun remains a clear focus from Earth's shoulder.
+    this.sunGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.95, 32, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0xffb020,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false,
+      }),
+    );
+    this.scene.add(this.sunGlow);
+
     this.sunLabel = makeLabel('Sun', 'body-label body-label--sun');
-    this.sunLabel.position.set(0, 0.75, 0);
+    this.sunLabel.position.set(0, 0.85, 0);
     this.sunMesh.add(this.sunLabel);
 
-    this.sunPointLight = new THREE.PointLight(0xfff4dd, 12, 200, 0.4);
+    // Strong sun light for lit-map Phong Earth (same lesson as geo navy-ambient fix).
+    this.sunPointLight = new THREE.PointLight(0xfff4dd, 28, 80, 1.1);
     this.sunPointLight.position.set(0, 0, 0);
     this.scene.add(this.sunPointLight);
 
-    const eclipticGeo = new THREE.RingGeometry(AU_SCALE * 0.95, AU_SCALE * 1.05, 128);
-    const eclipticMat = new THREE.MeshBasicMaterial({
-      color: 0x3a5070,
-      transparent: true,
-      opacity: 0.25,
-      side: THREE.DoubleSide,
-    });
-    this.eclipticPlane = new THREE.Mesh(eclipticGeo, eclipticMat);
-    this.eclipticPlane.rotation.x = Math.PI / 2;
+    // Thin ecliptic hint — fat ring washed out the close-up Sun–Earth shot.
+    const eclipticPts = [];
+    for (let i = 0; i <= 128; i++) {
+      const a = (i / 128) * Math.PI * 2;
+      eclipticPts.push(new THREE.Vector3(Math.cos(a) * AU_SCALE, 0, Math.sin(a) * AU_SCALE));
+    }
+    this.eclipticPlane = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(eclipticPts),
+      new THREE.LineBasicMaterial({
+        color: 0x3a5070,
+        transparent: true,
+        opacity: 0.28,
+      }),
+    );
     this.scene.add(this.eclipticPlane);
 
     const orbitLineGeo = new THREE.BufferGeometry();
     this.orbitTrail = new THREE.Line(
       orbitLineGeo,
-      new THREE.LineBasicMaterial({ color: 0x4da3ff, transparent: true, opacity: 0.4 })
+      new THREE.LineBasicMaterial({ color: 0x4da3ff, transparent: true, opacity: 0.55 })
     );
     this.scene.add(this.orbitTrail);
 
@@ -95,10 +154,18 @@ export class HeliocentricScene {
     this.surfaceGroup = new THREE.Group();
     this.axisGroup.add(this.surfaceGroup);
 
-    const earthTextures = await loadEarthTextures();
-    const scale = HELIO_EARTH_RADIUS / EARTH_RADIUS;
-    const earthGeo = new THREE.SphereGeometry(HELIO_EARTH_RADIUS, 48, 48);
-    this.earth = new THREE.Mesh(earthGeo, createEarthMaterial(earthTextures));
+    const earthTextures = await loadEarthTextures(this.renderer);
+    const earthGeo = new THREE.SphereGeometry(HELIO_EARTH_RADIUS, 64, 64);
+    // Lit day map — sun lights drive the dayside (same language as geo lit-map / GE).
+    this.earth = new THREE.Mesh(
+      earthGeo,
+      createLitMapEarthMaterial(earthTextures, {
+        nightLights: true,
+        nightEmissiveIntensity: 0.18,
+        albedoBoost: 1.4,
+        shininess: 10,
+      }),
+    );
     this.surfaceGroup.add(this.earth);
     this.earthLabel = makeLabel('Earth', 'body-label body-label--earth');
     this.earthLabel.position.set(0, HELIO_EARTH_RADIUS + 0.18, 0);
@@ -154,10 +221,11 @@ export class HeliocentricScene {
     this.moonLabel.position.set(0, 0.08, 0);
     this.moonMesh.add(this.moonLabel);
 
-    this.scene.add(new THREE.AmbientLight(0x1a2030, 0.06));
-    this.hemiLight = new THREE.HemisphereLight(0xfff0cc, 0x080810, 0.22);
+    // Soft white fill so nightside continents still read (navy ambient killed geo lit-map).
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.14));
+    this.hemiLight = new THREE.HemisphereLight(0xfff0cc, 0x0a1020, 0.28);
     this.scene.add(this.hemiLight);
-    this.sunDirectional = new THREE.DirectionalLight(0xfff8ee, 5.5);
+    this.sunDirectional = new THREE.DirectionalLight(0xfff8ee, 3.2);
     this.sunDirectional.target = new THREE.Object3D();
     this.scene.add(this.sunDirectional);
     this.scene.add(this.sunDirectional.target);
@@ -174,17 +242,25 @@ export class HeliocentricScene {
     this.quakeMeshes = new Map();
     this.volcanoMeshes = new Map();
     this.eventPulses = new EventPulseController();
-    this.defaultCameraPosition = new THREE.Vector3(0, 8, 18);
+    this.defaultCameraPosition = new THREE.Vector3(0, 6, 16);
+    this.defaultLookTarget = new THREE.Vector3(0, 0, 0);
     this.cameraEntry = null;
 
-    this.autoRotate = 0.008;
+    // Very slow decorative spin — Live posture, not free-spin show.
+    this.autoRotate = 0.0008;
     this.lodFactor = 1;
 
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.05;
-    this.controls.minDistance = 2;
-    this.controls.maxDistance = 40;
+    this.controls.dampingFactor = 0.06;
+    // Allow close inspection of Earth; still let users pull back to full orbit.
+    this.controls.minDistance = 0.9;
+    this.controls.maxDistance = 56;
+    this.controls.target.set(0, 0, 0);
+    this.controls.addEventListener('start', () => {
+      this.userMovedCamera = true;
+      this.autoFrame = false;
+    });
 
     this.handleResize();
     window.addEventListener('resize', () => this.handleResize());
@@ -268,10 +344,12 @@ export class HeliocentricScene {
     this.lastEarthPos = earthPos;
     this.earthSystem.position.copy(earthPos);
 
-    const sunDir = earthPos.clone().normalize();
-    this.sunDirectional.position.copy(sunDir.clone().multiplyScalar(-50));
+    // Light Earth from the Sun (origin → Earth is anti-sunward from surface? sun at 0, earth at earthPos)
+    // Directional from Sun toward Earth: light position near origin, target = earth.
+    this.sunDirectional.position.set(0, 0, 0);
     this.sunDirectional.target.position.copy(earthPos);
     this.sunDirectional.target.updateMatrixWorld();
+    this.sunPointLight.position.set(0, 0, 0);
 
     if (orbitHistory.length > 1) {
       const pts = orbitHistory
@@ -304,6 +382,40 @@ export class HeliocentricScene {
     } else {
       this.moonMesh.visible = false;
     }
+
+    // Keep Sun–Earth composition unless the user took the camera.
+    if (this.autoFrame && !this.userMovedCamera && !this.cameraEntry) {
+      this.frameSunEarth({ animate: false });
+    }
+  }
+
+  /**
+   * Default Helio posture: Sun is system focus; Earth sits large in the foreground.
+   */
+  frameSunEarth({ animate = false, duration = 560 } = {}) {
+    if (!this.lastEarthPos || !this.controls) return false;
+    const { position, target } = frameHelioSunEarth(this.lastEarthPos, {
+      earthRadius: HELIO_EARTH_RADIUS,
+    });
+    this.defaultCameraPosition.copy(position);
+    this.defaultLookTarget.copy(target);
+
+    if (animate) {
+      this.cameraEntry = {
+        start: performance.now(),
+        duration,
+        fromPos: this.camera.position.clone(),
+        toPos: position.clone(),
+        fromTarget: this.controls.target.clone(),
+        toTarget: target.clone(),
+      };
+    } else {
+      this.camera.position.copy(position);
+      this.controls.target.copy(target);
+      this.controls.update();
+      this.cameraEntry = null;
+    }
+    return true;
   }
 
   setEarthquakes(quakes) {
@@ -366,11 +478,29 @@ export class HeliocentricScene {
   }
 
   beginViewEntry() {
-    this.cameraEntry = { start: performance.now(), duration: 420 };
-    this.entryFromPos = this.camera.position.clone();
-    if (this.entryFromPos.distanceTo(this.defaultCameraPosition) < 0.05) {
-      this.entryFromPos.copy(this.defaultCameraPosition).multiplyScalar(1.12);
+    // Reset follow mode when entering Helio from Geo.
+    this.userMovedCamera = false;
+    this.autoFrame = true;
+    if (this.lastEarthPos) {
+      this.frameSunEarth({ animate: true, duration: 520 });
+      return;
     }
+    // No ephemeris yet — brief approach toward placeholder default.
+    this.cameraEntry = {
+      start: performance.now(),
+      duration: 420,
+      fromPos: this.camera.position.clone().multiplyScalar(1.08),
+      toPos: this.defaultCameraPosition.clone(),
+      fromTarget: this.controls?.target.clone() ?? new THREE.Vector3(),
+      toTarget: this.defaultLookTarget.clone(),
+    };
+  }
+
+  /** Re-engage Sun–Earth framing (e.g. Live mode / date change). */
+  resetHelioFraming() {
+    this.userMovedCamera = false;
+    this.autoFrame = true;
+    return this.frameSunEarth({ animate: true });
   }
 
   triggerDayPulse() {
@@ -390,8 +520,15 @@ export class HeliocentricScene {
     if (!this.cameraEntry) return;
     const t = Math.min(1, (now - this.cameraEntry.start) / this.cameraEntry.duration);
     const eased = t * t * (3 - 2 * t);
-    this.camera.position.lerpVectors(this.entryFromPos, this.defaultCameraPosition, eased);
-    this.controls.target.set(0, 0, 0);
+    const entry = this.cameraEntry;
+    const toPos = entry.toPos || this.defaultCameraPosition;
+    const fromPos = entry.fromPos || this.entryFromPos || this.camera.position;
+    this.camera.position.lerpVectors(fromPos, toPos, eased);
+    if (entry.fromTarget && entry.toTarget && this.controls) {
+      this.controls.target.lerpVectors(entry.fromTarget, entry.toTarget, eased);
+    } else if (this.controls) {
+      this.controls.target.copy(this.defaultLookTarget);
+    }
     if (t >= 1) this.cameraEntry = null;
   }
 

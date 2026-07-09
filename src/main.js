@@ -317,7 +317,12 @@ function setView(view) {
   incomingScene.beginViewEntry?.();
 
   updateLegend();
-  updateUI();
+  updateUI().then(() => {
+    // After ephemeris lands, lock Helio to Sun focus with Earth in the foreground.
+    if (view === 'heliocentric') {
+      heliocentricScene?.resetHelioFraming?.();
+    }
+  });
   activeScene().handleResize();
   applyViewCanvasVisibility();
 }
