@@ -528,6 +528,8 @@ function setTimeMode(mode, { reorient = false } = {}) {
       runViewerOrientation({ force: true });
     }
   } else {
+    // Archive / Replay: pedagogical day-spin, not wall-clock sun.
+    geocentricScene.liveSunClock = false;
     updateLiveNowChrome();
   }
 }
@@ -799,7 +801,15 @@ function animate(timestamp) {
   applyViewCanvasVisibility(timestamp);
 
   if (state.view === 'geocentric' && geocentricScene) {
-    geocentricScene.setDiurnalPhase(state.playing ? state.dayAccumulator : 0);
+    if (state.timeMode === 'live' && geocentricScene.liveSunClock) {
+      // Wall-clock hour angle — throttle; sun moves ~0.25°/min.
+      if (!state._lastLiveSunMs || timestamp - state._lastLiveSunMs > 15_000) {
+        state._lastLiveSunMs = timestamp;
+        geocentricScene.applyLiveSunFromClock(new Date());
+      }
+    } else {
+      geocentricScene.setDiurnalPhase(state.playing ? state.dayAccumulator : 0);
+    }
   }
 
   if (state.playing) {

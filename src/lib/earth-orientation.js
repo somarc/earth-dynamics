@@ -2,6 +2,7 @@
  * Pure helpers: face a lon toward the camera, local solar phase, etc.
  * Coordinate system matches utils.latLonToVector3.
  */
+import { ephemerisBodyToGeoVector, latLonToVector3 } from '../utils.js';
 
 /**
  * SurfaceGroup yaw (rad) so that `lon` sits on the +Z meridian (camera default).
@@ -14,6 +15,69 @@ export function surfaceYawToFaceLon(lon) {
   const z = Math.sin(theta);
   // Azimuth of that point from +Z; rotate world so it faces +Z
   return -Math.atan2(x, z);
+}
+
+/**
+ * Solar declination (deg) from a daily geocentric sun vector.
+ * Ephemeris samples are once/day — use for season only, not hour-of-day.
+ */
+export function solarDeclinationDeg(sunBody) {
+  const g = ephemerisBodyToGeoVector(sunBody);
+  if (!g) return 0;
+  return (Math.asin(Math.max(-1, Math.min(1, g.y))) * 180) / Math.PI;
+}
+
+/**
+ * Approximate subsolar lat/lon for a civil instant (mean solar, no equation of time).
+ * Lon: 0° at 12:00 UTC, moves west 15°/hour. Lat: seasonal declination.
+ * @param {Date} [date]
+ * @param {{ sunBody?: object, declinationDeg?: number }} [opts]
+ */
+export function subsolarLatLon(date = new Date(), opts = {}) {
+  const dec =
+    opts.declinationDeg != null
+      ? opts.declinationDeg
+      : solarDeclinationDeg(opts.sunBody);
+  const phase = utcDayPhase(date);
+  // Noon UTC → lon 0; later → west (negative).
+  let lon = (0.5 - phase) * 360;
+  lon = ((((lon + 180) % 360) + 360) % 360) - 180;
+  const lat = Math.max(-90, Math.min(90, dec || 0));
+  return { lat, lon };
+}
+
+/**
+ * Body-fixed unit sun direction (texture / surfaceGroup local frame).
+ */
+export function bodyFixedSunDirection(date = new Date(), opts = {}) {
+  const { lat, lon } = subsolarLatLon(date, opts);
+  return latLonToVector3(lat, lon, 1);
+}
+
+/**
+ * World-space sun direction after surfaceGroup yaw around Y
+ * (Three.js right-hand: x' = x c + z s, z' = −x s + z c).
+ * @param {number} surfaceYawY radians (surfaceGroup.rotation.y)
+ */
+export function worldSunDirection(date = new Date(), surfaceYawY = 0, opts = {}) {
+  const b = bodyFixedSunDirection(date, opts);
+  const c = Math.cos(surfaceYawY);
+  const s = Math.sin(surfaceYawY);
+  return {
+    x: b.x * c + b.z * s,
+    y: b.y,
+    z: -b.x * s + b.z * c,
+  };
+}
+
+/**
+ * Local solar elevation proxy: cos(zenith) ≈ n·s for a lat/lon under surface yaw.
+ * >0 day, ~0 terminator, <0 night.
+ */
+export function solarElevationCos(lat, lon, date = new Date(), opts = {}) {
+  const sun = bodyFixedSunDirection(date, opts);
+  const n = latLonToVector3(lat, lon, 1);
+  return n.x * sun.x + n.y * sun.y + n.z * sun.z;
 }
 
 /**

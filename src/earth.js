@@ -17,7 +17,10 @@ import {
   SURFACE_MODELS,
   isLitMap,
 } from './lib/bald-earth-params.js';
-import { surfaceYawToFaceLon } from './lib/earth-orientation.js';
+import {
+  surfaceYawToFaceLon,
+  worldSunDirection,
+} from './lib/earth-orientation.js';
 import { frameCameraForLatLon } from '../layers/home-region/globe.mjs';
 import {
   EARTH_RADIUS,
@@ -164,6 +167,9 @@ export class EarthScene {
 
     this.rotationLocked = false;
     this.lockedRotation = 0;
+    /** When true, terminator uses wall-clock hour angle (Live), not once-per-day ephemeris. */
+    this.liveSunClock = false;
+    this.liveSunDate = null;
     const polePick = new THREE.Mesh(
       new THREE.SphereGeometry(0.04, 8, 8),
       new THREE.MeshBasicMaterial({ visible: false }),
@@ -490,6 +496,8 @@ export class EarthScene {
   setDiurnalMode(mode) {
     this.diurnalMode = mode === 'free' ? 'free' : 'sync';
     if (this.diurnalMode === 'sync') {
+      // Replay / pedagogical day-spin owns lighting; release Live clock sun.
+      this.liveSunClock = false;
       this.applyDiurnalFrame(this.diurnalPhase);
     }
   }
@@ -631,7 +639,14 @@ export class EarthScene {
       return;
     }
 
-    this.updateSunLighting(ephemerisDay);
+    if (ephemerisDay) this.diurnalDay = ephemerisDay;
+
+    // Live / user-locked: sun follows wall-clock hour angle, not the once-per-day vector.
+    if (this.rotationLocked || this.liveSunClock) {
+      this.applyLiveSunFromClock(this.liveSunDate || new Date());
+    } else {
+      this.updateSunLighting(ephemerisDay);
+    }
 
     if (!ephemerisDay || !this.showBodies) {
       this.bodiesGroup.visible = false;
@@ -655,7 +670,10 @@ export class EarthScene {
       }
     }
 
-    if (ephemerisDay.sun) {
+    // Sun marker: clock-based when locked; otherwise daily ephemeris direction.
+    if (this.rotationLocked || this.liveSunClock) {
+      // applyLiveSunFromClock already placed the marker
+    } else if (ephemerisDay.sun) {
       const s = this.geoVectorFromEphemeris(ephemerisDay.sun);
       if (s) {
         this.sunMarker.position.copy(s.clone().multiplyScalar(sunDist));
@@ -1093,7 +1111,8 @@ export class EarthScene {
 
   /**
    * Face `lon` toward the default camera (+Z), optionally reframe camera on lat/lon,
-   * and lock spin so the view holds. Sun/day-night stay on ephemeris (caller sets phase).
+   * and lock spin so the view holds. Day/night uses wall-clock solar hour angle
+   * (see applyLiveSunFromClock) — not the once-per-day ephemeris sun vector alone.
    * @param {{ lat: number, lon: number, lock?: boolean, frameCamera?: boolean, camDistance?: number }} opts
    */
   orientToLocation({
@@ -1107,9 +1126,10 @@ export class EarthScene {
 
     const yaw = surfaceYawToFaceLon(lon);
     this.autoRotate = 0;
-    // Keep free mode so sync phase doesn't fight locked yaw; sun still updated separately.
+    // Keep free mode so sync phase doesn't fight locked yaw; sun follows clock.
     this.diurnalMode = 'free';
     this.rotationLocked = !!lock;
+    this.liveSunClock = !!lock;
     this.lockedRotation = yaw;
     this.surfaceGroup.rotation.y = yaw;
     if (this.fieldLinesGroup) this.fieldLinesGroup.rotation.y = yaw;
@@ -1129,13 +1149,72 @@ export class EarthScene {
     return true;
   }
 
-  /** Apply sun/moon lighting for a day-fraction without spinning the surface (when locked). */
+  /**
+   * Place sun from wall-clock UTC hour angle + seasonal declination in the
+   * body-fixed frame, then transform by current surface yaw so day/night on the
+   * map matches local solar time (works locked or freely orbited).
+   * @param {Date} [date]
+   */
+  applyLiveSunFromClock(date = new Date()) {
+    const day = this.diurnalDay;
+    if (!day?.sun || !this.surfaceGroup) return false;
+
+    this.liveSunDate = date;
+    this.liveSunClock = true;
+
+    // Prefer locked yaw when held; otherwise track whatever the surface is at now.
+    const yaw = this.rotationLocked
+      ? this.lockedRotation
+      : (this.surfaceGroup.rotation.y || 0);
+
+    const w = worldSunDirection(date, yaw, { sunBody: day.sun });
+    const dir = new THREE.Vector3(w.x, w.y, w.z);
+    if (dir.lengthSq() < 1e-12) return false;
+    dir.normalize();
+
+    this.updateSunLightingFromDir(dir, day);
+
+    const sunDist = 7.5;
+    if (this.sunMarker) {
+      this.sunMarker.position.copy(dir.clone().multiplyScalar(sunDist));
+    }
+    if (this.sunLine) {
+      const pts = [new THREE.Vector3(0, 0, 0), dir.clone().multiplyScalar(sunDist * 0.95)];
+      this.sunLine.geometry.dispose();
+      this.sunLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+    }
+    return true;
+  }
+
+  /**
+   * Apply sun/moon lighting for a day-fraction without spinning the surface (when locked).
+   * Prefer applyLiveSunFromClock for Live — fractional phase on a daily sun vector
+   * does not move the terminator (Earth rotation is the missing degree of freedom).
+   */
   applySunPhase(phase, day, nextDay = null) {
     if (day) {
       this.diurnalDay = day;
       this.diurnalNextDay = nextDay || day;
     }
     this.diurnalPhase = Math.max(0, Math.min(1, phase));
+
+    // Locked Live path: wall clock owns the terminator.
+    if (this.rotationLocked || this.liveSunClock) {
+      this.applyLiveSunFromClock(this.liveSunDate || new Date());
+      if (this.showBodies && this.bodiesGroup && this.diurnalDay) {
+        this.bodiesGroup.visible = true;
+        const moonDir = this.lerpBodyDirection(
+          this.diurnalDay.moon,
+          this.diurnalNextDay?.moon,
+          this.diurnalPhase,
+        );
+        if (moonDir) {
+          this.moonMesh.position.copy(moonDir.clone().multiplyScalar(2.8));
+        }
+      }
+      return;
+    }
+
     const d = this.diurnalDay;
     const n = this.diurnalNextDay || d;
     if (!d) return;

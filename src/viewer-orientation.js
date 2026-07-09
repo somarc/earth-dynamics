@@ -1,10 +1,15 @@
 /**
- * Default viewer orientation: face GPS/timezone location + local "now" sun phase.
+ * Default viewer orientation: face GPS/timezone location + wall-clock sun.
+ *
+ * Important: daily ephemeris sun vectors do NOT encode hour-of-day (Earth rotation).
+ * Live lighting uses body-fixed subsolar lon from UTC + seasonal declination.
  */
 import {
   localDateString,
-  localDayPhase,
   nearestCatalogDate,
+  solarElevationCos,
+  subsolarLatLon,
+  utcDayPhase,
 } from './lib/earth-orientation.js';
 import {
   loadGlobeAppDefaults,
@@ -40,9 +45,10 @@ export async function applyViewerOrientation(ctx, { force = false } = {}) {
 
   const loc = await resolveUserLocation();
   const dates = ctx.getDates?.() || [];
+  const now = new Date();
 
   if (appearance.useLocalNow !== false && dates.length) {
-    const preferred = localDateString();
+    const preferred = localDateString(now);
     const date = nearestCatalogDate(dates, preferred);
     const idx = date != null ? dates.indexOf(date) : -1;
     if (idx >= 0) {
@@ -58,9 +64,9 @@ export async function applyViewerOrientation(ctx, { force = false } = {}) {
     lock: true,
     frameCamera: true,
   });
+  // free = don't spin surface under a fake day phase; Live sun owns terminator.
   ctx.setDiurnalMode?.('free');
 
-  const phase = localDayPhase();
   const frame = ctx.getCachedFrame?.();
   const date = dates[ctx.getCurrentIndex?.() ?? 0];
   let nextEph = null;
@@ -73,13 +79,23 @@ export async function applyViewerOrientation(ctx, { force = false } = {}) {
   }
   const day = frame?.ephemerisDay ?? null;
   if (day) {
-    scene.applySunPhase?.(phase, day, nextEph);
+    scene.diurnalDay = day;
+    scene.diurnalNextDay = nextEph || day;
+    scene.liveSunClock = true;
+    scene.applyLiveSunFromClock?.(now);
   }
+
+  const elev = day?.sun
+    ? solarElevationCos(loc.lat, loc.lon, now, { sunBody: day.sun })
+    : null;
+  const sub = day?.sun ? subsolarLatLon(now, { sunBody: day.sun }) : null;
 
   return {
     location: loc,
     status: locationStatusText(loc),
-    phase,
+    phase: utcDayPhase(now),
+    solarElevationCos: elev,
+    subsolar: sub,
     date: dates[ctx.getCurrentIndex?.() ?? 0] ?? null,
   };
 }
