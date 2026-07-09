@@ -34,6 +34,20 @@ export interface ExperienceManifest {
   globeOpacity?: number;
   /** Hide event markers on the hemisphere facing away from the camera */
   hemisphereCull?: boolean;
+  /**
+   * When false, skip GPS/Live “face me” orientation on experience entry.
+   * Use for system-scale themes (orbital) that must not collapse to local Live.
+   */
+  orientToUser?: boolean;
+  /** Prefer Live or Replay chrome when the experience activates. */
+  preferTimeMode?: 'live' | 'replay';
+  /**
+   * Camera framing after data lands, keyed by view.
+   * - live-user: GPS + wall-clock sun (default Live product)
+   * - earth-moon: pull back to true lunar distance
+   * - helio-sun-earth: Sun-focused, Earth in foreground
+   */
+  entryFrames?: Partial<Record<ExperienceView, 'live-user' | 'earth-moon' | 'helio-sun-earth'>>;
   /** Connector / sourceKey ids for theme-scoped freshness chips */
   freshnessKeys: string[];
 

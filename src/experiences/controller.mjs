@@ -156,6 +156,43 @@ export function renderThemeRail(activeId, onSelect) {
   });
 }
 
+/**
+ * Resolve the camera entry frame for a view under this experience.
+ * @param {object} exp
+ * @param {'geocentric'|'heliocentric'} view
+ * @returns {'live-user'|'earth-moon'|'helio-sun-earth'|null}
+ */
+export function resolveEntryFrame(exp, view) {
+  if (!exp) return null;
+  const map = exp.entryFrames;
+  if (map && map[view]) return map[view];
+  if (view === 'heliocentric') return 'helio-sun-earth';
+  if (exp.orientToUser === false) return null;
+  return exp.bareGlobe ? 'live-user' : null;
+}
+
+/**
+ * Apply experience-specific camera framing after ephemeris is ready.
+ * @returns {boolean} whether a frame was applied
+ */
+export function applyExperienceEntryFrame(exp, view, {
+  geocentricScene,
+  heliocentricScene,
+} = {}) {
+  const frame = resolveEntryFrame(exp, view);
+  if (!frame) return false;
+
+  if (frame === 'earth-moon') {
+    return !!geocentricScene?.frameEarthMoonSystem?.({ animate: true });
+  }
+  if (frame === 'helio-sun-earth') {
+    heliocentricScene?.setLabelsVisible?.(true);
+    return !!heliocentricScene?.resetHelioFraming?.();
+  }
+  // live-user is owned by applyViewerOrientation in main.js
+  return false;
+}
+
 export function applyExperience(exp, {
   geocentricScene,
   heliocentricScene,
@@ -179,6 +216,20 @@ export function applyExperience(exp, {
   if (!bare) {
     geocentricScene?.setBareGlobeMode?.(false);
     heliocentricScene?.setBareGlobeMode?.(false);
+    geocentricScene?.resetMoonOrbitRingStyle?.();
+  }
+
+  // Orbital: force bodies/moon chrome on even if a prior studio left them muted.
+  if (exp.id === 'orbital') {
+    if (geocentricScene) {
+      geocentricScene.showBodies = true;
+      if (geocentricScene.bodiesGroup) geocentricScene.bodiesGroup.visible = true;
+    }
+    if (heliocentricScene) {
+      heliocentricScene.showMoon = true;
+      heliocentricScene.showCme = true;
+      heliocentricScene.setLabelsVisible?.(true);
+    }
   }
 
   const title = $id('experience-title');
@@ -201,6 +252,7 @@ export function applyExperience(exp, {
   if (appControls) {
     appControls.classList.toggle('controls--full-instrument', !!exp.showAllLayers);
     appControls.classList.toggle('controls--bare-experience', !!exp.bareGlobe);
+    appControls.classList.toggle('controls--orbital-experience', exp.id === 'orbital');
   }
 
   // Bald Earth is for authoring the shell — hide moment chips.

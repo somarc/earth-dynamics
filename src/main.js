@@ -42,6 +42,7 @@ import { setDomRoot, $id, $, $$ } from './dom-scope.js';
 import { getExperience, DEFAULT_EXPERIENCE_ID } from './experiences/registry.mjs';
 import {
   applyExperience,
+  applyExperienceEntryFrame,
   renderThemeRail,
   wireMoments,
   parseExperienceUrl,
@@ -318,9 +319,12 @@ function setView(view) {
 
   updateLegend();
   updateUI().then(() => {
-    // After ephemeris lands, lock Helio to Sun focus with Earth in the foreground.
-    if (view === 'heliocentric') {
-      heliocentricScene?.resetHelioFraming?.();
+    const exp = getExperience(state.experienceId);
+    // Experience-owned framing (orbital earth–moon / helio sun–earth) wins over defaults.
+    if (!applyExperienceEntryFrame(exp, view, { geocentricScene, heliocentricScene })) {
+      if (view === 'heliocentric') {
+        heliocentricScene?.resetHelioFraming?.();
+      }
     }
   });
   activeScene().handleResize();
@@ -571,12 +575,19 @@ function selectExperience(id) {
   // the scrubber is present and the layer tray isn't fighting a Live-only chrome.
   if (exp.showAllLayers && state.timeMode === 'live') {
     setTimeMode('replay');
+  } else if (exp.preferTimeMode === 'replay' && state.timeMode === 'live') {
+    setTimeMode('replay');
+  } else if (exp.preferTimeMode === 'live' && state.timeMode === 'replay') {
+    setTimeMode('live');
   }
   // Wider default lens for Full; short lens for Live-first themes.
   if (exp.showAllLayers) {
     state.timeLens = 'month';
   } else if (exp.bareGlobe) {
     state.timeLens = DEFAULT_TIME_LENS;
+  } else if (exp.id === 'orbital') {
+    // Year-scale orbital geometry (phases, distance) needs a wider lens.
+    state.timeLens = 'year';
   } else if (!state.timeLens) {
     state.timeLens = DEFAULT_TIME_LENS;
   }
@@ -589,7 +600,16 @@ function selectExperience(id) {
   filters?.classList.toggle('controls__cluster--hidden', !!exp.bareGlobe);
   renderThemeRail(state.experienceId, selectExperience);
   renderStalenessChips(state.catalog?.manifest, { freshnessKeys: exp.freshnessKeys });
-  updateUI().then(() => runViewerOrientation({ force: false }));
+  updateUI().then(() => {
+    // System-scale themes must not be collapsed into GPS Live face.
+    if (exp.orientToUser !== false) {
+      return runViewerOrientation({ force: false }).then(() => {
+        applyExperienceEntryFrame(exp, state.view, { geocentricScene, heliocentricScene });
+      });
+    }
+    applyExperienceEntryFrame(exp, state.view, { geocentricScene, heliocentricScene });
+    return null;
+  });
 }
 
 function jumpToMoment(date) {

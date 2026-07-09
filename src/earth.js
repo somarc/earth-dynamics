@@ -619,6 +619,76 @@ export class EarthScene {
     }
   }
 
+  /**
+   * Pull the camera back to frame the true-scale Earth–Moon system (~60 R⊕).
+   * Used by Orbital Geometry so geo is not another close-in bald globe.
+   */
+  frameEarthMoonSystem({ animate = true, duration = 1100 } = {}) {
+    if (!this.camera || !this.controls) return false;
+
+    this.showBodies = true;
+    if (this.bodiesGroup) this.bodiesGroup.visible = true;
+    this.autoRotate = 0.0004;
+    this.rotationLocked = false;
+    this.liveSunClock = false;
+    this.diurnalMode = 'free';
+    this.cameraEntry = null;
+
+    const moonDist = this.moonDistanceScene(this.diurnalDay);
+    const camDist = Math.max(moonDist * 1.5, 92);
+    const elev = camDist * 0.2;
+
+    let toPos = new THREE.Vector3(camDist * 0.12, elev, camDist);
+    const moonPos = this.moonMesh?.position;
+    if (moonPos && moonPos.lengthSq() > 1) {
+      // Sit off the Moon–Earth line so both discs read in frame.
+      const moonDir = moonPos.clone().normalize();
+      const worldUp = new THREE.Vector3(0, 1, 0);
+      let side = new THREE.Vector3().crossVectors(worldUp, moonDir);
+      if (side.lengthSq() < 1e-8) side.set(1, 0, 0);
+      else side.normalize();
+      toPos = moonDir.clone().multiplyScalar(-camDist * 0.35)
+        .add(side.multiplyScalar(camDist * 0.85))
+        .add(worldUp.clone().multiplyScalar(elev));
+    }
+
+    const toTarget = new THREE.Vector3(0, 0, 0);
+    this.defaultCameraPosition.copy(toPos);
+
+    // Orbit ring is the orbital story’s silhouette — lift it for this frame.
+    if (this.moonOrbitRing?.material) {
+      if (this.moonOrbitRing.userData.baseOpacity == null) {
+        this.moonOrbitRing.userData.baseOpacity = this.moonOrbitRing.material.opacity;
+      }
+      this.moonOrbitRing.material.opacity = 0.45;
+      this.moonOrbitRing.visible = true;
+    }
+
+    if (animate) {
+      this.cameraFly = {
+        start: performance.now(),
+        duration,
+        fromPos: this.camera.position.clone(),
+        toPos: toPos.clone(),
+        fromTarget: this.controls.target.clone(),
+        toTarget: toTarget.clone(),
+      };
+    } else {
+      this.camera.position.copy(toPos);
+      this.controls.target.copy(toTarget);
+      this.controls.update();
+      this.cameraFly = null;
+    }
+    return true;
+  }
+
+  /** Restore moon-orbit ring opacity after leaving orbital framing. */
+  resetMoonOrbitRingStyle() {
+    if (!this.moonOrbitRing?.material) return;
+    const base = this.moonOrbitRing.userData.baseOpacity;
+    if (base != null) this.moonOrbitRing.material.opacity = base;
+  }
+
   updateSunLightingFromDir(sunDir, ephemerisDay = null) {
     const dir = sunDir?.lengthSq() ? sunDir.clone().normalize() : this.defaultSunDirection;
     // DirectionalLight is parallel — keep a modest offset for numerical stability.
