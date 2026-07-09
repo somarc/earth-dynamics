@@ -9,15 +9,18 @@
 
 ### Product posture (locked direction)
 
-**Live-first globe, not continuous demo spin.**
+**Anonymous public site = LIVE lobby (Windy-class now).**  
+Full write-up: [`adr-live-public-default.md`](adr-live-public-default.md).
 
 | Default | Behavior |
 |---------|----------|
 | **Live** | Face user GPS/timezone, local today + hour for sun, day/night for *now* |
-| **Replay** | Footer scrubber + rates for historical data-layer time travel |
-| **Continuous free rotation** | No longer the preferred default UX |
+| **Events** | Recent layered pings in a short window (working target ~**48h** hot cache) |
+| **Replay** | Explicit door — scrubber + multi-decade archive (later: auth / DB, not edge hot path) |
+| **Continuous free rotation** | Not the preferred default UX |
+| **Helio** | Opt-in only until solar-domain ingest is real |
 
-Supporting stack: Bald Earth Studio (instrument vs lit-map), **Save as app defaults** (surface/lights/atmosphere/orient flags for all experiences), terminator-locked atmosphere shell.
+Supporting stack: Bald Earth Studio (instrument vs lit-map), **Save as app defaults**, terminator-locked atmosphere, true-scale Moon (GEO); Orbit is GEO-first earth–moon framing.
 
 **Verify Live:** Locate me · night local time → your region dark, west coast can still be day, thin terminator limb not a blue balloon.
 

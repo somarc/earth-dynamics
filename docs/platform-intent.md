@@ -14,6 +14,8 @@
 
 Wobblescope is an **aggregation instrument** — a time-synchronized explorer where verifiable Earth-system signals co-exist on one scrubbable timeline. The product thesis is not any single layer (quakes, cyclones, LOD, aurora). It is **composability**: many independent data sources, one coherent instrument.
 
+**How people meet it in public:** as a **LIVE room** first — orient to now, pulse recent events, shared global clock. Platform depth (archive, themes, connectors) is behind that door. See [`adr-live-public-default.md`](adr-live-public-default.md).
+
 That only works if adding a source is cheap, safe, and repeatable. Today it is not.
 
 ---

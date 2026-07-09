@@ -2,6 +2,8 @@
 
 **Spin, shake, storm & syzygy** — a time-synchronized Earth-system explorer. Scrub one timeline across polar motion, orbital geometry, earthquakes, volcanoes, space weather, aurora, weather, and storms. Inspired by [ECDO](https://x.com/Winston_104/status/2069692182634885555) pole-motion visualization.
 
+**Public default:** **LIVE** — arrive in *now*, face the world, see recent layered events (Windy-class lobby). Archive and deep history are opt-in. Product lock: [docs/adr-live-public-default.md](docs/adr-live-public-default.md).
+
 **Production target:** AEM Edge Delivery Services (static app) + Cloudflare Worker API + D1. See [docs/architecture.md](docs/architecture.md).
 
 ## Deployment status (today)

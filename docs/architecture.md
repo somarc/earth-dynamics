@@ -8,6 +8,8 @@
 
 A **time-synchronized Earth-system correlation explorer**: verifiable signals from rotation geodesy, orbital mechanics, solid-earth events, atmosphere, and space weather on one scrubbable timeline. Not a prediction engine — an instrument for seeing what co-occurs.
 
+**Public product posture:** the anonymous site is a **LIVE lobby** (Windy-class *now*): orient to the present, pulse recent events from a short edge-cached window (~48h working target). Archive / multi-decade scrub and heavy DB access sit behind deliberate Replay (and later auth). See [`adr-live-public-default.md`](adr-live-public-default.md).
+
 **Three-layer stack** (ingest → truth → presentation): **Connectors** (how data is acquired and how fresh it is) → **Layers** (`layers/*/`, registry plugins) → **Experiences** (`experiences/*/`, guided themes). See [`experience-platform-plan.md`](experience-platform-plan.md).
 
 ```

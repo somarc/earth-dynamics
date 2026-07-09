@@ -15,6 +15,8 @@ Full idea backlog → [`wishlist.md`](wishlist.md)
 
 Close the gap between **co-display** (many lanes, one timeline) and **co-analysis** (physics coupling, globe equity, shareable evidence). Ship a public read-only instrument when the narrative is trustworthy.
 
+**Public ship shape:** anonymous **LIVE lobby** (~48h hot cache, now-orientation, event pings) on EDS + edge worker; archive/DB depth opt-in (auth later). [`adr-live-public-default.md`](adr-live-public-default.md)
+
 **Experience platform** (guided themes + connector truth): [`experience-platform-plan.md`](experience-platform-plan.md)
 
 ---
