@@ -50,13 +50,44 @@ export function syncExperienceUrl(experienceId, date) {
   window.history.replaceState({}, '', url);
 }
 
-export function parseExperienceUrl() {
-  if (typeof window === 'undefined') return { experienceId: null, date: null };
-  const params = new URLSearchParams(window.location.search);
+/**
+ * Pure parse of experience deep-link params from a search string, full URL, or URLSearchParams.
+ * @param {string | URLSearchParams | URL | null | undefined} searchOrUrl
+ * @returns {{ experienceId: string | null, date: string | null }}
+ */
+export function parseExperienceSearch(searchOrUrl) {
+  let params;
+  if (searchOrUrl instanceof URLSearchParams) {
+    params = searchOrUrl;
+  } else if (searchOrUrl instanceof URL) {
+    params = searchOrUrl.searchParams;
+  } else if (typeof searchOrUrl === 'string' && searchOrUrl.length) {
+    try {
+      if (/^https?:\/\//i.test(searchOrUrl) || searchOrUrl.startsWith('//')) {
+        params = new URL(searchOrUrl, 'http://localhost').searchParams;
+      } else if (searchOrUrl.includes('?')) {
+        params = new URLSearchParams(searchOrUrl.slice(searchOrUrl.indexOf('?')));
+      } else if (searchOrUrl.startsWith('experience=') || searchOrUrl.includes('=')) {
+        params = new URLSearchParams(searchOrUrl);
+      } else {
+        params = new URLSearchParams(searchOrUrl.startsWith('?') ? searchOrUrl : `?${searchOrUrl}`);
+      }
+    } catch {
+      params = new URLSearchParams();
+    }
+  } else {
+    params = new URLSearchParams();
+  }
   return {
     experienceId: params.get('experience'),
     date: params.get('date'),
   };
+}
+
+/** Thin wrapper around window.location for the live app. */
+export function parseExperienceUrl() {
+  if (typeof window === 'undefined') return { experienceId: null, date: null };
+  return parseExperienceSearch(window.location.search);
 }
 
 export function renderMoments(exp) {
