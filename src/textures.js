@@ -128,7 +128,7 @@ void main() {
  * Optional night-lights texture as emissive.
  */
 export function createLitMapEarthMaterial(textures, {
-  shininess = 14,
+  shininess = 12,
   nightLights = true,
   nightEmissiveIntensity = 0.22,
   albedoBoost = 1.35,
@@ -137,8 +137,9 @@ export function createLitMapEarthMaterial(textures, {
   const mat = new THREE.MeshPhongMaterial({
     map: day,
     color: new THREE.Color(albedoBoost, albedoBoost, albedoBoost),
+    // Soft limb: less plastic highlight so terminator reads closer to atmosphere shell
     shininess,
-    specular: new THREE.Color(0x1a1a22),
+    specular: new THREE.Color(0x111118),
     transparent: false,
     depthWrite: true,
     depthTest: true,

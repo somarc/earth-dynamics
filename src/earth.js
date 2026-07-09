@@ -45,7 +45,12 @@ import {
 import { initGlobeLayers } from './layer-controller.mjs';
 import { GLOBE_LAYERS } from './layers/registry.mjs';
 import { classifyPick } from './event-inspect.js';
-import { createAtmosphereShell, updateAtmosphereSun } from './atmosphere.js';
+import {
+  createAtmosphereShell,
+  updateAtmosphereSun,
+  updateAtmosphereProfile,
+  updateAtmosphereIntensity,
+} from './atmosphere.js';
 import { buildWeatherGlyphGroup } from './weather-globe.js';
 import { buildOceanTempGridGroup } from './ocean-temp-grid.js';
 import { loadRadarSites, buildRadarSiteGroup } from './radar-globe.js';
@@ -547,11 +552,14 @@ export class EarthScene {
       this.ambientLight.intensity =
         this.showBodies && this.diurnalMode === 'sync' ? 0.06 : 0.22;
     }
+    // Same sun vector for shell, Phong, and instrument terminator (world / earthGroup).
     updateAtmosphereSun(this.atmosphere, dir);
-    // Instrument terminator only — lit-map uses DirectionalLight.
     if (this.surfaceModel === SURFACE_MODELS.INSTRUMENT) {
       updateEarthSunDirection(this.instrumentMaterial ?? this.earthMaterial, dir);
     }
+    // Lit-map + live orientation: softer terminator-locked shell (not instrument halo).
+    const lit = this.surfaceModel === SURFACE_MODELS.LIT_MAP;
+    updateAtmosphereProfile(this.atmosphere, lit ? 1 : 0);
     this.layerControllers.get('home-region')?.updateSun(dir);
   }
 
@@ -1005,10 +1013,10 @@ export class EarthScene {
 
     if (this.atmosphere) {
       this.atmosphere.visible = p.atmosphereVisible;
-      if (this.atmosphere.material?.uniforms?.uIntensity) {
-        this.atmosphere.material.uniforms.uIntensity.value = p.atmosphereIntensity;
-      }
+      updateAtmosphereIntensity(this.atmosphere, p.atmosphereIntensity);
+      // Scale is relative to authored shell (already slightly larger than Earth).
       this.atmosphere.scale.setScalar(p.atmosphereScale);
+      updateAtmosphereProfile(this.atmosphere, isLitMap(p) ? 1 : 0);
     }
 
     this.applyStudioLights(p);

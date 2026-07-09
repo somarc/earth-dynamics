@@ -61,7 +61,9 @@ export const LIT_MAP_SUGGESTED = Object.freeze({
   sunIntensity: 2.4,
   fillIntensity: 0.25,
   exposure: 1.25,
-  atmosphereIntensity: 0.85,
+  // Shell must stay modest so Live night views aren't a blue halo ball
+  atmosphereIntensity: 0.65,
+  atmosphereScale: 1.0,
   albedoBoost: 1.45,
   nightEmissive: 0.18,
   litRoughness: 0.55,
