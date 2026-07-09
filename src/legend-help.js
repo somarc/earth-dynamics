@@ -64,7 +64,7 @@ export const LEGEND_GEO = [
     label: '◯ Moon',
     title: 'Moon',
     help:
-      'JPL DE441 geocentric Moon and Sun direction. With Day=Sync, earth rotation and moon motion advance together while the timeline plays (tidal geometry). Free spin keeps decorative earth rotation with bodies fixed to the scrub date.',
+      'JPL DE441 geocentric Moon at true Earth-radii distance (~60 R⊕ mean; perigee/apogee from daily range). Zoom out to frame the orbit. Day=Sync advances earth rotation and moon together; Free keeps bodies on the scrub date.',
   },
   {
     id: 'sun',

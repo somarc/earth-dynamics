@@ -26,6 +26,9 @@ import {
   EARTH_RADIUS,
   ephemerisBodyToGeoVector,
   latLonToVector3,
+  moonBodyRadiusScene,
+  moonOrbitRadiusScene,
+  MOON_MEAN_DIST_KM,
   poleOffsetToTilt,
   iersPoleGlobePosition,
   magToSize,
@@ -275,7 +278,9 @@ export class EarthScene {
     this.bodiesGroup = new THREE.Group();
     this.earthGroup.add(this.bodiesGroup);
 
-    const moonGeo = new THREE.SphereGeometry(0.09, 24, 24);
+    // True scale: R_moon / R_earth ≈ 0.273; orbit ~60 R_earth (was decorative 2.8).
+    const moonR = moonBodyRadiusScene(EARTH_RADIUS);
+    const moonGeo = new THREE.SphereGeometry(moonR, 28, 28);
     this.moonMesh = new THREE.Mesh(
       moonGeo,
       new THREE.MeshPhongMaterial({ color: 0xc8c8d8, shininess: 4 })
@@ -296,17 +301,19 @@ export class EarthScene {
     );
     this.bodiesGroup.add(this.sunLine);
 
-    const orbitGeo = new THREE.RingGeometry(2.75, 2.85, 96);
+    const meanOrbit = moonOrbitRadiusScene(MOON_MEAN_DIST_KM);
+    const orbitGeo = new THREE.RingGeometry(meanOrbit * 0.992, meanOrbit * 1.008, 128);
     this.moonOrbitRing = new THREE.Mesh(
       orbitGeo,
       new THREE.MeshBasicMaterial({
         color: 0x667788,
         transparent: true,
-        opacity: 0.2,
+        opacity: 0.18,
         side: THREE.DoubleSide,
       })
     );
     this.moonOrbitRing.rotation.x = Math.PI / 2;
+    this.moonOrbitRing.userData.meanRadius = meanOrbit;
     this.bodiesGroup.add(this.moonOrbitRing);
 
     this.quakeMeshes = new Map();
@@ -539,6 +546,29 @@ export class EarthScene {
     return g ? new THREE.Vector3(g.x, g.y, g.z) : null;
   }
 
+  /**
+   * Earth–Moon distance in scene units (1 = 1 Earth radius).
+   * Uses daily ephemeris km when present so perigee/apogee read.
+   */
+  moonDistanceScene(ephemerisDay = this.diurnalDay) {
+    const km =
+      ephemerisDay?.lunar?.moonDistanceKm
+      ?? ephemerisDay?.moon?.distKm
+      ?? MOON_MEAN_DIST_KM;
+    return moonOrbitRadiusScene(km, EARTH_RADIUS);
+  }
+
+  placeMoon(direction, ephemerisDay = this.diurnalDay) {
+    if (!direction || !this.moonMesh) return;
+    const dist = this.moonDistanceScene(ephemerisDay);
+    this.moonMesh.position.copy(direction.clone().normalize().multiplyScalar(dist));
+    // Soft ring tracks mean orbit; slight scale if extreme perigee/apogee.
+    if (this.moonOrbitRing?.userData?.meanRadius) {
+      const s = dist / this.moonOrbitRing.userData.meanRadius;
+      this.moonOrbitRing.scale.set(s, s, s);
+    }
+  }
+
   updateSunLightingFromDir(sunDir, ephemerisDay = null) {
     const dir = sunDir?.lengthSq() ? sunDir.clone().normalize() : this.defaultSunDirection;
     const sunDistance = 9;
@@ -585,7 +615,6 @@ export class EarthScene {
       return;
     }
 
-    const moonDist = 2.8;
     const sunDist = 7.5;
 
     const moonDir = this.lerpBodyDirection(day.moon, next?.moon, phase);
@@ -620,7 +649,15 @@ export class EarthScene {
     this.bodiesGroup.visible = true;
 
     if (moonDir) {
-      this.moonMesh.position.copy(moonDir.clone().multiplyScalar(moonDist));
+      // Lerp distance across the day when both samples have range.
+      const d0 = this.moonDistanceScene(day);
+      const d1 = this.moonDistanceScene(next);
+      const dist = d0 + (d1 - d0) * phase;
+      this.moonMesh.position.copy(moonDir.clone().normalize().multiplyScalar(dist));
+      if (this.moonOrbitRing?.userData?.meanRadius) {
+        const s = dist / this.moonOrbitRing.userData.meanRadius;
+        this.moonOrbitRing.scale.set(s, s, s);
+      }
       const illumStart = day.lunar?.illumination ?? 0.5;
       const illumEnd = next?.lunar?.illumination ?? illumStart;
       const illum = illumStart + (illumEnd - illumStart) * phase;
@@ -654,13 +691,12 @@ export class EarthScene {
     }
 
     this.bodiesGroup.visible = true;
-    const moonDist = 2.8;
     const sunDist = 7.5;
 
     if (ephemerisDay.moon) {
       const m = this.geoVectorFromEphemeris(ephemerisDay.moon);
       if (m) {
-        this.moonMesh.position.copy(m.multiplyScalar(moonDist));
+        this.placeMoon(m, ephemerisDay);
         const illum = ephemerisDay.lunar?.illumination ?? 0.5;
         this.moonMesh.material.color.setRGB(
           0.55 + illum * 0.45,
@@ -1208,9 +1244,7 @@ export class EarthScene {
           this.diurnalNextDay?.moon,
           this.diurnalPhase,
         );
-        if (moonDir) {
-          this.moonMesh.position.copy(moonDir.clone().multiplyScalar(2.8));
-        }
+        if (moonDir) this.placeMoon(moonDir, this.diurnalDay);
       }
       return;
     }
@@ -1223,9 +1257,7 @@ export class EarthScene {
     if (this.showBodies && this.bodiesGroup) {
       this.bodiesGroup.visible = true;
       const moonDir = this.lerpBodyDirection(d.moon, n?.moon, this.diurnalPhase);
-      if (moonDir) {
-        this.moonMesh.position.copy(moonDir.clone().multiplyScalar(2.8));
-      }
+      if (moonDir) this.placeMoon(moonDir, d);
       if (sunDir) {
         this.sunMarker.position.copy(sunDir.clone().multiplyScalar(7.5));
       }

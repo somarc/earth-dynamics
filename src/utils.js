@@ -1,7 +1,29 @@
 export const EARTH_RADIUS = 1;
 export const EARTH_MEAN_RADIUS_KM = 6371;
+/** Mean lunar radius (km) — ~0.273 Earth radii. */
+export const MOON_MEAN_RADIUS_KM = 1737.4;
+/** Mean Earth–Moon center distance (km) — ~60.3 Earth radii. */
+export const MOON_MEAN_DIST_KM = 384_400;
+
 /** Scales hypocenter depth so foci are visible inside the globe while keeping true relative order. */
 export const QUAKE_DEPTH_EXAGGERATION = 28;
+
+/** Convert a physical length in km to scene units (EARTH_RADIUS = 1 → 1 Earth radius). */
+export function sceneUnitsFromKm(km, earthRadius = EARTH_RADIUS) {
+  if (km == null || !Number.isFinite(km)) return 0;
+  return (km / EARTH_MEAN_RADIUS_KM) * earthRadius;
+}
+
+/** Moon orbital radius in scene units (true Earth-radii scale; uses mean if km omitted). */
+export function moonOrbitRadiusScene(distanceKm = MOON_MEAN_DIST_KM, earthRadius = EARTH_RADIUS) {
+  const km = distanceKm > 0 ? distanceKm : MOON_MEAN_DIST_KM;
+  return sceneUnitsFromKm(km, earthRadius);
+}
+
+/** Moon body radius in scene units (true scale relative to Earth). */
+export function moonBodyRadiusScene(earthRadius = EARTH_RADIUS) {
+  return sceneUnitsFromKm(MOON_MEAN_RADIUS_KM, earthRadius);
+}
 
 export function quakeHypocenterRadius(
   depthKm,

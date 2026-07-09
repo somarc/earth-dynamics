@@ -7,6 +7,9 @@ import {
   isDateInPastWindow,
   iersPoleGlobePosition,
   latLonToVector3,
+  moonBodyRadiusScene,
+  moonOrbitRadiusScene,
+  MOON_MEAN_DIST_KM,
   quakeMarkerRadius,
   quakeHypocenterRadius,
 } from '../../src/utils.js';
@@ -88,5 +91,24 @@ describe('globe math', () => {
   it('eclipticToGeographicDirection rotates obliquity without NaN', () => {
     const g = eclipticToGeographicDirection(1, 0, 0);
     expect(Number.isFinite(g.x + g.y + g.z)).toBe(true);
+  });
+
+  it('moon orbit is ~60 Earth radii at mean distance', () => {
+    const r = moonOrbitRadiusScene(MOON_MEAN_DIST_KM);
+    expect(r).toBeGreaterThan(55);
+    expect(r).toBeLessThan(65);
+  });
+
+  it('moon body radius is ~0.27 Earth radii', () => {
+    const r = moonBodyRadiusScene(1);
+    expect(r).toBeGreaterThan(0.25);
+    expect(r).toBeLessThan(0.29);
+  });
+
+  it('uses ephemeris perigee/apogee km for orbit radius', () => {
+    const perigee = moonOrbitRadiusScene(363_300);
+    const apogee = moonOrbitRadiusScene(405_500);
+    expect(apogee).toBeGreaterThan(perigee);
+    expect(perigee).toBeGreaterThan(50);
   });
 });

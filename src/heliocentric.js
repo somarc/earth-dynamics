@@ -4,7 +4,10 @@ import { createLitMapEarthMaterial, loadEarthTextures } from './textures.js';
 import { createLabelRenderer, makeLabel, resizeLabelRenderer } from './labels.js';
 import {
   EARTH_RADIUS,
+  EARTH_MEAN_RADIUS_KM,
   latLonToVector3,
+  moonBodyRadiusScene,
+  MOON_MEAN_DIST_KM,
   poleOffsetToTilt,
   iersPoleGlobePosition,
   magToSize,
@@ -23,7 +26,6 @@ const OBLIQUITY = (23.4367 * Math.PI) / 180;
 const AU_SCALE = 12;
 /** Large enough to read continents when the default camera sits just outside Earth. */
 const HELIO_EARTH_RADIUS = 0.28;
-const MOON_GEO_SCALE = 140;
 
 function eclipticToScene(x, y, z) {
   return new THREE.Vector3(x * AU_SCALE, z * AU_SCALE, -y * AU_SCALE);
@@ -206,8 +208,10 @@ export class HeliocentricScene {
     this.volcanoGroup = new THREE.Group();
     this.surfaceGroup.add(this.volcanoGroup);
 
+    // True Moon/Earth size ratio on the exaggerated helio Earth.
+    const moonR = moonBodyRadiusScene(HELIO_EARTH_RADIUS);
     this.moonMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(0.04, 16, 16),
+      new THREE.SphereGeometry(moonR, 20, 20),
       new THREE.MeshStandardMaterial({
         color: 0xc8c8d8,
         roughness: 0.95,
@@ -218,7 +222,7 @@ export class HeliocentricScene {
     );
     this.scene.add(this.moonMesh);
     this.moonLabel = makeLabel('Moon', 'body-label body-label--moon');
-    this.moonLabel.position.set(0, 0.08, 0);
+    this.moonLabel.position.set(0, moonR + 0.04, 0);
     this.moonMesh.add(this.moonLabel);
 
     // Soft white fill so nightside continents still read (navy ambient killed geo lit-map).
@@ -365,12 +369,21 @@ export class HeliocentricScene {
     }
 
     if (this.showMoon && ephemerisDay.moon) {
-      const moonOffset = eclipticToScene(
-        ephemerisDay.moon.x * MOON_GEO_SCALE,
-        ephemerisDay.moon.y * MOON_GEO_SCALE,
-        ephemerisDay.moon.z * MOON_GEO_SCALE
+      // Direction from geocentric ecliptic; distance = real Earth-radii × helio Earth size
+      // (Earth is oversized for readability, so AU-true moon would sit inside the mesh).
+      const dir = eclipticToScene(
+        ephemerisDay.moon.x,
+        ephemerisDay.moon.y,
+        ephemerisDay.moon.z,
       );
-      this.moonMesh.position.copy(earthPos.clone().add(moonOffset));
+      if (dir.lengthSq() > 1e-16) dir.normalize();
+      const km =
+        ephemerisDay.lunar?.moonDistanceKm
+        ?? ephemerisDay.moon.distKm
+        ?? MOON_MEAN_DIST_KM;
+      const re = (km > 0 ? km : MOON_MEAN_DIST_KM) / EARTH_MEAN_RADIUS_KM;
+      const dist = HELIO_EARTH_RADIUS * re;
+      this.moonMesh.position.copy(earthPos.clone().add(dir.multiplyScalar(dist)));
       this.moonMesh.visible = true;
       const illum = ephemerisDay.lunar?.illumination ?? 0.5;
       this.moonMesh.material.color.setRGB(

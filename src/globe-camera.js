@@ -3,8 +3,11 @@ import { EARTH_RADIUS } from './utils.js';
 /** ~8 km above surface at EARTH_RADIUS = 1 (6371 km scale). */
 export const GLOBE_MIN_DISTANCE = EARTH_RADIUS * 1.0012;
 
-/** Continental / full-disk retreat. */
-export const GLOBE_MAX_DISTANCE = 8;
+/**
+ * Pull back far enough to frame lunar orbit (~60 Earth radii) with margin.
+ * Default entry camera stays close; this only raises the zoom-out ceiling.
+ */
+export const GLOBE_MAX_DISTANCE = 96;
 
 /**
  * Orbit setup for close regional inspection (radar rings, events, coastlines).
