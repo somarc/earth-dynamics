@@ -7,18 +7,30 @@
 
 ## Where we are
 
-**Test spine** (iterating, 2026-07-08):
+### Product posture (locked direction)
+
+**Live-first globe, not continuous demo spin.**
+
+| Default | Behavior |
+|---------|----------|
+| **Live** | Face user GPS/timezone, local today + hour for sun, day/night for *now* |
+| **Replay** | Footer scrubber + rates for historical data-layer time travel |
+| **Continuous free rotation** | No longer the preferred default UX |
+
+Supporting stack: Bald Earth Studio (instrument vs lit-map), **Save as app defaults** (surface/lights/atmosphere/orient flags for all experiences), terminator-locked atmosphere shell.
+
+**Verify Live:** Locate me · night local time → your region dark, west coast can still be day, thin terminator limb not a blue balloon.
+
+### Test spine
 
 | Item | What |
 |------|------|
-| `npm test` | vitest — **108** unit/contract tests, no network |
+| `npm test` | vitest — **125** unit/contract tests, no network |
 | Fixture DB | `tests/fixtures/create-fixture-db.mjs` in-memory seed |
 | Day-frame contract | Golden keys for `2024-05-11` (G5) + Katrina cyclones |
 | CI | `.github/workflows/test.yml` — test + `npm run build` |
-| Pure extracts | daily-resolve, playback-format, event-list, experience URL, ephWindowToChart |
-| Ingest parsers | ocean-sst, solar, AAM, USGS quakes, OMNI, IBTrACS + fetchWithRetry / upsert / incremental |
 
-Next: DayFrame cache in conductor, remaining space-weather parsers, GlobeCore peel, Playwright smokes.
+Next engineering: DayFrame cache, more parsers, GlobeCore peel, Playwright; Replay UX polish per experience.
 
 **Phase F (trust layer)** shipped:
 
