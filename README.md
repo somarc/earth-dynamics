@@ -63,12 +63,15 @@ npm run ingest -- --only=ephemeris
 
 | Command | Purpose |
 |---------|---------|
+| `npm test` | Unit + day-frame contract suite (vitest, no network) |
 | `npm run ingest` | Migrate JSON + ingest new sources |
 | `npm run ingest -- --only=weather` | Single source |
 | `npm run ingest -- --only=earthquakes` | USGS incremental (last 14d overlap) |
 | `npm run ingest:force` | Re-ingest all |
 | `npm run api` | SQLite API server |
 | `npm run fetch-data` | Refresh JSON from APIs |
+
+**Tests:** see [`tests/README.md`](tests/README.md). Phase A locks pure utils, experience manifests, layer registries, and `/api/day` shape via an in-memory fixture DB.
 
 ## Views
 

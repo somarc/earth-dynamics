@@ -1,11 +1,23 @@
 # Session handoff — Wobblescope
 
-**Updated:** 2026-06-26  
+**Updated:** 2026-07-08  
 **Repo:** `/Users/mhess/marc_projects/ecdo` · GitHub `somarc/earth-dynamics`
 
 ---
 
 ## Where we are
+
+**Phase A test harness** shipped (2026-07-08):
+
+| Item | What |
+|------|------|
+| `npm test` | vitest — 39 unit/contract tests, no network |
+| Fixture DB | `tests/fixtures/create-fixture-db.mjs` in-memory seed |
+| Day-frame contract | Golden keys for `2024-05-11` (G5) + Katrina cyclones |
+| CI | `.github/workflows/test.yml` — test + `npm run build` |
+| Extracts | `api/lib/daily-resolve.mjs`, `src/lib/playback-format.js` |
+
+Next deconstruct tiers: Lane pack migrations with fixtures, GlobeCore peel, Playwright smokes.
 
 **Phase F (trust layer)** shipped:
 
